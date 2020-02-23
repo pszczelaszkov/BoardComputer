@@ -24,6 +24,7 @@ Communication:</br>
 </br>>
 <b>Display Preview:</b></br>
 ![Display](https://github.com/pszczelaszkov/BoardComputer/blob/master/Previews/DisplayPreview.png)
-<b>Board:</b></br>
+</br>
+<b>Board Prototype:</b></br>
 ![Board](https://github.com/pszczelaszkov/BoardComputer/blob/master/Previews/BoardComputerFront.png)
 ![Board](https://github.com/pszczelaszkov/BoardComputer/blob/master/Previews/BoardComputerBack.png)
