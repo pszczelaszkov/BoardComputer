@@ -12,6 +12,7 @@
 #include "USART.h"
 #include "sensorsfeed.h"
 #include "ProgramData.h"
+#include<stdio.h>
 
 //FUELUSAGE
 #define NEXTION_FUELUSAGE_L_KM 0
@@ -39,7 +40,7 @@ int8_t NEXTION_switch_page(uint8_t page)
 		return 0;
 	  
 	char buffer[6];
-	sprintf(buffer,"page %d",page);
+	//sprintf(buffer,"page %d",page);
 	return NEXTION_send(buffer);
 }
 
@@ -50,7 +51,7 @@ int8_t NEXTION_switch_fuelusage()
 	if(NEXTION_fuelusage_mode > 2)
 		NEXTION_fuelusage_mode = 0;
 
-	sprintf(buffer,"fu.pic=%d",NEXTION_fuelusage_piclookup[NEXTION_fuelusage_mode]);
+	//sprintf(buffer,"fu.pic=%d",NEXTION_fuelusage_piclookup[NEXTION_fuelusage_mode]);
 	return NEXTION_send(buffer);
 }
 

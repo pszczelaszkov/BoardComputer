@@ -22,18 +22,22 @@ void SENSORSFEED_update()
 		return;
 	
 	SENSORSFEED_status = 0;
+#ifdef __AVR__
 	CLEAR(ADMUX,0x0f);
 	ADCSRA |= (1 << ADSC);
+#endif
 }
 
 void SENSORSFEED_initialize()
 {
 	//ADC init
+#ifdef __AVR__
 	ADMUX = (1<<REFS0);//Vcc ref
 	ADCSRA = (1<<ADEN)|(1<<ADIE);
+#endif
 	SENSORSFEED_status = SENSORSFEED_READY;
 }
-
+#ifdef __AVR__
 ISR(ADC_vect)
 {
 	SENSORSFEED_feed[SENSORSFEED_status] = ADC;
@@ -45,5 +49,5 @@ ISR(ADC_vect)
 	ADMUX++;
 	SENSORSFEED_status++;
 }
-
+#endif
 #endif /* SENSORSFEED_H_ */

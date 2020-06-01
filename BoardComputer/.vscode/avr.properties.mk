@@ -1,0 +1,9 @@
+AVR.source.compiler = 
+AVR.source.libraries = 
+AVR.device.type = 
+AVR.device.frequency = 
+AVR.programmer.tool = 
+AVR.programmer.definitions = 
+AVR.programmer.type = 
+AVR.programmer.port = 
+AVR.programmer.rate = 

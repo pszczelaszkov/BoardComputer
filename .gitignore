@@ -17,10 +17,15 @@ Thumbs.db
 *.cache
 *.ilk
 *.log
+*.pyc
 [Bb]in
 [Dd]ebug*/
 *.lib
 *.sbr
+*.so
+*.dll
+*.o
+*_.c
 obj/
 [Rr]elease*/
 _ReSharper*/
