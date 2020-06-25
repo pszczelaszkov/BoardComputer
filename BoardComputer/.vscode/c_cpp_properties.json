@@ -6,19 +6,24 @@
                 "${workspaceFolder}/**"
             ],
             "defines": [],
-            "compilerPath": "/usr/bin/cpp",
+            "compilerPath": "/usr/bin/gcc",
             "cStandard": "c11",
             "cppStandard": "c++17",
-            "intelliSenseMode": "gcc-x64"
+            "intelliSenseMode": "gcc-x86"
         },
         {
             "name": "AVR",
             "intelliSenseMode": "${default}",
             "cStandard": "c11",
             "cppStandard": "c++14",
-            "compilerPath": "",
-            "includePath": [],
-            "compilerArgs": []
+            "compilerPath": "/usr/bin/avr-gcc",
+            "includePath": [
+                "/usr/lib/avr"
+            ],
+            "compilerArgs": [
+                "-mmcu=atmega8",
+                "-O1"
+            ]
         }
     ],
     "version": 4

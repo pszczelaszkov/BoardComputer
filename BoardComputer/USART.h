@@ -15,65 +15,21 @@
 #define USART_EOT 0xff//End of transmission
 #define USART_EOT_COUNT 3//EOT must appear EOT_COUNT times in a row to be valid.
 
-//#define USART_PARSING_FINISHED 0
-//#define USART_PARSING_INWORK 1
-//#define USART_TEMPERATURE 3
-//#define USART_RTC 4
-/*
-    PARSING STARTS WITH /r
-    ENDS WITH RESULTING TX
-*/
 char USART_RX_buffer[USART_RX_BUFFER_SIZE];
 char USART_TX_buffer[USART_TX_BUFFER_SIZE];
 uint8_t USART_TX_message_length;
 uint8_t USART_RX_buffer_index;
 uint8_t USART_TX_buffer_index;
-//note: indexes work as status flags too I.E: TX index at TX_BUFFER_SIZE means "TX is ready to go" 
+//note: indexes work as status flags too I.E: TX index with value of TX_BUFFER_SIZE means "TX is ready to go" 
 int8_t USART_eot_counter;
-
+//double buffer zrobic
 //USARTcallbacks
 int8_t NEXTION_touch();
 
 #ifndef __AVR__
-uint8_t UDR;
+uint8_t UDR,UDRRX;
 #endif
 
-void USART_transmit()
-{
-    /*if(USART_eot_counter == USART_EOT_COUNT)//Message is done nothing to send, if statement is true its probably IRQ after sending last EOT. 
-    {
-		USART_outcome_buffer_index = USART_TX_BUFFER_SIZE;//set index beyond buffer so its marked as "free"
-		return;
-	}*/
-
-	if(USART_TX_buffer_index == USART_TX_message_length)
-		return;
-		
-    char buffer = USART_TX_buffer[USART_TX_buffer_index];
-    UDR = buffer;
-    
-    /*if(buffer == USART_EOT)
-    {
-		if(USART_eot_counter < USART_EOT_COUNT)
-			USART_eot_counter++;
-        else
-			return;
-    }*/
-	USART_TX_buffer_index++;
-}
-
-int8_t USART_register()
-{
-	switch(USART_RX_buffer[0])
-	{
-		case 0x65:
-			NEXTION_touch();
-		break;
-	}
-	USART_RX_buffer_index = 0;//unlock
-	
-	return 0;
-}
 
 void USART_TX_clear()
 {
@@ -118,10 +74,41 @@ void initializeUSART()
 	sei();//enable global interrupts
     #endif
 }
-#ifdef __AVR__
+#ifndef __AVR__
+void USART_test()
+{
+	char eot = 0xff;
+	if(!strncmp(&USART_RX_buffer[1],"PING",4))
+	{
+		USART_send("PONG",0);
+		USART_send(&eot,1);
+	}
+}
+#endif
+void USART_register()
+{
+	switch(USART_RX_buffer[0])
+	{
+		
+		#ifndef __AVR__
+		case 0x01:
+			USART_test();
+		break;
+		#endif
+		case 0x65:
+			NEXTION_touch();
+		break;
+	}
+	USART_RX_buffer_index = 0;//unlock
+}
+
 ISR(USART_RXC_vect)
 {
+	#ifdef __AVR__
 	uint8_t buffer = UDR;
+	#else
+	uint8_t buffer = UDRRX;
+	#endif
 	if(USART_RX_buffer_index < USART_RX_BUFFER_SIZE)
 	{
 		USART_RX_buffer[USART_RX_buffer_index] = buffer;
@@ -136,7 +123,7 @@ ISR(USART_RXC_vect)
 	if(USART_eot_counter == USART_EOT_COUNT)
 	{	
 		USART_RX_buffer_index = USART_RX_BUFFER_SIZE;//Lock buffer
-		SCHEDULER_addLowPriorityTask(USART_register);
+		SCHEDULER_addLowPriorityTask(USART_register_cb);
 	}
 }
 ISR(USART_TXC_vect)
@@ -151,5 +138,5 @@ ISR(USART_TXC_vect)
 	USART_TX_buffer_index++;
 	UDR = buffer;
 }
-#endif
+
 #endif

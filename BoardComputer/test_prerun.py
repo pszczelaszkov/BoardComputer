@@ -1,6 +1,6 @@
+import unittest
 import cffi
 import importlib
-import unittest
 
 
 def load(filename):
@@ -37,6 +37,14 @@ class testPreRun(unittest.TestCase):
         self.assertFalse(self.bc.USART_RX_buffer_index)
         self.assertFalse(self.bc.USART_TX_buffer_index)
         self.assertFalse(self.bc.USART_eot_counter)
+
+    def test_sensorsfeed(self):
+        self.assertEqual(self.bc.SENSORSFEED_READY, 0xff)
+        # Cant be 0(0 division issue at init)
+        self.assertTrue(self.bc.SENSORSFEED_injector_ccm)
+
+    def test_countersfeed(self):
+        self.assertTrue(self.bc.COUNTERSFEED_TICKSPERSECOND)
 
 
 if __name__ == "main":
