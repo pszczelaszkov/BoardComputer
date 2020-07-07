@@ -72,13 +72,13 @@ class testInit(unittest.TestCase):
     def test_countersfeed_fuel(self):
         # Tricky one, timer overflows at uint16
         # Normal situation (previous value lower)
-        fuelindex = self.bc.COUNTERSFEED_fuelps_index
-        injectorinput = self.bc.COUNTERSFEED_injector_input
+        fuelindex = self.bc.COUNTERSFEED_FUELPS_INDEX
+        injector_input = self.bc.COUNTERSFEED_injector_input
         self.bc.TCNT1 = 10000
         self.bc.PINA = injector_input  # Injector rising
         self.bc.PCINT0_vect()  # Simulate IRQ, should dump timestamp at rising
         self.bc.TCNT1 = 60000
-        self.bc.PINA = injector_input   # All falling
+        self.bc.PINA = self.bc.PINA ^ injector_input   # Injector falling back
         self.bc.PCINT0_vect()  # Simulate IRQ, should calc at falling
         self.bc.COUNTERSFEED_event_update()  # Move to front buffer
         self.assertEqual(self.bc.COUNTERSFEED_feed[fuelindex][0], 50000)
@@ -87,7 +87,7 @@ class testInit(unittest.TestCase):
         self.bc.PINA = injector_input
         self.bc.PCINT0_vect()
         self.bc.TCNT1 = 10000
-        self.bc.PINA = injector_input
+        self.bc.PINA = self.bc.PINA ^ injector_input
         self.bc.PCINT0_vect()
         for i in range(7):
             self.bc.COUNTERSFEED_event_update()  # Move again rolling back to 0
