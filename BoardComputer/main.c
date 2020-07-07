@@ -1,10 +1,11 @@
 /*
- * BoardComputer.c
+ * main.c
  *
  * Created: 2019-10-06 22:07:57
  * Author : pszczelaszkov
  */ 
-
+#define FRONTBUFFER 0
+#define BACKBUFFER 1
 #ifdef __AVR__
 #include <avr/io.h>
 #include <avr/sleep.h>
@@ -13,6 +14,8 @@
 void _delay_ms(int dummy){}
 #define ISR(...) void __VA_ARGS__()
 #define sleep_cpu()
+volatile uint8_t PINA;
+volatile uint16_t TCNT1;
 uint8_t DDRD;
 uint8_t PORTD;
 uint8_t ADC;
@@ -43,6 +46,14 @@ void prestart_routine()
 	NEXTION_switch_page(0);
 }
 
+void core()
+{
+
+	SCHEDULER_checkLowPriorityTasks();
+	SENSORSFEED_update();
+	NEXTION_update();
+}
+
 int main()
 {
 	SCHEDULER_init();
@@ -56,13 +67,7 @@ int main()
     while(run)
     {	
 		sleep_cpu();
-		if(!exec)
-			continue;
-
-		SCHEDULER_checkLowPriorityTasks();
-		SENSORSFEED_update();
-		NEXTION_update();
-		exec = 0;
+		core();
     }
 }
 

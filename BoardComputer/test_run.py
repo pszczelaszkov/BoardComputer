@@ -4,16 +4,19 @@ import re
 import time
 from collections import deque
 from threading import Thread
-from test_prerun import load
+from test_init import load
 
 nextion_values = {}
 ADC = [10, 2, 3, 4, 5, 6, 7, 8]
 
+# This test class should be launched last to perform runtime tests.
+
 
 def exec_cycle(module):
     module.exec = True
-    while module.exec is True:
-        pass
+    module.core()
+    #while module.exec is True:
+     #   pass
 
 
 def read_nextion_msg(module):
@@ -60,11 +63,11 @@ class testRun(unittest.TestCase):
                                      1,
                                      byteorder="little")
         cls.usart_eot = cls.usart_eot * cls.bc.USART_EOT_COUNT
-        cls.bcThread = Thread(target=cls.bc.main, daemon=True)
-        cls.bcThread.start()
-
-    def setUp(self):#cleanup usart
-        usart_receive_nextion(self.bc)
+        cls.bc.run = False
+        cls.bc.main()
+        cls.bc.prestart_routine()
+        #cls.bcThread = Thread(target=cls.bc.main, daemon=True)
+        #cls.bcThread.start()
 
     def test_analog(self):
         usart_receive_nextion(self.bc)

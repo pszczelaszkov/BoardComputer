@@ -28,7 +28,7 @@ uint16_t SENSORSFEED_fuelmodifier;
 
 void SENSORSFEED_l_h()
 {
-	uint16_t fuel_time = COUNTERSFEED_feed[0];//double buffer w feedzie
+	uint16_t fuel_time = COUNTERSFEED_feed[COUNTERSFEED_FUELPS_INDEX][FRONTBUFFER];
 	SENSORSFEED_feed[SENSORSFEED_FEEDID_L_H] = (uint32_t)(fuel_time * SENSORSFEED_fuelmodifier) >> 16;
 }
 
