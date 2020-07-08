@@ -19,7 +19,7 @@ volatile uint16_t TCNT1;
 uint8_t DDRD;
 uint8_t PORTD;
 uint8_t ADC;
-uint8_t ADMUX;
+uint8_t ADMUX, ADSC, ADCSRA;
 #endif
 //callbacks for scheduler
 enum SCHEDULER_callbacks{

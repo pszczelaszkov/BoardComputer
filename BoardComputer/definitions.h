@@ -38,8 +38,8 @@ void USART_register();
 void USART_TX_clear();
 
 #define SENSORSFEED_READY ...
+#define ADCMULTIPLEXER ...
 #define SENSORSFEED_ADC_CHANNELS ...
-extern uint8_t SENSORSFEED_status;
 extern uint8_t ADMUX;
 extern uint8_t ADC;
 extern uint16_t SENSORSFEED_injector_ccm;

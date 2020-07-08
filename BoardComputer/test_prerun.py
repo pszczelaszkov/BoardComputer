@@ -40,7 +40,7 @@ class testInit(unittest.TestCase):
         # Divide by 0 issue
         self.assertTrue(self.bc.SENSORSFEED_fuelmodifier)
         # After init, status should be ready
-        self.assertEqual(self.bc.SENSORSFEED_status, self.bc.SENSORSFEED_READY)
+        self.assertEqual(self.bc.ADCMULTIPLEXER, 0)
 
     def test_USART(self):
         usart_eot = int.to_bytes(self.bc.USART_EOT,

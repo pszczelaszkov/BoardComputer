@@ -72,7 +72,7 @@ class testRun(unittest.TestCase):
     def test_analog(self):
         usart_receive_nextion(self.bc)
 
-        while self.bc.SENSORSFEED_status != self.bc.SENSORSFEED_READY:# to pewnie trzeba bedzie zmienic przy countersfeed
+        for i in range(self.bc.SENSORSFEED_ADC_CHANNELS):
             ADC_channel = self.bc.ADMUX & 0x0f
             self.bc.ADC = ADC[ADC_channel]
             self.bc.ADC_vect()
