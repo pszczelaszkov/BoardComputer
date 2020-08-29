@@ -2,11 +2,14 @@ import unittest
 import cffi
 import random
 from test_init import load
+from helpers import write_usart, read_usart
+# This test class should be launched second to check one-cycle run
+# i.e tests direct functionality of subsystems.
 
-# This test class should be launched second to check one-cycle run.
+def cast_void(ffi, variable):
+    return ffi.cast("void*", cffi.FFI().addressof(variable))
 
-
-class testInit(unittest.TestCase):
+class testPreRun(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.bc = load("main")
@@ -35,6 +38,21 @@ class testInit(unittest.TestCase):
         for byte in eot[0:3]:
             self.assertEqual(byte, 0xff)
         self.assertEqual(eot[3], 0)
+        self.assertEqual(self.bc.NEXTION_maindisplay_renderer,
+                         self.bc.NEXTION_maindisplay_renderers[0])
+
+    def test_nextion_switch_maindisplay(self):
+        # Must have default renderer and be circular
+        initial = self.bc.NEXTION_maindisplay_renderer
+        desired = self.bc.NEXTION_maindisplay_renderers[0]
+        self.assertEqual(initial, desired)
+        temp = initial.nextRenderer
+        for i in range(self.bc.NEXTION_MD_LAST):
+            if temp == initial:
+                break
+            temp = temp.nextRenderer
+
+        self.assertEqual(initial, temp)
 
     def test_sensorsfeed(self):
         # Divide by 0 issue
@@ -43,56 +61,62 @@ class testInit(unittest.TestCase):
         self.assertEqual(self.bc.ADCMULTIPLEXER, 0)
 
     def test_USART(self):
-        usart_eot = int.to_bytes(self.bc.USART_EOT,
-                                 1,
-                                 byteorder="little")
-        usart_eot = usart_eot * self.bc.USART_EOT_COUNT
-        usart_header = 0x01.to_bytes(1, byteorder="little")
-        # Buffer must be empty at this point
-        self.assertFalse(self.bc.USART_TX_message_length)
-        # Test if USART is prepared for TX/RX
-        self.assertTrue(self.bc.USART_TX_buffer_index,
-                        self.bc.USART_TX_BUFFER_SIZE)
-        self.assertLess(self.bc.USART_RX_buffer_index,
-                        self.bc.USART_RX_BUFFER_SIZE)
-        # Test raw funcionality
-        message = usart_header + b"PING" + usart_eot
-        for byte in message:
-            self.bc.UDRRX = byte
-            self.bc.USART_RXC_vect()
-        # At this point usart_register should parse it
-        self.bc.USART_register()
-        response = bytearray()
-        while self.bc.UDR != 0xff:
-            response.append(self.bc.UDR)
-            self.bc.USART_TXC_vect()
-        self.assertEqual(response, b"PONG")
+        write_usart(self.bc, 0x01, b"PING")
+        response = read_usart(self.bc)
+        self.assertEqual(response[:4], b"PONG")
         self.bc.USART_TX_clear()
 
     def test_countersfeed_fuel(self):
         # Tricky one, timer overflows at uint16
         # Normal situation (previous value lower)
-        fuelindex = self.bc.COUNTERSFEED_FUELPS_INDEX
+        fuelindex = self.bc.COUNTERSFEED_FEEDID_FUELPS
         injector_input = self.bc.COUNTERSFEED_injector_input
         self.bc.TCNT1 = 10000
-        self.bc.PINA = injector_input  # Injector rising
+        self.bc.PINB = injector_input  # Injector rising
         self.bc.PCINT0_vect()  # Simulate IRQ, should dump timestamp at rising
         self.bc.TCNT1 = 60000
-        self.bc.PINA = self.bc.PINA ^ injector_input   # Injector falling back
+        self.bc.PINB = self.bc.PINB ^ injector_input   # Injector falling back
         self.bc.PCINT0_vect()  # Simulate IRQ, should calc at falling
         self.bc.COUNTERSFEED_event_update()  # Move to front buffer
         self.assertEqual(self.bc.COUNTERSFEED_feed[fuelindex][0], 50000)
         # Overflow situation (previous value higher)
         self.bc.TCNT1 = 60000
-        self.bc.PINA = injector_input
+        self.bc.PINB = injector_input
         self.bc.PCINT0_vect()
         self.bc.TCNT1 = 10000
-        self.bc.PINA = self.bc.PINA ^ injector_input
+        self.bc.PINB = self.bc.PINB ^ injector_input
         self.bc.PCINT0_vect()
         for i in range(7):
             self.bc.COUNTERSFEED_event_update()  # Move again rolling back to 0
         self.assertEqual(self.bc.COUNTERSFEED_feed[fuelindex][0], 15535)
         self.assertFalse(self.bc.COUNTERSFEED_event_timer)
+
+    def test_average(self):
+        for i in range(2):
+            # Random is quite uniform, after all average will be near ~(0xffff/2)
+            # But it is able to detect mismatch.
+            localsum = 0
+            for i in range(1, 2**16):
+                testint = random.randint(0, 0xffff)
+                localsum = localsum + testint
+                average = self.bc.AVERAGE_addvalue(0, testint)
+                self.assertEqual(average, localsum//i)
+            # At this point average sum is full
+            # Now it should switch to shifting instead of dividing
+            sum_base = self.bc.AVERAGE_addvalue(0, random.randint(0, 0xffff))
+            localsum = sum_base * 2**16
+            for i in range(1, 2**16):
+                testint = random.randint(0, 0xffff)
+                localsum = localsum + (testint - sum_base)
+                average = self.bc.AVERAGE_addvalue(0, testint)
+                self.assertEqual(average, localsum//2**16)
+
+            sum_base = self.bc.AVERAGE_addvalue(0, random.randint(0, 0xffff))
+            localsum = sum_base * 2**16
+            sum = self.bc.AVERAGE_buffers[0].sum
+            self.assertEqual(sum, localsum)
+            self.bc.AVERAGE_clear(0)
+
 
 if __name__ == "main":
     unittest.main()

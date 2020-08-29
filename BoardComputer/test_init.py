@@ -19,7 +19,7 @@ def load(filename):
         return module.lib
 
 
-class testPreRun(unittest.TestCase):
+class testInit(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.bc = load("main")
@@ -43,9 +43,13 @@ class testPreRun(unittest.TestCase):
         self.assertEqual(self.bc.SENSORSFEED_READY, 0xff)
         # Cant be 0(0 division issue at init)
         self.assertTrue(self.bc.SENSORSFEED_injector_ccm)
+        self.assertTrue(self.bc.SENSORSFEED_speed_ticks_100m)
 
     def test_countersfeed(self):
         self.assertTrue(self.bc.COUNTERSFEED_TICKSPERSECOND)
+
+    def test_average(self):
+        self.assertTrue(self.bc.AVERAGE_BUFFERS_COUNT)
 
 
 if __name__ == "main":

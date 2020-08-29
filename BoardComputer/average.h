@@ -11,7 +11,13 @@
 /*
     Somekind of circularbuffer that accepts 2^16 of 16bit integers as max capacity and holds their average value.
 */
-#define AVERAGE_BUFFERS_COUNT 1
+enum
+{
+    AVERAGE_BUFFER_SPEED,
+    AVERAGE_BUFFER_LP100,
+    AVERAGE_BUFFER_LAST
+};
+#define AVERAGE_BUFFERS_COUNT AVERAGE_BUFFER_LAST
 typedef struct Average
 {
     uint32_t sum;

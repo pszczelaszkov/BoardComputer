@@ -18,7 +18,8 @@
 
 enum COUNTERSFEED_counterinputs
 {
-    COUNTERSFEED_injector_input = 1
+    COUNTERSFEED_injector_input = 1,
+    COUNTERSFEED_speed_input = 2
 };
 
 enum COUNTERSFEED_timestamps
@@ -29,12 +30,14 @@ enum COUNTERSFEED_timestamps
 
 enum COUNTERSFEED_feed_indexes
 {
-    COUNTERSFEED_FUELPS_INDEX,
-    COUNTERSFEED_LAST_INDEX
+    COUNTERSFEED_FEEDID_FUELPS,
+    COUNTERSFEED_FEEDID_INJT,
+    COUNTERSFEED_FEEDID_SPEED,
+    COUNTERSFEED_FEEDID_LAST
 };
 
 #define COUNTERSFEED_TICKSPERSECOND 125000//ticks for second
-uint16_t COUNTERSFEED_feed[COUNTERSFEED_LAST_TIMESTAMP][2];
+uint16_t COUNTERSFEED_feed[COUNTERSFEED_FEEDID_LAST][2];
 uint16_t COUNTERSFEED_last_timestamp[COUNTERSFEED_LAST_TIMESTAMP];
 uint8_t COUNTERSFEED_last_PINA_state;
 uint8_t COUNTERSFEED_event_timer;//8 ticks/second
@@ -52,7 +55,7 @@ void COUNTERSFEED_event_update()//future ISR prototype(move to main/scheduler?)
     {
         case 1:
         case 4:
-            COUNTERSFEED_pushfeed(COUNTERSFEED_FUELPS_INDEX);
+            COUNTERSFEED_pushfeed(COUNTERSFEED_FEEDID_FUELPS);
         break;
         case 8:
             COUNTERSFEED_event_timer = 0;
@@ -63,13 +66,13 @@ void COUNTERSFEED_event_update()//future ISR prototype(move to main/scheduler?)
 ISR(PCINT0_vect)
 {   
     uint16_t timestamp = TCNT1;
-    uint8_t changed_pins = COUNTERSFEED_last_PINA_state ^ PINA;// detects change on pin
-    COUNTERSFEED_last_PINA_state = PINA;
+    uint8_t changed_pins = COUNTERSFEED_last_PINA_state ^ PINB;// detects change on pin
+    COUNTERSFEED_last_PINA_state = PINB;
     uint16_t result = 0;
     if((changed_pins & COUNTERSFEED_injector_input))
     {
         uint16_t* last_timestamp = &COUNTERSFEED_last_timestamp[COUNTERSFEED_FUELPS_TIMESTAMP];
-        if(isRising(PINA,COUNTERSFEED_injector_input))//Pin change on rising edge start counting
+        if(isRising(PINB,COUNTERSFEED_injector_input))//Pin change on rising edge start counting
             *last_timestamp = timestamp;
         else//Pin change on falling edge, calculate duration
         {
@@ -77,7 +80,7 @@ ISR(PCINT0_vect)
                 result = timestamp + (0xffff-*last_timestamp);
             else
                 result = timestamp - *last_timestamp;
-            COUNTERSFEED_feed[COUNTERSFEED_FUELPS_INDEX][BACKBUFFER] += result;
+            COUNTERSFEED_feed[COUNTERSFEED_FEEDID_FUELPS][BACKBUFFER] += result;
         }
     }
 }
