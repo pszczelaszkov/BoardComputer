@@ -1,8 +1,7 @@
 import unittest
 import cffi
 import random
-from test_init import load
-from helpers import write_usart, read_usart
+from helpers import write_usart, read_usart, load
 # This test class should be launched second to check one-cycle run
 # i.e tests direct functionality of subsystems.
 

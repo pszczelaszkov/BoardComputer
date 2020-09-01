@@ -1,10 +1,8 @@
 import unittest
 import cffi
-import time
 from math import ceil
 from threading import Thread
-from test_init import load
-from helpers import write_usart, read_usart, parse_nextion, exec_cycle, click
+from helpers import write_usart, read_usart, parse_nextion, exec_cycle, click, load
 
 nextion_data = {"val": {}, "pic": {}}
 ADC = [10, 2, 3, 4, 5, 6, 7, 8]

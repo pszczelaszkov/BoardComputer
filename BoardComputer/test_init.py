@@ -1,22 +1,10 @@
 import unittest
 import cffi
-import importlib
-
+from helpers import load
 # This test class should be launched first to check global definitions
 
 
-def load(filename):
-    # load source code
-    with open(filename + '.c') as source, open("definitions.h") as definitions:
-        # pass source code to CFFI
-        ffibuilder = cffi.FFI()
-        ffibuilder.cdef(definitions.read())
-        ffibuilder.set_source(filename + '_', source.read())
-        ffibuilder.compile()
 
-        # import and return resulting module
-        module = importlib.import_module(filename + '_')
-        return module.lib
 
 
 class testInit(unittest.TestCase):

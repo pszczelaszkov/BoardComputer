@@ -1,5 +1,28 @@
-from collections import deque
+import os
 import re
+import cffi
+import importlib
+import glob
+
+
+def load(filename):
+    # load source code
+    with open('src/' + filename + '.c') as source, open('src/definitions.h') as definitions:
+        # pass source code to CFFI
+        ffibuilder = cffi.FFI()
+        ffibuilder.cdef(definitions.read())
+        ffibuilder.set_source("src." + filename + '_', source.read())
+        ffibuilder.compile()
+
+        # import and return resulting module
+        module = importlib.import_module('src.' + filename + '_')
+        fileList = glob.glob('src/' + filename +'_*')
+        for filePath in fileList:
+            try:
+                os.remove(filePath)
+            except:
+                print('Error while deleting file : ', filePath)
+        return module.lib
 
 
 def exec_cycle(module):

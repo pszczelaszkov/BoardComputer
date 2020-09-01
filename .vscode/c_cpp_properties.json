@@ -6,8 +6,13 @@
             "cStandard": "c11",
             "cppStandard": "c++14",
             "compilerPath": "/usr/bin/avr-gcc",
-            "includePath": [],
-            "compilerArgs": []
+            "includePath": [
+                "/mnt/8C4A46DD4A46C424/Projekty/AVR/BoardComputer/BoardComputer/src/**"
+            ],
+            "compilerArgs": [
+                "-mmcu=atmega8",
+                "-DF_CPU=180000UL"
+            ]
         }
     ],
     "version": 4
