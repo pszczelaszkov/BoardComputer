@@ -9,12 +9,6 @@
     "python.testing.pytestEnabled": false,
     "python.testing.nosetestsEnabled": false,
     "python.testing.unittestEnabled": true,
-    "AVR.source.compiler": "/usr/bin/avr-gcc",
-    "AVR.programmer.tool": "/usr/bin/avrdude",
-    "AVR.source.libraries": [
-        "/mnt/8C4A46DD4A46C424/Projekty/AVR/BoardComputer/BoardComputer/src"
     ],
-    "AVR.device.type": "atmega8",
-    "AVR.device.frequency": 180000,
-    "AVR.programmer.type": "usbasp"
+
 }
