@@ -6,3 +6,5 @@
 - [ ] Remove all sprintf
 - [ ] Different precisions bases instead of one big in sensorsfeed
 - [ ] FP8/FP16 weights need better placement, and should be macros
+- [ ] Roll concats in utils?
+- [x] Comments in sensorsfeed utils

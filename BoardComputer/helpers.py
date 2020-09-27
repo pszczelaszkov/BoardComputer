@@ -68,6 +68,11 @@ def parse_nextion(module, stream, nextion_values):
             variable = message.split('.')[0]
             value = message.split("=")[1]
             nextion_values["val"][variable] = value
+        if re.fullmatch("[a-z]+[0-9]*\\.txt+=\"\\s*\\S+\"", message):
+            # String variable value e.g var.txt=24
+            variable = message.split('.')[0]
+            value = message.split("=")[1]
+            nextion_values["txt"][variable] = value[1:-1]
         if re.fullmatch("[a-z]+[0-9]*\\.pic+=\\S+", message):
             # picture id e.g var.pic=24
             variable = message.split('.')[0]

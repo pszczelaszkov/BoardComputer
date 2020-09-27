@@ -15,7 +15,7 @@
 #define ADCSTART ADCSRA |= (1 << ADSC)
 #define ADCMULTIPLEXER (ADMUX & 0x0f)
 #define SENSORSFEED_PRECISION_BASE 1000000000//We dont want to operate on floats so use bigger representation than 1.
-#define SENSORSFEED_LOW_PRECISION_BASE 100000//We dont want to operate on floats so use bigger representation than 1.
+#define SENSORSFEED_LOW_PRECISION_BASE 100000
 #define SENSORSFEED_READY 0xff
 #define SENSORSFEED_ADC_CHANNELS 2
 enum SENSORSFEED_feedid
@@ -98,11 +98,9 @@ void SENSORSFEED_initialize()
 	fraction_representation = SENSORSFEED_LOW_PRECISION_BASE/(COUNTERSFEED_TICKSPERSECOND/1000);
 	SENSORSFEED_injtmodifier = fraction_representation/fixed_base;
 
-	//wzor 540    1  lub  150 100
-	//		360   x		   1   x lub jeszcze inne proporcje raczej to pierwsze
-	//modifier = 360/540 fp na 6? To 100/64=~1.5 .Limit bazy na 1024
-	//ABS prawdsopodobnie 2400 impulsow
-	//modifier = 360/2400 fp na 16+16 baza
+	//Calculate ticks for 1km, which in short is 360/ticksp100
+	//Result is in fp 8+8.
+	//As an addition speed_max is limiter to protect from overflow during further processing.
 	uint32_t base_fp16 = 360 << 8;//reduced from 3600sec
 	SENSORSFEED_speedmodifier = base_fp16/SENSORSFEED_speed_ticks_100m;
 	SENSORSFEED_speed_max = 0xffff/SENSORSFEED_speedmodifier;

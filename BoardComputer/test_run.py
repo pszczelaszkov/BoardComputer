@@ -4,7 +4,7 @@ from math import ceil
 from threading import Thread
 from helpers import write_usart, read_usart, parse_nextion, exec_cycle, click, load
 
-nextion_data = {"val": {}, "pic": {}}
+nextion_data = {"val": {}, "pic": {}, "txt": {}}
 ADC = [10, 2, 3, 4, 5, 6, 7, 8]
 
 # This test class should be launched last to perform runtime tests
@@ -84,7 +84,7 @@ class testRun(unittest.TestCase):
             self.bc.AVERAGE_clear(self.bc.AVERAGE_BUFFER_SPEED)
             parse_nextion(self.bc, read_usart(self.bc),
                           nextion_data)
-            self.assertEqual(nextion_data['val']['md'], packet["assert"])
+            self.assertEqual(nextion_data['txt']['mdv'], packet["assert"])
 
         # Fast checkup of averages, only format is tested
         # Average itself is tested in prerun
@@ -95,7 +95,7 @@ class testRun(unittest.TestCase):
         self.bc.NEXTION_maindisplay_renderer.render()
         parse_nextion(self.bc, read_usart(self.bc),
                       nextion_data)
-        self.assertEqual(nextion_data['val']['md'], "12.0")
+        self.assertEqual(nextion_data['txt']['mdv'], "12.0")
         # SPEED_AVG
         self.bc.NEXTION_switch_maindisplay()
         read_usart(self.bc)
@@ -103,7 +103,7 @@ class testRun(unittest.TestCase):
         self.bc.NEXTION_maindisplay_renderer.render()
         parse_nextion(self.bc, read_usart(self.bc),
                       nextion_data)
-        self.assertEqual(nextion_data['val']['md'], " 90")
+        self.assertEqual(nextion_data['txt']['mdv'], " 90")
         self.bc.SENSORSFEED_feed[SPEED_AVG_ID] = 0
         # INJ_T
         self.bc.NEXTION_switch_maindisplay()
@@ -112,7 +112,7 @@ class testRun(unittest.TestCase):
         self.bc.NEXTION_maindisplay_renderer.render()
         parse_nextion(self.bc, read_usart(self.bc),
                       nextion_data)
-        self.assertEqual(nextion_data['val']['md'], " 1.1")
+        self.assertEqual(nextion_data['txt']['mdv'], " 1.1")
         # RANGE
         self.bc.NEXTION_switch_maindisplay()
         read_usart(self.bc)
@@ -121,7 +121,7 @@ class testRun(unittest.TestCase):
         self.bc.NEXTION_maindisplay_renderer.render()
         parse_nextion(self.bc, read_usart(self.bc),
                       nextion_data)
-        self.assertEqual(nextion_data['val']['md'], " 583")
+        self.assertEqual(nextion_data['txt']['mdv'], " 583")
 
 if __name__ == "main":
     unittest.main()

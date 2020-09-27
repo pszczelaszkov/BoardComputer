@@ -9,6 +9,8 @@
 #include <string.h>
 #include "NEXTION.h"
 
+#define USART_HOLD 0
+#define USART_FLUSH 1
 #define USART_BAUDRATE 12
 #define USART_RX_BUFFER_SIZE 32
 #define USART_TX_BUFFER_SIZE 32
@@ -22,8 +24,7 @@ uint8_t USART_RX_buffer_index;
 uint8_t USART_TX_buffer_index;
 //note: indexes work as status flags too I.E: TX index with value of TX_BUFFER_SIZE means "TX is ready to go" 
 int8_t USART_eot_counter;
-//double buffer zrobic
-//USARTcallbacks
+
 int8_t NEXTION_touch();
 
 #ifndef __AVR__
