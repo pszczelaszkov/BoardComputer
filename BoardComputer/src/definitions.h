@@ -31,9 +31,9 @@ extern int8_t USART_eot_counter;
 extern uint8_t USART_TX_message_length;
 extern uint8_t USART_RX_buffer_index;
 extern uint8_t USART_TX_buffer_index;
-extern uint8_t UDR,UDRRX;
-void USART_RXC_vect();
-void USART_TXC_vect();
+extern uint8_t UDR0,UDRRX;
+void USART0_RX_vect();
+void USART0_TX_vect();
 void USART_register();
 void USART_TX_clear();
 
