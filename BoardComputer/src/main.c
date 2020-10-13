@@ -8,11 +8,14 @@
 #define FRONTBUFFER 0
 #define BACKBUFFER 1
 #define F_CPU 8000000
+#define EVENT_TIMER_ISR ISR(TIMER2_COMPA_vect)
+
 #ifdef __AVR__
 #include <avr/io.h>
 #include <avr/sleep.h>
 #include <util/delay.h>
 #endif
+
 //callbacks for scheduler
 enum SCHEDULER_callbacks{
 	USART_register_cb,
@@ -23,18 +26,18 @@ enum SCHEDULER_callbacks{
 #include "scheduler.h"
 #include "sensorsfeed.h"
 
-//Watch out for sync in callbacks and fregister!*/
+//Watch out for sync in callbacks and fregister!
 Fptr SCHEDULER_fregister[] = {USART_register};
 
-volatile uint8_t run = 1;
-volatile uint8_t exec;
+volatile uint8_t SYSTEM_run = 1;
+volatile uint8_t SYSTEM_exec;
 
 void prestart_routine()
 {
-	DDRD = 0xff;
-	PORTD = 0xff;
+	DDRD = 0x00;
+	PORTD = 0x00;
 	SENSORSFEED_update();
-	_delay_ms(5000);
+	_delay_ms(1000);
 	NEXTION_switch_page(0);
 }
 
@@ -50,16 +53,33 @@ int main()
 	SCHEDULER_init();
 	NEXTION_initialize();
 	SENSORSFEED_initialize();
+	COUNTERSFEED_initialize();
 	#ifndef __AVR__
 	if(run)
 	#endif
 	prestart_routine();
 
-    while(run)
-    {	
-        _delay_ms(100);
-		sleep_cpu();
+    while(SYSTEM_run)
+    {
+		while(!SYSTEM_exec)
+			sleep_cpu();
+		SYSTEM_exec = 0;
 		core();
     }
+}
+
+EVENT_TIMER_ISR
+{
+	//Event timer is clocked at rate of 1/8 sec
+    COUNTERSFEED_event_counter++;
+    switch(COUNTERSFEED_event_counter)
+    {
+        case 8:
+			COUNTERSFEED_pushfeed(COUNTERSFEED_FEEDID_FUELPS);
+            COUNTERSFEED_event_counter = 0; 
+			
+        break;
+    }
+   	SYSTEM_exec = 1;
 }
 

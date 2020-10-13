@@ -40,7 +40,7 @@ enum COUNTERSFEED_feed_indexes
 uint16_t COUNTERSFEED_feed[COUNTERSFEED_FEEDID_LAST][2];
 uint16_t COUNTERSFEED_last_timestamp[COUNTERSFEED_LAST_TIMESTAMP];
 uint8_t COUNTERSFEED_last_PINA_state;
-uint8_t COUNTERSFEED_event_timer;//8 ticks/second
+uint8_t COUNTERSFEED_event_counter;//8 ticks/second
 
 inline void COUNTERSFEED_pushfeed(uint8_t index)
 {
@@ -48,19 +48,14 @@ inline void COUNTERSFEED_pushfeed(uint8_t index)
     COUNTERSFEED_feed[index][BACKBUFFER] = 0;
 }
 
-void COUNTERSFEED_event_update()//future ISR prototype(move to main/scheduler?)
-{//1/8s?
-    COUNTERSFEED_event_timer++;
-    switch(COUNTERSFEED_event_timer)
-    {
-        case 1:
-        case 4:
-            COUNTERSFEED_pushfeed(COUNTERSFEED_FEEDID_FUELPS);
-        break;
-        case 8:
-            COUNTERSFEED_event_timer = 0;
-        break;
-    }
+void COUNTERSFEED_initialize()
+{
+    //Event Timer
+    OCR2A = 15;// 1/8 seconds
+    ASSR = (1 << AS2);// async
+    TCCR2A = (1 << WGM21);// Clear on match
+    TCCR2B = (3 << CS21);// 256 prescaler
+    TIMSK2 = (1 << OCIE2A);// Enable IRQ
 }
 
 ISR(PCINT0_vect)
