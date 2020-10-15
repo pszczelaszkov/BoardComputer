@@ -14,7 +14,7 @@ class testPreRun(unittest.TestCase):
         cls.bc = load("main")
         cls.ffi = cffi.FFI()
         cls.nullptr = cls.ffi.NULL
-        cls.bc.run = False
+        cls.bc.SYSTEM_run = False
         cls.bc.main()
         random.seed()
 
@@ -76,7 +76,7 @@ class testPreRun(unittest.TestCase):
         self.bc.TCNT1 = 60000
         self.bc.PINB = self.bc.PINB ^ injector_input   # Injector falling back
         self.bc.PCINT0_vect()  # Simulate IRQ, should calc at falling
-        self.bc.COUNTERSFEED_event_update()  # Move to front buffer
+        self.bc.COUNTERSFEED_pushfeed(self.bc.COUNTERSFEED_FEEDID_FUELPS)
         self.assertEqual(self.bc.COUNTERSFEED_feed[fuelindex][0], 50000)
         # Overflow situation (previous value higher)
         self.bc.TCNT1 = 60000
@@ -85,10 +85,8 @@ class testPreRun(unittest.TestCase):
         self.bc.TCNT1 = 10000
         self.bc.PINB = self.bc.PINB ^ injector_input
         self.bc.PCINT0_vect()
-        for i in range(7):
-            self.bc.COUNTERSFEED_event_update()  # Move again rolling back to 0
+        self.bc.COUNTERSFEED_pushfeed(self.bc.COUNTERSFEED_FEEDID_FUELPS)
         self.assertEqual(self.bc.COUNTERSFEED_feed[fuelindex][0], 15535)
-        self.assertFalse(self.bc.COUNTERSFEED_event_timer)
 
     def test_average(self):
         for i in range(2):

@@ -1,10 +1,11 @@
 //Definitions only for testing purposes
-extern volatile uint8_t run, exec, PINA, PINB;
+extern volatile uint8_t SYSTEM_run, SYSTEM_exec, SYSTEM_event_timer, PINA, PINB;
 volatile extern uint16_t TCNT1;
 int main();
 void core();
 void prestart_routine();
 void PCINT0_vect();
+void TIMER2_COMPA_vect();
 #define SCHEDULER_LOW_PRIORITY_QUEUE_SIZE ...
 typedef void (*Fptr)();
 typedef struct LowPriorityTask
@@ -31,9 +32,9 @@ extern int8_t USART_eot_counter;
 extern uint8_t USART_TX_message_length;
 extern uint8_t USART_RX_buffer_index;
 extern uint8_t USART_TX_buffer_index;
-extern uint8_t UDR0,UDRRX;
-void USART0_RX_vect();
-void USART0_TX_vect();
+extern uint8_t UDR2,UDRRX;
+void USART2_RX_vect();
+void USART2_TX_vect();
 void USART_register();
 void USART_TX_clear();
 
@@ -75,9 +76,8 @@ enum COUNTERSFEED_feed_indexes
     COUNTERSFEED_FEEDID_SPEED,
     COUNTERSFEED_FEEDID_LAST
 };
-void COUNTERSFEED_event_update();
 extern uint16_t COUNTERSFEED_feed[][2]; 
-extern uint8_t COUNTERSFEED_event_timer;
+inline void COUNTERSFEED_pushfeed(uint8_t index);
 
 typedef void (*RenderingCallback)();
 typedef struct MainDisplayRenderer

@@ -31,6 +31,7 @@ Fptr SCHEDULER_fregister[] = {USART_register};
 
 volatile uint8_t SYSTEM_run = 1;
 volatile uint8_t SYSTEM_exec;
+volatile uint8_t SYSTEM_event_timer;//8 ticks/second
 
 void prestart_routine()
 {
@@ -55,7 +56,7 @@ int main()
 	SENSORSFEED_initialize();
 	COUNTERSFEED_initialize();
 	#ifndef __AVR__
-	if(run)
+	if(SYSTEM_run)
 	#endif
 	prestart_routine();
 
@@ -71,13 +72,12 @@ int main()
 EVENT_TIMER_ISR
 {
 	//Event timer is clocked at rate of 1/8 sec
-    COUNTERSFEED_event_counter++;
-    switch(COUNTERSFEED_event_counter)
+    SYSTEM_event_timer++;
+    switch(SYSTEM_event_timer)
     {
         case 8:
 			COUNTERSFEED_pushfeed(COUNTERSFEED_FEEDID_FUELPS);
-            COUNTERSFEED_event_counter = 0; 
-			
+            SYSTEM_event_timer = 0;
         break;
     }
    	SYSTEM_exec = 1;

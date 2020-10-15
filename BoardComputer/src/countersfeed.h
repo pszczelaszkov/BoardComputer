@@ -40,7 +40,7 @@ enum COUNTERSFEED_feed_indexes
 uint16_t COUNTERSFEED_feed[COUNTERSFEED_FEEDID_LAST][2];
 uint16_t COUNTERSFEED_last_timestamp[COUNTERSFEED_LAST_TIMESTAMP];
 uint8_t COUNTERSFEED_last_PINA_state;
-uint8_t COUNTERSFEED_event_counter;//8 ticks/second
+
 
 inline void COUNTERSFEED_pushfeed(uint8_t index)
 {
@@ -50,12 +50,14 @@ inline void COUNTERSFEED_pushfeed(uint8_t index)
 
 void COUNTERSFEED_initialize()
 {
+    #ifdef __AVR__
     //Event Timer
     OCR2A = 15;// 1/8 seconds
     ASSR = (1 << AS2);// async
     TCCR2A = (1 << WGM21);// Clear on match
     TCCR2B = (3 << CS21);// 256 prescaler
     TIMSK2 = (1 << OCIE2A);// Enable IRQ
+    #endif
 }
 
 ISR(PCINT0_vect)

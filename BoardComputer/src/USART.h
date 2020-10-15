@@ -28,7 +28,7 @@ int8_t USART_eot_counter;
 int8_t NEXTION_touch();
 
 #ifndef __AVR__
-uint8_t UDR0,UDRRX;
+uint8_t UDR0,UDR2,UDRRX;
 #endif
 
 
@@ -53,7 +53,7 @@ uint8_t USART_send(char data[],uint8_t flush)
 	if(flush)
 	{
 		USART_TX_buffer_index = 1;//set index at 2nd byte for further IRQ callback
-		UDR0 = USART_TX_buffer[0];//First byte is send here, rest is handled on IRQ
+		UDR2 = USART_TX_buffer[0];//First byte is send here, rest is handled on IRQ
 	}
 	
 	return 1;
@@ -68,10 +68,10 @@ void initializeUSART()
 	USART_TX_buffer_index = USART_TX_BUFFER_SIZE;
 	#ifdef __AVR__
     uint8_t baud = USART_BAUDRATE;
-    UBRR0H = (uint8_t)(baud>>8);
-    UBRR0L = (uint8_t)baud;
-    UCSR0B = (1<<RXEN)|(1<<TXEN)|(1<<RXCIE)|(1<<TXCIE);
-    UCSR0C = (3<<UCSZ0);//frame format: 8data, 1stop bit
+    UBRR2H = (uint8_t)(baud>>8);
+    UBRR2L = (uint8_t)baud;
+    UCSR2B = (1<<RXEN)|(1<<TXEN)|(1<<RXCIE)|(1<<TXCIE);
+    UCSR2C = (3<<UCSZ0);//frame format: 8data, 1stop bit
 	sei();//enable global interrupts
     #endif
 }
@@ -103,10 +103,10 @@ void USART_register()
 	USART_RX_buffer_index = 0;//unlock
 }
 
-ISR(USART0_RX_vect)
+ISR(USART2_RX_vect)
 {
 	#ifdef __AVR__
-	uint8_t buffer = UDR0;
+	uint8_t buffer = UDR2;
 	#else
 	uint8_t buffer = UDRRX;
 	#endif
@@ -127,7 +127,7 @@ ISR(USART0_RX_vect)
 		SCHEDULER_addLowPriorityTask(USART_register_cb);
 	}
 }
-ISR(USART0_TX_vect)
+ISR(USART2_TX_vect)
 {
     if(USART_TX_buffer_index == USART_TX_message_length)
 	{
@@ -137,7 +137,7 @@ ISR(USART0_TX_vect)
 	
     char buffer = USART_TX_buffer[USART_TX_buffer_index];
 	USART_TX_buffer_index++;
-	UDR0 = buffer;
+	UDR2 = buffer;
 }
 
 #endif

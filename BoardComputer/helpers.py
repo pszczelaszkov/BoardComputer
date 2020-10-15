@@ -26,7 +26,7 @@ def load(filename):
 
 
 def exec_cycle(module):
-    module.exec = True
+    module.SYSTEM_exec = True
     module.core()
     #while module.exec is True:
      #   pass
@@ -35,8 +35,8 @@ def exec_cycle(module):
 def read_usart(module):
     response = bytearray()
     while module.USART_TX_message_length:
-        response.append(module.UDR0)
-        module.USART0_TX_vect()
+        response.append(module.UDR2)
+        module.USART2_TX_vect()
 
     return response
 
@@ -54,7 +54,7 @@ def write_usart(module, header, message, force_register=True):
     message = usart_header + bytearray(message) + usart_eot
     for byte in message:
         module.UDRRX = byte
-        module.USART0_RX_vect()
+        module.USART2_RX_vect()
     # At this point usart_register should parse it
     if force_register:
         module.USART_register()

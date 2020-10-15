@@ -27,14 +27,14 @@ LowPriorityTask SCHEDULER_low_priority_tasks[SCHEDULER_LOW_PRIORITY_QUEUE_SIZE];
 LowPriorityTask* SCHEDULER_final_task;
 LowPriorityTask* SCHEDULER_active_task;
 
-volatile extern uint8_t run;
+volatile extern uint8_t SYSTEM_run;
 /*
 Safe only when called from single IRQ, for nested IRQ or main thread use call within ATOMIC block. 
 */
 LowPriorityTask* SCHEDULER_addLowPriorityTask(uint8_t fid)
 {
 	#ifndef __AVR__
-	if(!run)
+	if(!SYSTEM_run)
 		return 0;
 	#endif
     LowPriorityTask* task = SCHEDULER_final_task;

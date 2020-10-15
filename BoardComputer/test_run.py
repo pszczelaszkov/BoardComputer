@@ -20,7 +20,7 @@ class testRun(unittest.TestCase):
                                      1,
                                      byteorder="little")
         cls.usart_eot = cls.usart_eot * cls.bc.USART_EOT_COUNT
-        cls.bc.run = False
+        cls.bc.SYSTEM_run = False
         cls.bc.main()
         cls.bc.prestart_routine()
         #clear usart from initial stuff
