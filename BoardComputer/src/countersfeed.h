@@ -78,6 +78,7 @@ ISR(PCINT0_vect)
             else
                 result = timestamp - *last_timestamp;
             COUNTERSFEED_feed[COUNTERSFEED_FEEDID_FUELPS][BACKBUFFER] += result;
+            COUNTERSFEED_feed[COUNTERSFEED_FEEDID_INJT][FRONTBUFFER] = result;
         }
     }
 }

@@ -69,6 +69,7 @@ class testPreRun(unittest.TestCase):
         # Tricky one, timer overflows at uint16
         # Normal situation (previous value lower)
         fuelindex = self.bc.COUNTERSFEED_FEEDID_FUELPS
+        injtindex = self.bc.COUNTERSFEED_FEEDID_INJT
         injector_input = self.bc.COUNTERSFEED_injector_input
         self.bc.TCNT1 = 10000
         self.bc.PINB = injector_input  # Injector rising
@@ -78,6 +79,7 @@ class testPreRun(unittest.TestCase):
         self.bc.PCINT0_vect()  # Simulate IRQ, should calc at falling
         self.bc.COUNTERSFEED_pushfeed(self.bc.COUNTERSFEED_FEEDID_FUELPS)
         self.assertEqual(self.bc.COUNTERSFEED_feed[fuelindex][0], 50000)
+        self.assertEqual(self.bc.COUNTERSFEED_feed[injtindex][0], 50000)
         # Overflow situation (previous value higher)
         self.bc.TCNT1 = 60000
         self.bc.PINB = injector_input
@@ -87,6 +89,7 @@ class testPreRun(unittest.TestCase):
         self.bc.PCINT0_vect()
         self.bc.COUNTERSFEED_pushfeed(self.bc.COUNTERSFEED_FEEDID_FUELPS)
         self.assertEqual(self.bc.COUNTERSFEED_feed[fuelindex][0], 15535)
+        self.assertEqual(self.bc.COUNTERSFEED_feed[injtindex][0], 15535)
 
     def test_average(self):
         for i in range(2):
