@@ -14,10 +14,12 @@ typedef struct LowPriorityTask
 	struct LowPriorityTask* nextTask;
 
 }LowPriorityTask;
-enum SCHEDULER_callbacks{
-	USART_register_cb,
-	LAST_cb
+enum SCHEDULER_CALLBACK
+{
+	SCHEDULER_CALLBACK_USART_REGISTER,
+	SCHEDULER_CALLBACK_LAST
 };
+#define SCHEDULER_FREGISTER_SIZE ...
 extern Fptr SCHEDULER_fregister[];
 extern LowPriorityTask SCHEDULER_low_priority_tasks[];
 extern LowPriorityTask* SCHEDULER_final_task;
@@ -38,10 +40,9 @@ void USART2_TX_vect();
 void USART_register();
 void USART_TX_clear();
 
-#define SENSORSFEED_READY ...
 #define ADCMULTIPLEXER ...
 #define SENSORSFEED_ADC_CHANNELS ...
-enum SENSORSFEED_feedid
+enum SENSORSFEED_FEEDID
 {
 	SENSORSFEED_FEEDID_TANK,
 	SENSORSFEED_FEEDID_EGT,
@@ -64,12 +65,12 @@ void SENSORSFEED_update_speed();
 void ADC_vect();
 
 #define COUNTERSFEED_TICKSPERSECOND ...
-enum COUNTERSFEED_counterinputs
+enum COUNTERSFEED_INPUT
 {
-    COUNTERSFEED_injector_input = 1,
-    COUNTERSFEED_speed_input = 2
+    COUNTERSFEED_INPUT_INJECTOR = 1,
+    COUNTERSFEED_INPUT_SPEED = 2
 };
-enum COUNTERSFEED_feed_indexes
+enum COUNTERSFEED_FEEDID
 {
     COUNTERSFEED_FEEDID_FUELPS,
     COUNTERSFEED_FEEDID_INJT,
@@ -87,7 +88,7 @@ typedef struct MainDisplayRenderer
 	uint8_t picID;
 }MainDisplayRenderer;
 
-enum NextionMainDisplayModes
+enum NEXTION_MD
 {
 	NEXTION_MD_LPH,
 	NEXTION_MD_LP100,
@@ -110,7 +111,7 @@ enum
     AVERAGE_BUFFER_LP100,
     AVERAGE_BUFFER_LAST
 };
-#define AVERAGE_BUFFERS_COUNT ...
+#define AVERAGE_BUFFERS_SIZE ...
 typedef struct Average
 {
     uint32_t sum;

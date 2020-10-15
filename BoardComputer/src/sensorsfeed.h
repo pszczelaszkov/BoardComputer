@@ -14,11 +14,11 @@
 
 #define ADCSTART ADCSRA |= (1 << ADSC)
 #define ADCMULTIPLEXER (ADMUX & 0x0f)
-#define SENSORSFEED_PRECISION_BASE 1000000000//We dont want to operate on floats so use bigger representation than 1.
+//Big int as an answer to float
+#define SENSORSFEED_HIGH_PRECISION_BASE 1000000000
 #define SENSORSFEED_LOW_PRECISION_BASE 100000
-#define SENSORSFEED_READY 0xff
 #define SENSORSFEED_ADC_CHANNELS 2
-enum SENSORSFEED_feedid
+enum SENSORSFEED_FEEDID
 {
 	SENSORSFEED_FEEDID_TANK = SENSORSFEED_ADC_CHANNELS - 1,// TANK input always last
 	SENSORSFEED_FEEDID_EGT = SENSORSFEED_ADC_CHANNELS,
@@ -29,7 +29,9 @@ enum SENSORSFEED_feedid
 	SENSORSFEED_FEEDID_SPEED_AVG,//fp 8bit
 	SENSORSFEED_FEEDID_LAST
 };
-uint16_t SENSORSFEED_feed[SENSORSFEED_FEEDID_LAST];//ADC 0...SENSORSFEED_ADC_CHANNELS
+
+#define SENSORSFEED_FEED_SIZE SENSORSFEED_FEEDID_LAST
+uint16_t SENSORSFEED_feed[SENSORSFEED_FEED_SIZE];//ADC 0...SENSORSFEED_ADC_CHANNELS
 
 uint16_t SENSORSFEED_speed_ticks_100m = 1;
 uint16_t SENSORSFEED_injector_ccm = 1;
@@ -89,9 +91,9 @@ void SENSORSFEED_initialize()
 	//First we obtain ticks required for 1 liter / h, then we changing form so it will be possible to multiplicate it later rather than divide.
 	//Last step is to obtain it in form of 24 bit fixed point value.
 	//Now to get liters we just need to multiplicate counted ticks by modifier and byte shift 24 times.
-	uint16_t fixed_base = SENSORSFEED_PRECISION_BASE/0xffff;//16bit fixed point base.
+	uint16_t fixed_base = SENSORSFEED_HIGH_PRECISION_BASE/0xffff;//16bit fixed point base.
 	uint16_t liter_ticks = (COUNTERSFEED_TICKSPERSECOND*1000/60)/SENSORSFEED_injector_ccm;//ticks for 1000cch
-	uint32_t fraction_representation = SENSORSFEED_PRECISION_BASE/liter_ticks;//Represent as 1/value form
+	uint32_t fraction_representation = SENSORSFEED_HIGH_PRECISION_BASE/liter_ticks;//Represent as 1/value form
 	SENSORSFEED_fuelmodifier = fraction_representation/fixed_base;//Get 16bit fixed point value
 
 	fixed_base = SENSORSFEED_LOW_PRECISION_BASE/0xff;//8bit fixed point base

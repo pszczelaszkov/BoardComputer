@@ -124,7 +124,7 @@ ISR(USART2_RX_vect)
 	if(USART_eot_counter == USART_EOT_COUNT)
 	{	
 		USART_RX_buffer_index = USART_RX_BUFFER_SIZE;//Lock buffer
-		SCHEDULER_addLowPriorityTask(USART_register_cb);
+		SCHEDULER_addLowPriorityTask(SCHEDULER_CALLBACK_USART_REGISTER);
 	}
 }
 ISR(USART2_TX_vect)

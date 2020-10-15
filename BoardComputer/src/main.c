@@ -16,18 +16,10 @@
 #include <util/delay.h>
 #endif
 
-//callbacks for scheduler
-enum SCHEDULER_callbacks{
-	USART_register_cb,
-	LAST_cb//counting
-};
 #include "utils.h"
 #include "NEXTION.h"
 #include "scheduler.h"
 #include "sensorsfeed.h"
-
-//Watch out for sync in callbacks and fregister!
-Fptr SCHEDULER_fregister[] = {USART_register};
 
 volatile uint8_t SYSTEM_run = 1;
 volatile uint8_t SYSTEM_exec;
@@ -37,6 +29,7 @@ void prestart_routine()
 {
 	DDRD = 0x00;
 	PORTD = 0x00;
+	
 	SENSORSFEED_update();
 	_delay_ms(1000);
 	NEXTION_switch_page(0);
@@ -51,6 +44,7 @@ void core()
 
 int main()
 {
+	SCHEDULER_fregister[SCHEDULER_CALLBACK_USART_REGISTER] = USART_register;
 	SCHEDULER_init();
 	NEXTION_initialize();
 	SENSORSFEED_initialize();

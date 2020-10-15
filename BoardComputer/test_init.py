@@ -14,21 +14,12 @@ class testInit(unittest.TestCase):
         cls.ffi = cffi.FFI()
         cls.nullptr = cls.ffi.NULL
 
-    def test_scheduler(self):
-        # Test if fregister is fully initialized
-        fregister = self.ffi.unpack(self.bc.SCHEDULER_fregister,
-                                    self.bc.LAST_cb)
-        for fptr in fregister:
-            fptr = self.ffi.cast("void*", fptr)
-            self.assertNotEqual(fptr, self.nullptr)
-
     def test_USART(self):
         # Test buffers and counters are at 0
         self.assertFalse(self.bc.USART_RX_buffer_index)
         self.assertFalse(self.bc.USART_eot_counter)
 
     def test_sensorsfeed(self):
-        self.assertEqual(self.bc.SENSORSFEED_READY, 0xff)
         # Cant be 0(0 division issue at init)
         self.assertTrue(self.bc.SENSORSFEED_injector_ccm)
         self.assertTrue(self.bc.SENSORSFEED_speed_ticks_100m)
@@ -37,7 +28,7 @@ class testInit(unittest.TestCase):
         self.assertTrue(self.bc.COUNTERSFEED_TICKSPERSECOND)
 
     def test_average(self):
-        self.assertTrue(self.bc.AVERAGE_BUFFERS_COUNT)
+        self.assertTrue(self.bc.AVERAGE_BUFFERS_SIZE)
 
 
 if __name__ == "main":

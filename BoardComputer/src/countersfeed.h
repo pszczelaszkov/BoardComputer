@@ -16,19 +16,19 @@
 
 #define isRising(PIN, input) (PIN & input) == input
 
-enum COUNTERSFEED_counterinputs
+enum COUNTERSFEED_INPUT
 {
-    COUNTERSFEED_injector_input = 1,
-    COUNTERSFEED_speed_input = 2
+    COUNTERSFEED_INPUT_INJECTOR = 1,
+    COUNTERSFEED_INPUT_SPEED = 2
 };
 
-enum COUNTERSFEED_timestamps
+enum COUNTERSFEED_TIMESTAMP
 {
-    COUNTERSFEED_FUELPS_TIMESTAMP,
-    COUNTERSFEED_LAST_TIMESTAMP
+    COUNTERSFEED_TIMESTAMP_FUELPS,
+    COUNTERSFEED_TIMESTAMP_LAST
 };
 
-enum COUNTERSFEED_feed_indexes
+enum COUNTERSFEED_FEEDID
 {
     COUNTERSFEED_FEEDID_FUELPS,
     COUNTERSFEED_FEEDID_INJT,
@@ -36,9 +36,11 @@ enum COUNTERSFEED_feed_indexes
     COUNTERSFEED_FEEDID_LAST
 };
 
+#define COUNTERSFEED_FEED_SIZE COUNTERSFEED_FEEDID_LAST
+#define COUNTERSFEED_LAST_TIMESTAMP_SIZE COUNTERSFEED_TIMESTAMP_LAST
 #define COUNTERSFEED_TICKSPERSECOND 125000//ticks for second
-uint16_t COUNTERSFEED_feed[COUNTERSFEED_FEEDID_LAST][2];
-uint16_t COUNTERSFEED_last_timestamp[COUNTERSFEED_LAST_TIMESTAMP];
+uint16_t COUNTERSFEED_feed[COUNTERSFEED_FEED_SIZE][2];
+uint16_t COUNTERSFEED_last_timestamp[COUNTERSFEED_LAST_TIMESTAMP_SIZE];
 uint8_t COUNTERSFEED_last_PINA_state;
 
 
@@ -66,10 +68,10 @@ ISR(PCINT0_vect)
     uint8_t changed_pins = COUNTERSFEED_last_PINA_state ^ PINB;// detects change on pin
     COUNTERSFEED_last_PINA_state = PINB;
     uint16_t result = 0;
-    if((changed_pins & COUNTERSFEED_injector_input))
+    if((changed_pins & COUNTERSFEED_INPUT_INJECTOR))
     {
-        uint16_t* last_timestamp = &COUNTERSFEED_last_timestamp[COUNTERSFEED_FUELPS_TIMESTAMP];
-        if(isRising(PINB,COUNTERSFEED_injector_input))//Pin change on rising edge start counting
+        uint16_t* last_timestamp = &COUNTERSFEED_last_timestamp[COUNTERSFEED_TIMESTAMP_FUELPS];
+        if(isRising(PINB,COUNTERSFEED_INPUT_INJECTOR))//Pin change on rising edge start counting
             *last_timestamp = timestamp;
         else//Pin change on falling edge, calculate duration
         {

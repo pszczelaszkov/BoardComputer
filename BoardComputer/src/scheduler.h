@@ -21,8 +21,13 @@ typedef struct LowPriorityTask
 
 }LowPriorityTask;
 
-enum SCHEDULER_callbacks;
-Fptr SCHEDULER_fregister[];
+enum SCHEDULER_CALLBACK{
+	SCHEDULER_CALLBACK_USART_REGISTER,
+	SCHEDULER_CALLBACK_LAST
+};
+#define SCHEDULER_FREGISTER_SIZE SCHEDULER_CALLBACK_LAST
+
+Fptr SCHEDULER_fregister[SCHEDULER_FREGISTER_SIZE];
 LowPriorityTask SCHEDULER_low_priority_tasks[SCHEDULER_LOW_PRIORITY_QUEUE_SIZE];
 LowPriorityTask* SCHEDULER_final_task;
 LowPriorityTask* SCHEDULER_active_task;
@@ -38,7 +43,7 @@ LowPriorityTask* SCHEDULER_addLowPriorityTask(uint8_t fid)
 		return 0;
 	#endif
     LowPriorityTask* task = SCHEDULER_final_task;
-    if(task->fid != LAST_cb)
+    if(task->fid != SCHEDULER_CALLBACK_LAST)
 		return 0;
 	task->fid = fid;
 	SCHEDULER_final_task = task->nextTask;
@@ -51,10 +56,10 @@ void SCHEDULER_checkLowPriorityTasks()
 	for(i = 0; i < SCHEDULER_LOW_PRIORITY_QUEUE_SIZE; i++)
 	{
 		fid = SCHEDULER_active_task->fid;
-		if(fid < LAST_cb)
+		if(fid < SCHEDULER_CALLBACK_LAST)
 		{	
 			SCHEDULER_fregister[fid]();
-			SCHEDULER_active_task->fid = LAST_cb;
+			SCHEDULER_active_task->fid = SCHEDULER_CALLBACK_LAST;
 			SCHEDULER_active_task = SCHEDULER_active_task->nextTask;
 		}
     }
@@ -75,20 +80,8 @@ void SCHEDULER_init()
 	
 	for(i = 0;i < SCHEDULER_LOW_PRIORITY_QUEUE_SIZE;i++)
     {
-        SCHEDULER_low_priority_tasks[i].fid = LAST_cb;		
+        SCHEDULER_low_priority_tasks[i].fid = SCHEDULER_CALLBACK_LAST;		
     }
-  //  SCHEDULER_unused_lowpriority_ids_last = i-1;
-
-//    SCHEDULER_tasks_mutex.awaiting_call = SCHEDULER_checkScheduledTasks;
-   // OCR0 = 199;//refresh per 100us
-   // TIMSK = (1<<OCIE0);//enable compare match interrupt(timer0)
-  //  TCCR0 = (1<<CS01) | (1<<WGM01);//start timer (/8 prescaler)/CTC MODE
-   // sei();//enable interrupts
 }
-
-//ISR(TIMER0_COMP_vect,/*ISR_NOBLOCK*/)
-//{
- //   SCHEDULER_checkLowPriorityTasks();
-//}
 
 #endif

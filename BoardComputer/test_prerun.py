@@ -19,6 +19,12 @@ class testPreRun(unittest.TestCase):
         random.seed()
 
     def test_scheduler(self):
+        # Test if fregister is fully initialized
+        fregister = self.ffi.unpack(self.bc.SCHEDULER_fregister,
+                                    self.bc.SCHEDULER_CALLBACK_LAST)
+        for fptr in fregister:
+            fptr = self.ffi.cast("void*", fptr)
+            self.assertNotEqual(fptr, self.nullptr)
         # Test queue is circular
         size = self.bc.SCHEDULER_LOW_PRIORITY_QUEUE_SIZE
         tasks = self.ffi.unpack(self.bc.SCHEDULER_low_priority_tasks, size)
@@ -26,7 +32,7 @@ class testPreRun(unittest.TestCase):
         nextptr = self.ffi.cast("void*", last.nextTask)
         for task in tasks:
             # Are tasks fid's properly initialized?
-            self.assertEqual(task.fid, self.bc.LAST_cb)
+            self.assertEqual(task.fid, self.bc.SCHEDULER_CALLBACK_LAST)
             fptr = self.ffi.cast("void*", cffi.FFI().addressof(task))
             self.assertEqual(nextptr, fptr)
             nextptr = self.ffi.cast("void*", task.nextTask)
@@ -70,7 +76,7 @@ class testPreRun(unittest.TestCase):
         # Normal situation (previous value lower)
         fuelindex = self.bc.COUNTERSFEED_FEEDID_FUELPS
         injtindex = self.bc.COUNTERSFEED_FEEDID_INJT
-        injector_input = self.bc.COUNTERSFEED_injector_input
+        injector_input = self.bc.COUNTERSFEED_INPUT_INJECTOR
         self.bc.TCNT1 = 10000
         self.bc.PINB = injector_input  # Injector rising
         self.bc.PCINT0_vect()  # Simulate IRQ, should dump timestamp at rising

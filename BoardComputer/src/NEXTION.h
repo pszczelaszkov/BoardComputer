@@ -8,14 +8,12 @@
 
 #ifndef NEXTION_H_
 #define NEXTION_H_
-#include <stdio.h>
-#include <stdlib.h>
 #include "USART.h"
 #include "sensorsfeed.h"
 #include "ProgramData.h"
 #include "utils.h"
 
-enum NextionMainDisplayModes
+enum NEXTION_MD
 {
 	NEXTION_MD_LPH,
 	NEXTION_MD_LP100,
@@ -26,6 +24,7 @@ enum NextionMainDisplayModes
 	NEXTION_MD_LAST
 };
 #define NEXTION_COMPONENT_MAINDISPLAY 2
+#define NEXTION_MAINDISPLAY_REDNERERS_SIZE NEXTION_MD_LAST
 typedef void (*RenderingCallback)();
 typedef struct MainDisplayRenderer
 {
@@ -34,13 +33,11 @@ typedef struct MainDisplayRenderer
 	uint8_t picID;
 }MainDisplayRenderer;
 
-MainDisplayRenderer NEXTION_maindisplay_renderers[NEXTION_MD_LAST];
+MainDisplayRenderer NEXTION_maindisplay_renderers[NEXTION_MAINDISPLAY_REDNERERS_SIZE];
 MainDisplayRenderer* NEXTION_maindisplay_renderer;
 
 char NEXTION_eot[4];
 uint8_t NEXTION_update_status;
-uint8_t FP8_weight = 10000/0xff;
-uint16_t FP16_weight = SENSORSFEED_PRECISION_BASE/0xffff;
 
 uint8_t NEXTION_send(char data[], uint8_t flush)
 {
@@ -141,11 +138,11 @@ void NEXTION_renderer_md_range()
 
 int8_t NEXTION_switch_page(uint8_t page)
 {
+	char buffer[] = "page  ";
 	if(page > 9)
 		return 0;
 	  
-	char buffer[7];
-	sprintf((char*)&buffer,"page %d",page);
+	concat_short_1(&buffer[5],page);
 	return NEXTION_send(buffer,USART_FLUSH);
 }
 
@@ -164,7 +161,8 @@ int8_t NEXTION_update()
 	switch(NEXTION_update_status)
 	{
 		case 0:
-			sprintf(buffer,"a0.val=%d",pgm_read_word(&PROGRAMDATA_NTC_2200_INVERTED[SENSORSFEED_feed[0]]));
+			strcpy(buffer,"a0.val=    ");
+			concat_short_l4(&buffer[7],pgm_read_word(&PROGRAMDATA_NTC_2200_INVERTED[SENSORSFEED_feed[0]]));
 		break;
 	}
 	NEXTION_send(buffer,USART_HOLD);

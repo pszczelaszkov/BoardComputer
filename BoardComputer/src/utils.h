@@ -8,6 +8,7 @@
 
 #ifndef __UTILS__
 #define __UTILS__
+
 #ifdef __AVR__
     #include <stdlib.h>
 #else
@@ -49,6 +50,9 @@
     }
     void _delay_ms(int dummy){}
 #endif
+#include "sensorsfeed.h"
+const uint8_t FP8_weight = 10000/0xff;
+const uint16_t FP16_weight = SENSORSFEED_HIGH_PRECISION_BASE/0xffff;
 
 void concat_short_1(char* dest, uint16_t value)
 {
@@ -109,6 +113,13 @@ int8_t concat_short_r4(char* dest, uint16_t value)
 		dest[3] = temp[3];
 	}
 	
+	return 1;
+}
+
+int8_t concat_short_l4(char* dest, uint16_t value)
+{
+	//Concatenate left aligned integer.
+	itoa(value, dest,10);
 	return 1;
 }
 
