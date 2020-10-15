@@ -1,6 +1,4 @@
 # BoardComputer
-Device currently is in concept stage</br>
-Code itself for now is just a sketch, at least until final PCB arrives.</br>
 I'm developing this project as i'm in need of unified standalone controller which will fit into OEM Board Computer mountings.</br>
 Although device itself is versatile, specs in short:</br>
 Target uC: <a href="https://www.microchip.com/wwwproducts/en/ATmega324PB">ATMEGA324PB</a></br>
