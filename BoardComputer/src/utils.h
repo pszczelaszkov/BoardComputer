@@ -8,7 +8,6 @@
 
 #ifndef __UTILS__
 #define __UTILS__
-
 #ifdef __AVR__
     #include <stdlib.h>
 #else
@@ -50,77 +49,27 @@
     }
     void _delay_ms(int dummy){}
 #endif
+#include <string.h>
 #include "sensorsfeed.h"
 const uint8_t FP8_weight = 10000/0xff;
 const uint16_t FP16_weight = SENSORSFEED_HIGH_PRECISION_BASE/0xffff;
 
-void concat_short_1(char* dest, uint16_t value)
+//Concatenate right aligned integer.
+void rightconcat_short(char* dest, int16_t value, uint8_t spacing)
 {
-		char temp[5];
-		itoa(value,&temp[0],10);
-		dest[0] = temp[0];
-}
-
-int8_t concat_short_r3(char* dest, uint16_t value)
-{
-	//Concatenate right aligned integer.
-	char temp[5];
+	char temp[6];
+	uint8_t length;
 	itoa(value, &temp[0],10);
-	if(value < 10)
-	{	
-		dest[2] = temp[0];
-	}
-	else if(value < 100)
-	{
-		dest[1] = temp[0];
-		dest[2] = temp[1];
-	}
-	else
-	{
-		dest[0] = temp[0];
-		dest[1] = temp[1];
-		dest[2] = temp[2];
-	}
-	
-	return 1;
+	length = strlen(temp);
+	memcpy(&dest[spacing-length],temp,length);
 }
-
-int8_t concat_short_r4(char* dest, uint16_t value)
+//Concatenate right aligned integer limited by n.
+void rightnconcat_short(char* dest, int16_t value, uint8_t spacing, uint8_t n)
 {
-	//Concatenate right aligned integer.
-	char temp[5];
+	char temp[6];
+	if (n > 5)
+		n = 5;
 	itoa(value, &temp[0],10);
-	if(value < 10)
-	{	
-		dest[3] = temp[0];
-	}
-	else if(value < 100)
-	{
-		dest[2] = temp[0];
-		dest[3] = temp[1];
-	}
-	else if(value < 1000)
-	{
-		dest[1] = temp[0];
-		dest[2] = temp[1];
-		dest[3] = temp[2];
-	}
-	else
-	{
-		dest[0] = temp[0];
-		dest[1] = temp[1];
-		dest[2] = temp[2];
-		dest[3] = temp[3];
-	}
-	
-	return 1;
+	memcpy(&dest[spacing-n],temp,n);
 }
-
-int8_t concat_short_l4(char* dest, uint16_t value)
-{
-	//Concatenate left aligned integer.
-	itoa(value, dest,10);
-	return 1;
-}
-
 #endif

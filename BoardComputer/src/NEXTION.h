@@ -33,11 +33,11 @@ typedef struct MainDisplayRenderer
 	uint8_t picID;
 }MainDisplayRenderer;
 
+char NEXTION_eot[4];
+uint8_t NEXTION_update_status;
 MainDisplayRenderer NEXTION_maindisplay_renderers[NEXTION_MAINDISPLAY_REDNERERS_SIZE];
 MainDisplayRenderer* NEXTION_maindisplay_renderer;
 
-char NEXTION_eot[4];
-uint8_t NEXTION_update_status;
 
 uint8_t NEXTION_send(char data[], uint8_t flush)
 {
@@ -60,9 +60,9 @@ void NEXTION_renderer_md_lph()
 		liters = 99;
 		fraction = 9999;
 	}
-	concat_short_r3(&buffer[8],liters);
+	rightconcat_short(&buffer[9],liters,2);
 	if(fraction > 999)
-		concat_short_1(&buffer[12], fraction);
+		rightnconcat_short(&buffer[9], fraction, 4, 1);
 	NEXTION_send(buffer, USART_FLUSH);
 }
 
@@ -80,9 +80,9 @@ void NEXTION_renderer_md_lp100()
 	lp100 = SENSORSFEED_feed[SENSORSFEED_FEEDID_LP100];
 	liters = lp100 >> 8;
 	fraction = (lp100 & 0x00ff) * FP8_weight;
-	concat_short_r3(&buffer[8],liters);
+	rightconcat_short(&buffer[9], liters, 2);
 	if(fraction > 999)
-		concat_short_1(&buffer[12], fraction);
+		rightnconcat_short(&buffer[9], fraction, 4, 1);
 	NEXTION_send(buffer, USART_FLUSH);
 }
 
@@ -92,9 +92,9 @@ void NEXTION_renderer_md_lp100_avg()
 	uint16_t lp100 = SENSORSFEED_feed[SENSORSFEED_FEEDID_LP100_AVG];
 	uint8_t liters = lp100 >> 8;
 	uint16_t fraction = (lp100 & 0x00ff) * FP8_weight;
-	concat_short_r3(&buffer[8],liters);
+	rightconcat_short(&buffer[9], liters ,2);
 	if(fraction > 999)
-		concat_short_1(&buffer[12], fraction);
+		rightnconcat_short(&buffer[9], fraction, 4, 1);
 	NEXTION_send(buffer, USART_FLUSH);
 }
 
@@ -102,7 +102,7 @@ void NEXTION_renderer_md_speed_avg()
 {
 	char buffer[] = "mdv.txt=\"  0\"";
 	uint16_t speed = SENSORSFEED_feed[SENSORSFEED_FEEDID_SPEED_AVG] >> 8;
-	concat_short_r3(&buffer[9], speed);
+	rightconcat_short(&buffer[9], speed, 3);
 	NEXTION_send(buffer, USART_FLUSH);
 }
 
@@ -116,9 +116,9 @@ void NEXTION_renderer_md_inj_t()
 	integral = fuel_time >> 8;
 	fraction = (fuel_time & 0xff) * FP8_weight;
 
-	concat_short_r3(&buffer[8], integral);
+	rightconcat_short(&buffer[9], integral, 2);
 	if(fraction > 999)
-		concat_short_1(&buffer[12], fraction);
+		rightnconcat_short(&buffer[9], fraction, 4, 1);
 	NEXTION_send(buffer, USART_FLUSH);
 }
 
@@ -132,18 +132,8 @@ void NEXTION_renderer_md_range()
 	if(lp100)
 		range = tank*100/lp100;
 
-	concat_short_r4(&buffer[9], range);
+	rightconcat_short(&buffer[9], range, 4);
 	NEXTION_send(buffer, USART_FLUSH);
-}
-
-int8_t NEXTION_switch_page(uint8_t page)
-{
-	char buffer[] = "page  ";
-	if(page > 9)
-		return 0;
-	  
-	concat_short_1(&buffer[5],page);
-	return NEXTION_send(buffer,USART_FLUSH);
 }
 
 int8_t NEXTION_switch_maindisplay()
@@ -155,6 +145,16 @@ int8_t NEXTION_switch_maindisplay()
 	return NEXTION_send(buffer,USART_FLUSH);
 }
 
+int8_t NEXTION_switch_page(uint8_t page)
+{
+	char buffer[] = "page  ";
+	if(page > 9)
+		return 0;
+	  
+	rightnconcat_short(&buffer[5], page, 0, 1);
+	return NEXTION_send(buffer,USART_FLUSH);
+}
+
 int8_t NEXTION_update()
 {			
 	char buffer[24];
@@ -162,7 +162,7 @@ int8_t NEXTION_update()
 	{
 		case 0:
 			strcpy(buffer,"a0.val=    ");
-			concat_short_l4(&buffer[7],pgm_read_word(&PROGRAMDATA_NTC_2200_INVERTED[SENSORSFEED_feed[0]]));
+			itoa(pgm_read_word(&PROGRAMDATA_NTC_2200_INVERTED[SENSORSFEED_feed[0]]),&buffer[7],10);
 		break;
 	}
 	NEXTION_send(buffer,USART_HOLD);
