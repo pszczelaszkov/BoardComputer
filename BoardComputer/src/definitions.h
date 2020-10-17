@@ -39,6 +39,7 @@ void USART2_RX_vect();
 void USART2_TX_vect();
 void USART_register();
 void USART_TX_clear();
+void USART_flush();
 
 #define ADCMULTIPLEXER ...
 #define SENSORSFEED_ADC_CHANNELS ...

@@ -38,6 +38,14 @@ void USART_TX_clear()
 		USART_TX_message_length = 0;
 }
 
+void USART_flush()
+{
+	if(!USART_TX_message_length)
+		return;
+	USART_TX_buffer_index = 1;//set index at 2nd byte for further IRQ callback
+	UDR2 = USART_TX_buffer[0];//First byte is send here, rest is handled on IRQ
+}
+
 uint8_t USART_send(char data[],uint8_t flush)
 {
 	if(USART_TX_buffer_index != USART_TX_BUFFER_SIZE)//Check if there is no pending transmission
@@ -51,10 +59,7 @@ uint8_t USART_send(char data[],uint8_t flush)
 	USART_TX_message_length = USART_TX_message_length + size;
 	
 	if(flush)
-	{
-		USART_TX_buffer_index = 1;//set index at 2nd byte for further IRQ callback
-		UDR2 = USART_TX_buffer[0];//First byte is send here, rest is handled on IRQ
-	}
+		USART_flush();
 	
 	return 1;
 }

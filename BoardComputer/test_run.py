@@ -80,6 +80,7 @@ class testRun(unittest.TestCase):
             self.bc.SENSORSFEED_update_fuel()
             self.bc.SENSORSFEED_update_speed()
             self.bc.NEXTION_maindisplay_renderer.render()
+            self.bc.USART_flush()
             self.bc.AVERAGE_clear(self.bc.AVERAGE_BUFFER_LP100)
             self.bc.AVERAGE_clear(self.bc.AVERAGE_BUFFER_SPEED)
             parse_nextion(self.bc, read_usart(self.bc),
@@ -93,6 +94,7 @@ class testRun(unittest.TestCase):
         read_usart(self.bc)
         self.bc.SENSORSFEED_feed[LP100_AVG_ID] = 12 << 8
         self.bc.NEXTION_maindisplay_renderer.render()
+        self.bc.USART_flush()
         parse_nextion(self.bc, read_usart(self.bc),
                       nextion_data)
         self.assertEqual(nextion_data['txt']['mdv'], "12.0")
@@ -101,6 +103,7 @@ class testRun(unittest.TestCase):
         read_usart(self.bc)
         self.bc.SENSORSFEED_feed[SPEED_AVG_ID] = (90 << 8)
         self.bc.NEXTION_maindisplay_renderer.render()
+        self.bc.USART_flush()
         parse_nextion(self.bc, read_usart(self.bc),
                       nextion_data)
         self.assertEqual(nextion_data['txt']['mdv'], " 90")
@@ -110,6 +113,7 @@ class testRun(unittest.TestCase):
         read_usart(self.bc)
         self.bc.COUNTERSFEED_feed[INJT_ID][0] = 150
         self.bc.NEXTION_maindisplay_renderer.render()
+        self.bc.USART_flush()
         parse_nextion(self.bc, read_usart(self.bc),
                       nextion_data)
         self.assertEqual(nextion_data['txt']['mdv'], " 1.1")
@@ -119,6 +123,7 @@ class testRun(unittest.TestCase):
         self.bc.SENSORSFEED_feed[TANK_ID] = 70
         self.bc.SENSORSFEED_feed[LP100_AVG_ID] = 12 << 8
         self.bc.NEXTION_maindisplay_renderer.render()
+        self.bc.USART_flush()
         parse_nextion(self.bc, read_usart(self.bc),
                       nextion_data)
         self.assertEqual(nextion_data['txt']['mdv'], " 583")

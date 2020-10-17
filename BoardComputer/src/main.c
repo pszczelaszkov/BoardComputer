@@ -23,7 +23,7 @@
 
 volatile uint8_t SYSTEM_run = 1;
 volatile uint8_t SYSTEM_exec;
-volatile uint8_t SYSTEM_event_timer;//8 ticks/second
+volatile uint8_t SYSTEM_event_timer;//Represent fraction of second in values from 0 to 7. 
 
 void prestart_routine()
 {
@@ -65,7 +65,6 @@ int main()
 
 EVENT_TIMER_ISR
 {
-	//Event timer is clocked at rate of 1/8 sec
     SYSTEM_event_timer++;
     switch(SYSTEM_event_timer)
     {

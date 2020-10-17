@@ -33,8 +33,8 @@ typedef struct MainDisplayRenderer
 	uint8_t picID;
 }MainDisplayRenderer;
 
+extern volatile uint8_t SYSTEM_event_timer;
 char NEXTION_eot[4];
-uint8_t NEXTION_update_status;
 MainDisplayRenderer NEXTION_maindisplay_renderers[NEXTION_MAINDISPLAY_REDNERERS_SIZE];
 MainDisplayRenderer* NEXTION_maindisplay_renderer;
 
@@ -44,7 +44,7 @@ uint8_t NEXTION_send(char data[], uint8_t flush)
 	if(USART_send(data,USART_HOLD))
 		return USART_send(NEXTION_eot,USART_FLUSH & flush);
 		
-	return 0; //Assume fail
+	return 0;
 }
 
 void NEXTION_renderer_md_lph()
@@ -63,7 +63,7 @@ void NEXTION_renderer_md_lph()
 	rightconcat_short(&buffer[9],liters,2);
 	if(fraction > 999)
 		rightnconcat_short(&buffer[9], fraction, 4, 1);
-	NEXTION_send(buffer, USART_FLUSH);
+	NEXTION_send(buffer, USART_HOLD);
 }
 
 void NEXTION_renderer_md_lp100()
@@ -83,7 +83,7 @@ void NEXTION_renderer_md_lp100()
 	rightconcat_short(&buffer[9], liters, 2);
 	if(fraction > 999)
 		rightnconcat_short(&buffer[9], fraction, 4, 1);
-	NEXTION_send(buffer, USART_FLUSH);
+	NEXTION_send(buffer, USART_HOLD);
 }
 
 void NEXTION_renderer_md_lp100_avg()
@@ -95,7 +95,7 @@ void NEXTION_renderer_md_lp100_avg()
 	rightconcat_short(&buffer[9], liters ,2);
 	if(fraction > 999)
 		rightnconcat_short(&buffer[9], fraction, 4, 1);
-	NEXTION_send(buffer, USART_FLUSH);
+	NEXTION_send(buffer, USART_HOLD);
 }
 
 void NEXTION_renderer_md_speed_avg()
@@ -103,7 +103,7 @@ void NEXTION_renderer_md_speed_avg()
 	char buffer[] = "mdv.txt=\"  0\"";
 	uint16_t speed = SENSORSFEED_feed[SENSORSFEED_FEEDID_SPEED_AVG] >> 8;
 	rightconcat_short(&buffer[9], speed, 3);
-	NEXTION_send(buffer, USART_FLUSH);
+	NEXTION_send(buffer, USART_HOLD);
 }
 
 void NEXTION_renderer_md_inj_t()
@@ -119,7 +119,7 @@ void NEXTION_renderer_md_inj_t()
 	rightconcat_short(&buffer[9], integral, 2);
 	if(fraction > 999)
 		rightnconcat_short(&buffer[9], fraction, 4, 1);
-	NEXTION_send(buffer, USART_FLUSH);
+	NEXTION_send(buffer, USART_HOLD);
 }
 
 void NEXTION_renderer_md_range()
@@ -133,7 +133,7 @@ void NEXTION_renderer_md_range()
 		range = tank*100/lp100;
 
 	rightconcat_short(&buffer[9], range, 4);
-	NEXTION_send(buffer, USART_FLUSH);
+	NEXTION_send(buffer, USART_HOLD);
 }
 
 int8_t NEXTION_switch_maindisplay()
@@ -142,7 +142,7 @@ int8_t NEXTION_switch_maindisplay()
 	char buffer[] = "md.pic=  ";
 	uint8_t picid = NEXTION_maindisplay_renderer->picID;
 	itoa(picid,&buffer[7],10);
-	return NEXTION_send(buffer,USART_FLUSH);
+	return NEXTION_send(buffer,USART_HOLD);
 }
 
 int8_t NEXTION_switch_page(uint8_t page)
@@ -158,15 +158,21 @@ int8_t NEXTION_switch_page(uint8_t page)
 int8_t NEXTION_update()
 {			
 	char buffer[24];
-	switch(NEXTION_update_status)
+	uint8_t timer = SYSTEM_event_timer;
+	switch(timer)
 	{
 		case 0:
 			strcpy(buffer,"a0.val=    ");
 			itoa(pgm_read_word(&PROGRAMDATA_NTC_2200_INVERTED[SENSORSFEED_feed[0]]),&buffer[7],10);
+			NEXTION_send(buffer,USART_HOLD);
+		break;
+		case 1:
+		case 5://yeah, somekind of twice per second
+			NEXTION_maindisplay_renderer->render();
 		break;
 	}
-	NEXTION_send(buffer,USART_HOLD);
-	NEXTION_maindisplay_renderer->render();
+	USART_flush();
+	
 	return 0;
 }
 

@@ -40,6 +40,8 @@ uint16_t SENSORSFEED_speedmodifier;
 uint8_t SENSORSFEED_injtmodifier;
 uint16_t SENSORSFEED_speed_max;
 
+extern volatile uint8_t SYSTEM_event_timer;
+
 void SENSORSFEED_update_fuel()
 {
 	uint16_t fuel_time = COUNTERSFEED_feed[COUNTERSFEED_FEEDID_FUELPS][FRONTBUFFER];
@@ -75,9 +77,19 @@ void SENSORSFEED_update_ADC()
 
 void SENSORSFEED_update()
 {
-	SENSORSFEED_update_ADC();
-	SENSORSFEED_update_fuel();
-	SENSORSFEED_update_speed();
+	switch(SYSTEM_event_timer)
+	{
+		case 0:
+		case 3:
+			SENSORSFEED_update_ADC();
+		break;
+		case 4:
+			SENSORSFEED_update_fuel();
+		break;
+		case 5:
+			SENSORSFEED_update_speed();
+		break;
+	}
 }
 
 void SENSORSFEED_initialize()

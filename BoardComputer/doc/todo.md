@@ -4,5 +4,6 @@
 - [x] Glitchy analog update(commands) or too fast
 - [x] test mdv.txt
 - [ ] backend for max6675
-- [ ] refresh rate of display
+- [x] refresh rate of display
+- [ ] More flexible buffer on USART
   
