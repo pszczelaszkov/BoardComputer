@@ -12,12 +12,32 @@
 #include "countersfeed.h"
 #include "average.h"
 
+#ifndef __AVR__
+	uint8_t SPDR0;
+#endif
 #define ADCSTART ADCSRA |= (1 << ADSC)
 #define ADCMULTIPLEXER (ADMUX & 0x0f)
-//Big int as an answer to float
-#define SENSORSFEED_HIGH_PRECISION_BASE 1000000000
-#define SENSORSFEED_LOW_PRECISION_BASE 100000
+#define EGT_ISR ISR(SPI0_STC_vect)
+#define SENSORSFEED_EGT_CONVERSION SET(PORTB,BIT0)
+#define SENSORSFEED_EGT_TRANSMISSION CLEAR(PORTB,BIT0)
+
+#define SENSORSFEED_HIGH_PRECISION_BASE 1000000000//Big int as an answer to float
+#define SENSORSFEED_LOW_PRECISION_BASE 100000//Big int as an answer to float
 #define SENSORSFEED_ADC_CHANNELS 2
+enum SENSORSFEED_EGT_STATUS
+{
+	SENSORSFEED_EGT_STATUS_UNKN,
+	SENSORSFEED_EGT_STATUS_OPEN,
+	SENSORSFEED_EGT_STATUS_VALUE
+}SENSORSFEED_EGT_status;
+
+enum SENSORSFEED_EGT_TRANSMISSION_STATUS
+{
+	SENSORSFEED_EGT_TRANSMISSION_READY,
+	SENSORSFEED_EGT_TRANSMISSION_HALF,
+	SENSORSFEED_EGT_TRANSMISSION_FULL
+}SENSORSFEED_EGT_transmission_status;
+
 enum SENSORSFEED_FEEDID
 {
 	SENSORSFEED_FEEDID_TANK = SENSORSFEED_ADC_CHANNELS - 1,// TANK input always last
@@ -33,12 +53,14 @@ enum SENSORSFEED_FEEDID
 #define SENSORSFEED_FEED_SIZE SENSORSFEED_FEEDID_LAST
 uint16_t SENSORSFEED_feed[SENSORSFEED_FEED_SIZE];//ADC 0...SENSORSFEED_ADC_CHANNELS
 
+uint16_t SENSORSFEED_max6675_data;
 uint16_t SENSORSFEED_speed_ticks_100m = 1;
 uint16_t SENSORSFEED_injector_ccm = 1;
 uint16_t SENSORSFEED_fuelmodifier;
 uint16_t SENSORSFEED_speedmodifier;
-uint8_t SENSORSFEED_injtmodifier;
 uint16_t SENSORSFEED_speed_max;
+uint8_t SENSORSFEED_injtmodifier;
+
 
 extern volatile uint8_t SYSTEM_event_timer;
 
@@ -75,18 +97,42 @@ void SENSORSFEED_update_ADC()
 	ADCSTART;
 }
 
+void SENSORSFEED_update_EGT()
+{
+	if(SENSORSFEED_EGT_transmission_status == SENSORSFEED_EGT_TRANSMISSION_READY)
+	{
+		SENSORSFEED_EGT_TRANSMISSION;
+		switch((uint8_t)SENSORSFEED_max6675_data & 0x06)//Open and devid bits
+		{
+			case 0:
+				SENSORSFEED_EGT_status = SENSORSFEED_EGT_STATUS_VALUE;
+				SENSORSFEED_feed[SENSORSFEED_FEEDID_EGT] = SENSORSFEED_max6675_data >> 5;
+			break;
+			case 4:
+				SENSORSFEED_EGT_status = SENSORSFEED_EGT_STATUS_OPEN;
+			break;
+			default:
+				SENSORSFEED_EGT_status = SENSORSFEED_EGT_STATUS_UNKN;
+			break;
+		}
+		SPDR0 = 0x0;
+	}
+}
+
 void SENSORSFEED_update()
 {
-	switch(SYSTEM_event_timer)
+	uint8_t timer = SYSTEM_event_timer;
+	switch(timer)
 	{
 		case 0:
 		case 3:
 			SENSORSFEED_update_ADC();
-		break;
-		case 4:
-			SENSORSFEED_update_fuel();
+			SENSORSFEED_update_EGT();
 		break;
 		case 5:
+			SENSORSFEED_update_fuel();
+		break;
+		case 6:
 			SENSORSFEED_update_speed();
 		break;
 	}
@@ -123,6 +169,10 @@ void SENSORSFEED_initialize()
 	#ifdef __AVR__
 	ADMUX |= (1<<REFS0);//Vcc ref
 	ADCSRA = (1<<ADEN)|(1<<ADIE);
+	
+
+	//SPI input for EGT
+	SPCR0 = (1<<MSTR)|(1<<SPIE)|(1<<SPE)|(1<<SPR1)|(1<<CPHA);
 	#endif
 }
 
@@ -140,4 +190,17 @@ ISR(ADC_vect)
 	ADMUX++;
 }
 
+EGT_ISR
+{
+	SENSORSFEED_EGT_transmission_status++;
+	SENSORSFEED_max6675_data <<= 8;
+	SENSORSFEED_max6675_data |= SPDR0;
+	if(SENSORSFEED_EGT_transmission_status == SENSORSFEED_EGT_TRANSMISSION_FULL)
+	{
+		SENSORSFEED_EGT_CONVERSION;
+		SENSORSFEED_EGT_transmission_status = SENSORSFEED_EGT_TRANSMISSION_READY;
+	}
+	else
+		SPDR0 = 0x0;
+}
 #endif /* SENSORSFEED_H_ */

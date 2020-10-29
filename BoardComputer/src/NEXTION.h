@@ -166,8 +166,21 @@ int8_t NEXTION_update()
 			itoa(pgm_read_word(&PROGRAMDATA_NTC_2200_INVERTED[SENSORSFEED_feed[0]]),&buffer[7],10);
 			NEXTION_send(buffer,USART_HOLD);
 		break;
-		case 1:
-		case 5://yeah, somekind of twice per second
+		case 2:
+		case 5:
+			strcpy(buffer,"egt.txt=\"    \"");
+			switch(SENSORSFEED_EGT_status)
+			{
+				case SENSORSFEED_EGT_STATUS_UNKN:
+					memcpy(&buffer[9],"----",4);
+				break;
+				case SENSORSFEED_EGT_STATUS_OPEN:
+					memcpy(&buffer[9],"open",4);
+				break;
+				case SENSORSFEED_EGT_STATUS_VALUE:
+					rightconcat_short(&buffer[9],SENSORSFEED_feed[SENSORSFEED_FEEDID_EGT],4);
+			}
+			NEXTION_send(buffer,USART_HOLD);
 			NEXTION_maindisplay_renderer->render();
 		break;
 	}

@@ -27,9 +27,7 @@ volatile uint8_t SYSTEM_event_timer;//Represent fraction of second in values fro
 
 void prestart_routine()
 {
-	DDRD = 0x00;
-	PORTD = 0x00;
-	
+	SENSORSFEED_EGT_CONVERSION;
 	SENSORSFEED_update();
 	_delay_ms(1000);
 	NEXTION_switch_page(0);
@@ -43,7 +41,13 @@ void core()
 }
 
 int main()
-{
+{	
+	DDRD = 0x00;
+	PORTD = 0x00;
+	SET(DDRB,BIT0);
+	SET(DDRB,BIT4);
+	SET(DDRB,BIT7);
+	
 	SCHEDULER_fregister[SCHEDULER_CALLBACK_USART_REGISTER] = USART_register;
 	SCHEDULER_init();
 	NEXTION_initialize();

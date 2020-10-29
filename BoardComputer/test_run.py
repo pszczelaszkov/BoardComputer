@@ -2,7 +2,7 @@ import unittest
 import cffi
 from math import ceil
 from threading import Thread
-from helpers import write_usart, read_usart, parse_nextion, exec_cycle, click, load
+from helpers import write_usart, read_usart, max6675_response, parse_nextion, exec_cycle, click, load
 
 nextion_data = {"val": {}, "pic": {}, "txt": {}}
 ADC = [10, 2, 3, 4, 5, 6, 7, 8]
@@ -127,6 +127,31 @@ class testRun(unittest.TestCase):
         parse_nextion(self.bc, read_usart(self.bc),
                       nextion_data)
         self.assertEqual(nextion_data['txt']['mdv'], " 583")
+    
+    def test_EGT(self):
+        # No Response
+        packets = [
+            {"test": 0xffff, "result": self.bc.SENSORSFEED_EGT_STATUS_UNKN},
+            {"test": 0xfffd, "result": self.bc.SENSORSFEED_EGT_STATUS_OPEN},
+            {"test": 0x7720, "result": self.bc.SENSORSFEED_EGT_STATUS_VALUE}
+        ]
+        for test_packet in packets:
+            response = max6675_response(self.bc, test_packet["test"])
+            next(response)
+            self.assertEqual(self.bc.SENSORSFEED_EGT_transmission_status,
+                            self.bc.SENSORSFEED_EGT_TRANSMISSION_HALF)
+            next(response)
+            self.assertEqual(self.bc.SENSORSFEED_EGT_transmission_status,
+                            self.bc.SENSORSFEED_EGT_TRANSMISSION_READY)
+            self.bc.SENSORSFEED_update_EGT()
+            self.assertEqual(self.bc.SENSORSFEED_EGT_status,
+                             test_packet["result"])
+
+        # Last test should bring value to sensors feed (bits 14 to 5 inclusive)
+        self.assertEqual(
+                         self.bc.SENSORSFEED_feed[self.bc.SENSORSFEED_FEEDID_EGT],
+                         0x3b9)
+
 
 if __name__ == "main":
     unittest.main()

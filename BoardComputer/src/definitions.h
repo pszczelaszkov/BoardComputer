@@ -5,8 +5,17 @@ int main();
 void core();
 void prestart_routine();
 void PCINT0_vect();
+void SPI0_STC_vect();
 void TIMER2_COMPA_vect();
 #define SCHEDULER_LOW_PRIORITY_QUEUE_SIZE ...
+#define BIT0 1
+#define BIT1 2
+#define BIT2 4
+#define BIT3 8
+#define BIT4 16
+#define BIT5 32
+#define BIT6 64
+#define BIT7 128
 typedef void (*Fptr)();
 typedef struct LowPriorityTask
 {
@@ -124,4 +133,21 @@ extern Average AVERAGE_buffers[];
 uint16_t AVERAGE_addvalue(uint8_t bufferid, uint16_t value);
 void AVERAGE_clear(uint8_t bufferid);
 
+extern enum SENSORSFEED_EGT_STATUS
+{
+	SENSORSFEED_EGT_STATUS_UNKN,
+	SENSORSFEED_EGT_STATUS_OPEN,
+	SENSORSFEED_EGT_STATUS_VALUE
+}SENSORSFEED_EGT_status;
+
+extern enum SENSORSFEED_EGT_TRANSMISSION_STATUS
+{
+	SENSORSFEED_EGT_TRANSMISSION_READY,
+	SENSORSFEED_EGT_TRANSMISSION_HALF,
+	SENSORSFEED_EGT_TRANSMISSION_FULL
+}SENSORSFEED_EGT_transmission_status;
+
+void SENSORSFEED_update_EGT();
+extern uint8_t SPDR0;
+extern uint16_t SENSORSFEED_max6675_data;
 extern const int16_t PROGRAMDATA_NTC_2200_INVERTED[];

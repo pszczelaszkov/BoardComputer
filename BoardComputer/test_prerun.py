@@ -122,6 +122,11 @@ class testPreRun(unittest.TestCase):
             sum = self.bc.AVERAGE_buffers[0].sum
             self.assertEqual(sum, localsum)
             self.bc.AVERAGE_clear(0)
+        
+        def test_egt(self):
+            self.assertTrue(self.bc.DDRB & self.bc.BIT0)  # CS
+            self.assertTrue(self.bc.DDRB & self.bc.BIT4)  # SS
+            self.assertTrue(self.bc.DDRB & self.bc.BIT7)  # SCK
 
 
 if __name__ == "main":

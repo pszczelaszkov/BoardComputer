@@ -15,8 +15,8 @@
     #define sleep_cpu()
     volatile uint8_t PINA,PINB;
     volatile uint16_t TCNT1;
-    uint8_t DDRD;
-    uint8_t PORTD;
+    uint8_t DDRD, DDRB;
+    uint8_t PORTD, PORTB;
     uint8_t ADC;
     uint8_t ADMUX, ADSC, ADCSRA;
     /* reverse:  reverse string s in place */

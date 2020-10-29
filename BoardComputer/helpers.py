@@ -31,6 +31,12 @@ def exec_cycle(module):
     #while module.exec is True:
      #   pass
 
+def max6675_response(module, test_response):
+    for i in range(2):
+        module.SPDR0 = (test_response & 0xff00) >> 8  # MSB first
+        test_response = test_response << 8
+        module.SPI0_STC_vect()
+        yield
 
 def read_usart(module):
     response = bytearray()
