@@ -127,16 +127,19 @@ class testRun(unittest.TestCase):
         parse_nextion(self.bc, read_usart(self.bc),
                       nextion_data)
         self.assertEqual(nextion_data['txt']['mdv'], " 583")
-    
+
     def test_EGT(self):
-        # No Response
         packets = [
-            {"test": 0xffff, "result": self.bc.SENSORSFEED_EGT_STATUS_UNKN},
-            {"test": 0xfffd, "result": self.bc.SENSORSFEED_EGT_STATUS_OPEN},
-            {"test": 0x7720, "result": self.bc.SENSORSFEED_EGT_STATUS_VALUE}
+            {"test": 0xffff, "result": self.bc.SENSORSFEED_EGT_STATUS_UNKN,
+             "display": "----"},
+            {"test": 0xfffd, "result": self.bc.SENSORSFEED_EGT_STATUS_OPEN,
+             "display": "open"},
+            {"test": 0x7720, "result": self.bc.SENSORSFEED_EGT_STATUS_VALUE,
+             "display": " 953"}
         ]
         for test_packet in packets:
             response = max6675_response(self.bc, test_packet["test"])
+            self.bc.SYSTEM_event_timer = 5
             next(response)
             self.assertEqual(self.bc.SENSORSFEED_EGT_transmission_status,
                             self.bc.SENSORSFEED_EGT_TRANSMISSION_HALF)
@@ -146,11 +149,17 @@ class testRun(unittest.TestCase):
             self.bc.SENSORSFEED_update_EGT()
             self.assertEqual(self.bc.SENSORSFEED_EGT_status,
                              test_packet["result"])
+            self.bc.NEXTION_update_EGT()
+            self.bc.USART_flush()
+            parse_nextion(self.bc,read_usart(self.bc), nextion_data)
+            self.assertEqual(nextion_data["txt"]["egt"],
+                                          test_packet["display"])
 
         # Last test should bring value to sensors feed (bits 14 to 5 inclusive)
-        self.assertEqual(
-                         self.bc.SENSORSFEED_feed[self.bc.SENSORSFEED_FEEDID_EGT],
+        self.assertEqual(self.bc.SENSORSFEED_feed[self.bc.SENSORSFEED_FEEDID_EGT],
                          0x3b9)
+
+        self.bc.SYSTEM_event_timer = 0
 
 
 if __name__ == "main":
