@@ -1,6 +1,6 @@
 boardcomputer: src/main.c
 	avr-gcc src/main.c -O1 -mmcu=atmega324pb -o bin/BoardComputer.elf
-	avr-objcopy -R .eeprom -R .fuse -R .lock -R .signature -O ihex bin/BoardComputer.elf bin/BoardComputer.hex
+	avr-objcopy -j .text -j .data -O ihex bin/BoardComputer.elf bin/BoardComputer.hex
 	avr-size --mcu=atmega324pa -C bin/BoardComputer.elf
 
 flash:
