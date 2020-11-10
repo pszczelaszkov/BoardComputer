@@ -50,17 +50,6 @@ inline void COUNTERSFEED_pushfeed(uint8_t index)
     COUNTERSFEED_feed[index][BACKBUFFER] = 0;
 }
 
-void COUNTERSFEED_initialize()
-{
-    #ifdef __AVR__
-    //Event Timer
-    OCR2A = 15;// 1/8 seconds
-    ASSR = (1 << AS2);// async
-    TCCR2A = (1 << WGM21);// Clear on match
-    TCCR2B = (3 << CS21);// 256 prescaler
-    TIMSK2 = (1 << OCIE2A);// Enable IRQ
-    #endif
-}
 
 ISR(PCINT0_vect)
 {   

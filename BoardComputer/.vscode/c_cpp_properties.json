@@ -21,7 +21,7 @@
                 "/usr/lib/avr"
             ],
             "compilerArgs": [
-                "-mmcu=atmega8",
+                "-mmcu=atmega324pb",
                 "-O1"
             ]
         }

@@ -122,11 +122,31 @@ class testPreRun(unittest.TestCase):
             sum = self.bc.AVERAGE_buffers[0].sum
             self.assertEqual(sum, localsum)
             self.bc.AVERAGE_clear(0)
-        
-        def test_egt(self):
-            self.assertTrue(self.bc.DDRB & self.bc.BIT0)  # CS
-            self.assertTrue(self.bc.DDRB & self.bc.BIT4)  # SS
-            self.assertTrue(self.bc.DDRB & self.bc.BIT7)  # SCK
+
+    def test_egt(self):
+        self.assertTrue(self.bc.DDRB & self.bc.BIT0)  # CS
+        self.assertTrue(self.bc.DDRB & self.bc.BIT4)  # SS
+        self.assertTrue(self.bc.DDRB & self.bc.BIT7)  # SCK
+
+    def test_timer(self):
+        watch = self.bc.TIMER_watches[self.bc.TIMERTYPE_WATCH]
+        watch = cffi.FFI().addressof(watch)
+        self.assertEqual(watch.timer.watchstatus,
+                         self.bc.TIMER_WATCHSTATUS_COUNTING)
+        self.bc.TIMER_watch_toggle(watch)
+        self.assertEqual(watch.timer.watchstatus,
+                         self.bc.TIMER_WATCHSTATUS_STOP)
+        stopwatch = self.bc.TIMER_watches[self.bc.TIMERTYPE_STOPWATCH]
+        stopwatch = cffi.FFI().addressof(stopwatch)
+        stopwatch.timer.miliseconds = 50
+        stopwatch.timer.seconds = 2
+        stopwatch.timer.minutes = 1
+        stopwatch.timer.hours = 40
+        self.bc.TIMER_watch_zero(stopwatch)
+        self.assertEqual(stopwatch.timer.hours, 0)
+        self.assertEqual(stopwatch.timer.miliseconds, 0)
+        self.assertTrue(stopwatch.next_watch)
+        self.assertTrue(self.bc.TIMER_active_watch)
 
 
 if __name__ == "main":

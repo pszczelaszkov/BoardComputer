@@ -6,4 +6,7 @@
 - [x] backend for max6675
 - [x] refresh rate of display
 - [ ] More flexible buffer on USART
+- [x] Timer/Stopwatch
+- [ ] Outside temp 0.5 C mark
+- [ ] Better handling of user input
   

@@ -65,7 +65,7 @@ void SCHEDULER_checkLowPriorityTasks()
     }
 }
 
-void SCHEDULER_init()
+void SCHEDULER_initialize()
 {
 	int8_t i;
     for(i = 0;i < SCHEDULER_LOW_PRIORITY_QUEUE_SIZE-1;i++)

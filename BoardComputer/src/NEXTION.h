@@ -12,6 +12,8 @@
 #include "sensorsfeed.h"
 #include "ProgramData.h"
 #include "utils.h"
+#include "timer.h"
+
 
 enum NEXTION_MD
 {
@@ -155,35 +157,60 @@ int8_t NEXTION_switch_page(uint8_t page)
 	return NEXTION_send(buffer,USART_FLUSH);
 }
 
+void NEXTION_update_EGT()
+{
+	char buffer[] = "egt.txt=\"    \"";
+	switch(SENSORSFEED_EGT_status)
+	{
+		case SENSORSFEED_EGT_STATUS_UNKN:
+			memcpy(&buffer[9],"----",4);
+		break;
+		case SENSORSFEED_EGT_STATUS_OPEN:
+			memcpy(&buffer[9],"open",4);
+		break;
+		case SENSORSFEED_EGT_STATUS_VALUE:
+			rightconcat_short(&buffer[9],SENSORSFEED_feed[SENSORSFEED_FEEDID_EGT],4);
+	}
+	NEXTION_send(buffer,USART_HOLD);
+}
+
+void NEXTION_update_ADC()
+{
+	char buffer[24];
+	strcpy(buffer,"a0.val=    ");
+	itoa(pgm_read_word(&PROGRAMDATA_NTC_2200_INVERTED[SENSORSFEED_feed[0]]),&buffer[7],10);
+	NEXTION_send(buffer,USART_HOLD);
+}
+
+void NEXTION_update_watch()
+{
+	const char WATCHTEMPLATE[]  = "w.txt=\"        \"";
+	char buffer[sizeof(WATCHTEMPLATE)];
+	strcpy(buffer,WATCHTEMPLATE);
+	
+	if(TIMER_active_watch == &TIMER_watches[TIMERTYPE_WATCH])
+		memcpy(&buffer[9],TIMER_formated,5);
+	else
+		memcpy(&buffer[7],&TIMER_formated[3],8);
+
+	NEXTION_send(buffer,USART_HOLD);
+}
+
 int8_t NEXTION_update()
 {			
-	char buffer[24];
-	uint8_t timer = SYSTEM_event_timer;
+	uint8_t timer = SYSTEM_event_timer;	
 	switch(timer)
 	{
 		case 0:
-			strcpy(buffer,"a0.val=    ");
-			itoa(pgm_read_word(&PROGRAMDATA_NTC_2200_INVERTED[SENSORSFEED_feed[0]]),&buffer[7],10);
-			NEXTION_send(buffer,USART_HOLD);
+			NEXTION_update_ADC();
+			NEXTION_update_EGT();
 		break;
 		case 2:
 		case 5:
-			strcpy(buffer,"egt.txt=\"    \"");
-			switch(SENSORSFEED_EGT_status)
-			{
-				case SENSORSFEED_EGT_STATUS_UNKN:
-					memcpy(&buffer[9],"----",4);
-				break;
-				case SENSORSFEED_EGT_STATUS_OPEN:
-					memcpy(&buffer[9],"open",4);
-				break;
-				case SENSORSFEED_EGT_STATUS_VALUE:
-					rightconcat_short(&buffer[9],SENSORSFEED_feed[SENSORSFEED_FEEDID_EGT],4);
-			}
-			NEXTION_send(buffer,USART_HOLD);
 			NEXTION_maindisplay_renderer->render();
 		break;
 	}
+	NEXTION_update_watch();
 	USART_flush();
 	
 	return 0;

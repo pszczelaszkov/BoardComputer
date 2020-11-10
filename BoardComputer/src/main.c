@@ -20,6 +20,7 @@
 #include "NEXTION.h"
 #include "scheduler.h"
 #include "sensorsfeed.h"
+#include "timer.h"
 
 volatile uint8_t SYSTEM_run = 1;
 volatile uint8_t SYSTEM_exec;
@@ -34,7 +35,8 @@ void prestart_routine()
 }
 
 void core()
-{
+{	
+	TIMER_update();
 	SCHEDULER_checkLowPriorityTasks();
 	SENSORSFEED_update();
 	NEXTION_update();
@@ -49,10 +51,10 @@ int main()
 	SET(DDRB,BIT7);
 	
 	SCHEDULER_fregister[SCHEDULER_CALLBACK_USART_REGISTER] = USART_register;
-	SCHEDULER_init();
+	SCHEDULER_initialize();
 	NEXTION_initialize();
 	SENSORSFEED_initialize();
-	COUNTERSFEED_initialize();
+	TIMER_initialize();
 	#ifndef __AVR__
 	if(SYSTEM_run)
 	#endif
@@ -69,14 +71,15 @@ int main()
 
 EVENT_TIMER_ISR
 {
-    SYSTEM_event_timer++;
+    SYSTEM_exec = 1;
     switch(SYSTEM_event_timer)
     {
-        case 8:
+        case 7:
 			COUNTERSFEED_pushfeed(COUNTERSFEED_FEEDID_FUELPS);
             SYSTEM_event_timer = 0;
+			return;
         break;
     }
-   	SYSTEM_exec = 1;
+	SYSTEM_event_timer++;	
 }
 

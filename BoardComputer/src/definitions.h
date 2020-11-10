@@ -1,6 +1,6 @@
 //Definitions only for testing purposes
-extern volatile uint8_t SYSTEM_run, SYSTEM_exec, SYSTEM_event_timer, PINA, PINB;
-volatile extern uint16_t TCNT1;
+extern volatile uint8_t SYSTEM_run, SYSTEM_exec, SYSTEM_event_timer, PINA, PINB, DDRB;
+volatile extern uint16_t TCNT1,TCNT2;
 int main();
 void core();
 void prestart_routine();
@@ -148,6 +148,46 @@ extern enum SENSORSFEED_EGT_TRANSMISSION_STATUS
 }SENSORSFEED_EGT_transmission_status;
 
 void SENSORSFEED_update_EGT();
+void NEXTION_update_EGT();
 extern uint8_t SPDR0;
 extern uint16_t SENSORSFEED_max6675_data;
+
+#define TIMER_REGISTER ...
+extern const uint8_t TIMER_REGISTER_WEIGHT;
+extern const uint8_t TIMER_MILISECOND_WEIGHT;
+typedef struct TIMER_watch
+{    
+    struct
+    {
+        uint8_t hours;
+        uint8_t minutes;
+        uint8_t seconds;
+        uint8_t miliseconds;//2digit
+        uint8_t watchstatus;
+    }timer; 
+    struct TIMER_watch* next_watch;
+}TIMER_watch;
+
+enum TIMER_STOPWATCHSTATUS
+{
+    TIMER_WATCHSTATUS_ZERO,
+    TIMER_WATCHSTATUS_COUNTING,
+    TIMER_WATCHSTATUS_STOP
+};
+
+enum TIMER_TIMERTYPE
+{
+    TIMERTYPE_WATCH,
+    TIMERTYPE_STOPWATCH
+};
+
+uint8_t TIMER_counter_to_miliseconds();
+void TIMER_update();
+void TIMER_watch_zero(TIMER_watch* timer);
+void TIMER_watch_toggle(TIMER_watch* timer);
+void TIMER_next_watch();
+
+extern TIMER_watch* TIMER_active_watch;
+extern TIMER_watch TIMER_watches[2];
+extern char TIMER_formated[12];
 extern const int16_t PROGRAMDATA_NTC_2200_INVERTED[];

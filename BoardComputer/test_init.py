@@ -30,6 +30,14 @@ class testInit(unittest.TestCase):
     def test_average(self):
         self.assertTrue(self.bc.AVERAGE_BUFFERS_SIZE)
 
+    def test_timer(self):
+        self.assertTrue(self.bc.TIMER_MILISECOND_WEIGHT)
+        self.assertTrue(self.bc.TIMER_REGISTER_WEIGHT)
+        self.bc.TCNT2 = 14
+        miliseconds = self.bc.TIMER_counter_to_miliseconds()
+        self.assertEqual(10, miliseconds)
+        self.bc.TCNT2 = 0
+
 
 if __name__ == "main":
     unittest.main()

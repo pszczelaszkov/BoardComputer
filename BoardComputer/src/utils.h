@@ -1,5 +1,5 @@
 /*
- * utils.c
+ * utils.h
  *
  * Created: 2020-09-03 03:21:00
  * Author : pszczelaszkov
@@ -14,7 +14,7 @@
     #define ISR(...) void __VA_ARGS__()
     #define sleep_cpu()
     volatile uint8_t PINA,PINB;
-    volatile uint16_t TCNT1;
+    volatile uint16_t TCNT1,TCNT2;
     uint8_t DDRD, DDRB;
     uint8_t PORTD, PORTB;
     uint8_t ADC;
