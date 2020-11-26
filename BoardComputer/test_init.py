@@ -38,6 +38,15 @@ class testInit(unittest.TestCase):
         self.assertEqual(10, miliseconds)
         self.bc.TCNT2 = 0
 
+    def test_input(self):
+        self.assertTrue(self.bc.INPUT_KEY_LAST)
+        self.assertTrue(self.bc.INPUT_KEYSTATUS_RELEASED == 0)
+        self.assertTrue(self.bc.INPUT_KEYSTATUS_PRESSED == 1)
+        self.assertTrue(self.bc.INPUT_KEYSTATUS_HOLD >
+                        self.bc.INPUT_KEYSTATUS_PRESSED)
+        self.assertTrue(self.bc.INPUT_KEYSTATUS_CLICK >
+                        self.bc.INPUT_KEYSTATUS_HOLD)
+
 
 if __name__ == "main":
     unittest.main()

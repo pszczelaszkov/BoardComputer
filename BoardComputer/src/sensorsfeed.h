@@ -147,8 +147,8 @@ void SENSORSFEED_initialize()
 	//Calculate system ticks required for 1000ccm, knowing injector ccm
 	//Since minutes are base unit, after /60 as a result we have ticks for cch rather than ccm.
 	//First we obtain ticks required for 1 liter / h, then we changing form so it will be possible to multiplicate it later rather than divide.
-	//Last step is to obtain it in form of 24 bit fixed point value.
-	//Now to get liters we just need to multiplicate counted ticks by modifier and byte shift 24 times.
+	//Last step is to obtain it in form of 16 bit fixed point value.
+	//Now to get liters we just need to multiplicate counted ticks by modifier and byte shift 16 times.
 	uint16_t fixed_base = SENSORSFEED_HIGH_PRECISION_BASE/0xffff;//16bit fixed point base.
 	uint16_t liter_ticks = (COUNTERSFEED_TICKSPERSECOND*1000/60)/SENSORSFEED_injector_ccm;//ticks for 1000cch
 	uint32_t fraction_representation = SENSORSFEED_HIGH_PRECISION_BASE/liter_ticks;//Represent as 1/value form

@@ -7,6 +7,7 @@
 
 #include "scheduler.h"
 #include <string.h>
+#include "input.h"
 #include "NEXTION.h"
 
 #define USART_HOLD 0
@@ -25,7 +26,6 @@ uint8_t USART_TX_buffer_index;
 //note: indexes work as status flags too I.E: TX index with value of TX_BUFFER_SIZE means "TX is ready to go" 
 int8_t USART_eot_counter;
 
-int8_t NEXTION_touch();
 
 #ifndef __AVR__
 uint8_t UDR0,UDR2,UDRRX;
@@ -40,7 +40,7 @@ void USART_TX_clear()
 
 void USART_flush()
 {
-	if(!USART_TX_message_length)
+	if(!USART_TX_message_length || USART_TX_buffer_index != USART_TX_BUFFER_SIZE)
 		return;
 	USART_TX_buffer_index = 1;//set index at 2nd byte for further IRQ callback
 	UDR2 = USART_TX_buffer[0];//First byte is send here, rest is handled on IRQ
@@ -102,7 +102,10 @@ void USART_register()
 		break;
 		#endif
 		case 0x65:
-			NEXTION_touch();
+			INPUT_active_page = USART_RX_buffer[1];
+			INPUT_active_component = USART_RX_buffer[2];
+			INPUT_Keystatus_t keystatus = USART_RX_buffer[3];
+			INPUT_userinput(keystatus, INPUT_KEY_ENTER);
 		break;
 	}
 	USART_RX_buffer_index = 0;//unlock
@@ -129,7 +132,8 @@ ISR(USART2_RX_vect)
 	if(USART_eot_counter == USART_EOT_COUNT)
 	{	
 		USART_RX_buffer_index = USART_RX_BUFFER_SIZE;//Lock buffer
-		SCHEDULER_addLowPriorityTask(SCHEDULER_CALLBACK_USART_REGISTER);
+		USART_register();
+		//SCHEDULER_addLowPriorityTask(SCHEDULER_CALLBACK_USART_REGISTER);
 	}
 }
 ISR(USART2_TX_vect)

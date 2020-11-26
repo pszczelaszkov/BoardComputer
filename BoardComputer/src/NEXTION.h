@@ -25,7 +25,6 @@ enum NEXTION_MD
 	NEXTION_MD_RANGE,
 	NEXTION_MD_LAST
 };
-#define NEXTION_COMPONENT_MAINDISPLAY 2
 #define NEXTION_MAINDISPLAY_REDNERERS_SIZE NEXTION_MD_LAST
 typedef void (*RenderingCallback)();
 typedef struct MainDisplayRenderer
@@ -144,7 +143,7 @@ int8_t NEXTION_switch_maindisplay()
 	char buffer[] = "md.pic=  ";
 	uint8_t picid = NEXTION_maindisplay_renderer->picID;
 	itoa(picid,&buffer[7],10);
-	return NEXTION_send(buffer,USART_HOLD);
+	return NEXTION_send(buffer,USART_FLUSH);
 }
 
 int8_t NEXTION_switch_page(uint8_t page)
@@ -215,26 +214,6 @@ int8_t NEXTION_update()
 	
 	return 0;
 }
-
-//Only USART
-int8_t NEXTION_touch()
-{
-	uint8_t page = USART_RX_buffer[1];
-	uint8_t component = USART_RX_buffer[2];
-	uint8_t pressed = USART_RX_buffer[3];
-	if(page == 0 && pressed)//main page
-	{
-		switch(component)
-		{	
-			case NEXTION_COMPONENT_MAINDISPLAY:
-				NEXTION_switch_maindisplay();
-			break;
-		}	
-	}
-	return 0;
-}
-//
-
 
 void NEXTION_initialize()
 {

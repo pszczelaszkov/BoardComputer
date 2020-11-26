@@ -21,6 +21,7 @@
 #include "scheduler.h"
 #include "sensorsfeed.h"
 #include "timer.h"
+#include "input.h"
 
 volatile uint8_t SYSTEM_run = 1;
 volatile uint8_t SYSTEM_exec;
@@ -37,8 +38,9 @@ void prestart_routine()
 void core()
 {	
 	TIMER_update();
-	SCHEDULER_checkLowPriorityTasks();
+	//SCHEDULER_checkLowPriorityTasks();
 	SENSORSFEED_update();
+	INPUT_update();
 	NEXTION_update();
 }
 

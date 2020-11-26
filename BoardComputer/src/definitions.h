@@ -108,7 +108,6 @@ enum NEXTION_MD
 	NEXTION_MD_RANGE,
 	NEXTION_MD_LAST
 };
-#define NEXTION_COMPONENT_MAINDISPLAY ...
 
 int8_t NEXTION_switch_maindisplay();
 extern char NEXTION_eot[4];
@@ -190,4 +189,34 @@ void TIMER_next_watch();
 extern TIMER_watch* TIMER_active_watch;
 extern TIMER_watch TIMER_watches[2];
 extern char TIMER_formated[12];
+
+typedef enum INPUT_COMPONENT
+{
+    INPUT_COMPONENT_NONE = 0,
+	INPUT_COMPONENT_MAINDISPLAY = 2,
+	INPUT_COMPONENT_WATCH
+}INPUT_Component_t;
+
+typedef enum INPUT_KEYSTATUS
+{
+	INPUT_KEYSTATUS_RELEASED = 0,
+	INPUT_KEYSTATUS_PRESSED,
+	//8 system cycles to detect as HOLD 
+	INPUT_KEYSTATUS_HOLD = 9,
+	INPUT_KEYSTATUS_CLICK
+}INPUT_Keystatus_t;
+
+typedef enum INPUT_KEY
+{
+	INPUT_KEY_ENTER,
+	INPUT_KEY_DOWN,
+	INPUT_KEY_LAST
+}INPUT_Key_t;
+
+void INPUT_update();
+void INPUT_userinput(INPUT_Keystatus_t keystatus, INPUT_Key_t key);
+extern INPUT_Keystatus_t INPUT_keystatus[INPUT_KEY_LAST];
+extern INPUT_Component_t INPUT_active_component;
+extern uint8_t INPUT_active_page;
+
 extern const int16_t PROGRAMDATA_NTC_2200_INVERTED[];

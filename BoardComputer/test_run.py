@@ -45,7 +45,7 @@ class testRun(unittest.TestCase):
 
     def test_nextion_maindisplay(self):
         # Cuz of chain of events, test needs to dive into countersfeed
-        maindisplay_id = self.bc.NEXTION_COMPONENT_MAINDISPLAY
+        maindisplay_id = self.bc.INPUT_COMPONENT_MAINDISPLAY
         TANK_ID = self.bc.SENSORSFEED_FEEDID_TANK
         SPEED_ID = self.bc.COUNTERSFEED_FEEDID_SPEED
         FUEL_ID = self.bc.COUNTERSFEED_FEEDID_FUELPS

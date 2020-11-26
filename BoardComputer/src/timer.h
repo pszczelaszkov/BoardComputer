@@ -80,7 +80,7 @@ void TIMER_format(TIMER_watch* timer, uint8_t format_flag)
         case FORMATFLAG_MILISECONDS:
             if(TIMER_active_watch != &TIMER_watches[TIMERTYPE_WATCH])
             {
-                uint8_t miliseconds = (timer->timer.miliseconds>>1) + TIMER_counter_to_miliseconds();
+                uint8_t miliseconds = timer->timer.miliseconds>>1;
                 memcpy(&TIMER_formated[9],ASCIIDOUBLEZERO,2);
                 rightconcat_short(&TIMER_formated[9],miliseconds,2);
             }
@@ -121,7 +121,11 @@ uint8_t TIMER_increment(TIMER_watch* watch)
 void TIMER_watch_toggle(TIMER_watch* watch)
 {
     if(watch->timer.watchstatus == TIMER_WATCHSTATUS_COUNTING)
+    {
         watch->timer.watchstatus = TIMER_WATCHSTATUS_STOP;
+        //in fact thats the only moment when counter could be ahead of event timer.
+        watch->timer.miliseconds += TIMER_counter_to_miliseconds() << 1;
+    }
     else
         watch->timer.watchstatus = TIMER_WATCHSTATUS_COUNTING;
 }

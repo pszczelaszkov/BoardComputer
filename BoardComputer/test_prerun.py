@@ -148,6 +148,30 @@ class testPreRun(unittest.TestCase):
         self.assertTrue(stopwatch.next_watch)
         self.assertTrue(self.bc.TIMER_active_watch)
 
+    def test_input(self):
+        keystatus = self.bc.INPUT_keystatus
+        enter = self.bc.INPUT_KEY_ENTER
+        down = self.bc.INPUT_KEY_DOWN
+        released = self.bc.INPUT_KEYSTATUS_RELEASED
+        pressed = self.bc.INPUT_KEYSTATUS_PRESSED
+        hold = self.bc.INPUT_KEYSTATUS_HOLD
+        click = self.bc.INPUT_KEYSTATUS_CLICK
+        self.bc.INPUT_userinput(released, enter)
+        self.assertEqual(keystatus[enter], released)
+
+        self.bc.INPUT_userinput(pressed, enter)
+        self.assertEqual(keystatus[enter], pressed)
+
+        self.bc.INPUT_userinput(released, down)
+        self.assertEqual(keystatus[enter], pressed)
+
+        for i in range(8):
+            self.bc.INPUT_update()
+        self.assertEqual(keystatus[enter], hold)
+        self.assertEqual(keystatus[down], released)
+
+        self.bc.INPUT_userinput(released, enter)
+        self.assertEqual(keystatus[enter], click)
 
 if __name__ == "main":
     unittest.main()
