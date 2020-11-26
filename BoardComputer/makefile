@@ -1,5 +1,5 @@
 boardcomputer: src/main.c
-	avr-gcc src/main.c -O1 -mmcu=atmega324pb -o bin/BoardComputer.elf
+	avr-gcc src/main.c -O1 -mmcu=atmega324pb -fshort-enums -o bin/BoardComputer.elf
 	avr-objcopy -j .text -j .data -O ihex bin/BoardComputer.elf bin/BoardComputer.hex
 	avr-size --mcu=atmega324pa -C bin/BoardComputer.elf
 
