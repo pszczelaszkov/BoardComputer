@@ -5,8 +5,6 @@
  * Author : pszczelaszkov
  */ 
 
-#define FRONTBUFFER 0
-#define BACKBUFFER 1
 #define F_CPU 8000000
 #define EVENT_TIMER_ISR ISR(TIMER2_COMPA_vect)
 
@@ -17,12 +15,14 @@
 #endif
 
 #include "utils.h"
+#include "USART.h"
 #include "NEXTION.h"
-#include "scheduler.h"
+//#include "scheduler.h"
 #include "sensorsfeed.h"
+#include "ProgramData.h"
 #include "timer.h"
 #include "input.h"
-
+#include <stdio.h>
 volatile uint8_t SYSTEM_run = 1;
 volatile uint8_t SYSTEM_exec;
 volatile uint8_t SYSTEM_event_timer;//Represent fraction of second in values from 0 to 7. 
@@ -44,6 +44,8 @@ void core()
 	NEXTION_update();
 }
 
+
+
 int main()
 {	
 	DDRD = 0x00;
@@ -52,13 +54,40 @@ int main()
 	SET(DDRB,BIT4);
 	SET(DDRB,BIT7);
 	
-	SCHEDULER_fregister[SCHEDULER_CALLBACK_USART_REGISTER] = USART_register;
-	SCHEDULER_initialize();
+	//SCHEDULER_fregister[SCHEDULER_CALLBACK_USART_REGISTER] = USART_register;
+	//SCHEDULER_initialize();
 	NEXTION_initialize();
 	SENSORSFEED_initialize();
 	TIMER_initialize();
 	#ifndef __AVR__
-	if(SYSTEM_run)
+		if(SYSTEM_run)
+	#endif
+	prestart_routine();
+
+    while(SYSTEM_run)
+    {
+		while(!SYSTEM_exec)
+			sleep_cpu();
+		SYSTEM_exec = 0;
+		core();
+    }
+}
+
+void test()
+{	
+		DDRD = 0x00;
+	PORTD = 0x00;
+	SET(DDRB,BIT0);
+	SET(DDRB,BIT4);
+	SET(DDRB,BIT7);
+	
+	//SCHEDULER_fregister[SCHEDULER_CALLBACK_USART_REGISTER] = USART_register;
+	//SCHEDULER_initialize();
+	NEXTION_initialize();
+	SENSORSFEED_initialize();
+	TIMER_initialize();
+	#ifndef __AVR__
+		if(SYSTEM_run)
 	#endif
 	prestart_routine();
 

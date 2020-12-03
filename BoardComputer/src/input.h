@@ -4,17 +4,19 @@
  * Created: 2020-11-10 19:07:00
  * Author : pszczelaszkov
  */
+
 #ifndef __INPUT__
 #define __INPUT__
 
 #include "timer.h"
+#include "NEXTION.h"
 
-typedef enum INPUT_COMPONENT
+typedef enum INPUT_COMPONENTID
 {
 	INPUT_COMPONENT_NONE = 0,
 	INPUT_COMPONENT_MAINDISPLAY = 2,
 	INPUT_COMPONENT_WATCH
-}INPUT_Component_t;
+}INPUT_ComponentID_t;
 
 typedef enum INPUT_KEYSTATUS
 {
@@ -32,50 +34,21 @@ typedef enum INPUT_KEY
 	INPUT_KEY_LAST
 }INPUT_Key_t;
 
-INPUT_Keystatus_t INPUT_keystatus[INPUT_KEY_LAST];
-INPUT_Component_t INPUT_active_component;
-uint8_t INPUT_active_page;
-
-extern int8_t NEXTION_switch_maindisplay();
-//Called from ISR, keep fit
-void INPUT_userinput(INPUT_Keystatus_t keystatus, INPUT_Key_t key)
+typedef struct INPUT_Component
 {
-	if(keystatus == INPUT_KEYSTATUS_PRESSED)
-	{
-		if(INPUT_active_component == INPUT_COMPONENT_WATCH)
-		{	
-			if(TIMER_active_watch == &TIMER_watches[TIMERTYPE_STOPWATCH] && key == INPUT_KEY_ENTER)
-				TIMER_watch_toggle(TIMER_active_watch);
-		}
-	}
-	else
-	{
-		if(INPUT_keystatus[key] > INPUT_KEYSTATUS_RELEASED)
-			keystatus = INPUT_KEYSTATUS_CLICK;
-	}
-	INPUT_keystatus[key] = keystatus;
-}
+	INPUT_ComponentID_t componentID;
+	Callback on_click;
+	Callback on_hold;
+	NEXTION_Component* nextion_component;
+}INPUT_Component;
 
-void INPUT_update()
-{
-	for(uint8_t i = 0; i < INPUT_KEY_LAST; i++)
-	{	
-		uint8_t status = INPUT_keystatus[i];
-		if(status > INPUT_KEYSTATUS_RELEASED && status < INPUT_KEYSTATUS_HOLD)
-			INPUT_keystatus[i]++;
-	}
-	
-	switch(INPUT_active_component)
-	{
-		case INPUT_COMPONENT_MAINDISPLAY:
-			if(INPUT_keystatus[INPUT_KEY_ENTER] == INPUT_KEYSTATUS_CLICK)
-			{
-				NEXTION_switch_maindisplay();
-				INPUT_keystatus[INPUT_KEY_ENTER] = INPUT_KEYSTATUS_RELEASED;
-			}
-		break;
-		default:
-		break;
-	}
-}
+
+extern uint8_t INPUT_active_page;
+extern INPUT_Keystatus_t INPUT_keystatus[];
+extern INPUT_Component INPUT_components[];
+extern INPUT_Component* INPUT_active_component;
+
+void INPUT_switch_maindisplay();
+void INPUT_userinput(INPUT_Keystatus_t keystatus, INPUT_Key_t key);
+void INPUT_update();
 #endif

@@ -15,27 +15,14 @@ class testPreRun(unittest.TestCase):
         cls.ffi = cffi.FFI()
         cls.nullptr = cls.ffi.NULL
         cls.bc.SYSTEM_run = False
-        cls.bc.main()
+        cls.bc.test()
         random.seed()
 
-    def test_scheduler(self):
-        # Test if fregister is fully initialized
-        fregister = self.ffi.unpack(self.bc.SCHEDULER_fregister,
-                                    self.bc.SCHEDULER_CALLBACK_LAST)
-        for fptr in fregister:
-            fptr = self.ffi.cast("void*", fptr)
-            self.assertNotEqual(fptr, self.nullptr)
-        # Test queue is circular
-        size = self.bc.SCHEDULER_LOW_PRIORITY_QUEUE_SIZE
-        tasks = self.ffi.unpack(self.bc.SCHEDULER_low_priority_tasks, size)
-        last = tasks[-1]
-        nextptr = self.ffi.cast("void*", last.nextTask)
-        for task in tasks:
-            # Are tasks fid's properly initialized?
-            self.assertEqual(task.fid, self.bc.SCHEDULER_CALLBACK_LAST)
-            fptr = self.ffi.cast("void*", cffi.FFI().addressof(task))
-            self.assertEqual(nextptr, fptr)
-            nextptr = self.ffi.cast("void*", task.nextTask)
+    def test_sensorsfeed(self):
+        # Divide by 0 issue
+        self.assertTrue(self.bc.SENSORSFEED_fuelmodifier)
+        # After init, status should be ready
+        self.assertEqual(self.bc.ADCMULTIPLEXER, 0)
 
     def test_nextion(self):
         # EOT must be null-terminated triple 0xff
@@ -58,12 +45,6 @@ class testPreRun(unittest.TestCase):
             temp = temp.nextRenderer
 
         self.assertEqual(initial, temp)
-
-    def test_sensorsfeed(self):
-        # Divide by 0 issue
-        self.assertTrue(self.bc.SENSORSFEED_fuelmodifier)
-        # After init, status should be ready
-        self.assertEqual(self.bc.ADCMULTIPLEXER, 0)
 
     def test_USART(self):
         write_usart(self.bc, 0x01, b"PING")
@@ -96,6 +77,7 @@ class testPreRun(unittest.TestCase):
         self.bc.COUNTERSFEED_pushfeed(self.bc.COUNTERSFEED_FEEDID_FUELPS)
         self.assertEqual(self.bc.COUNTERSFEED_feed[fuelindex][0], 15535)
         self.assertEqual(self.bc.COUNTERSFEED_feed[injtindex][0], 15535)
+
 
     def test_average(self):
         for i in range(2):
@@ -147,7 +129,7 @@ class testPreRun(unittest.TestCase):
         self.assertEqual(stopwatch.timer.miliseconds, 0)
         self.assertTrue(stopwatch.next_watch)
         self.assertTrue(self.bc.TIMER_active_watch)
-
+class placeholder:
     def test_input(self):
         keystatus = self.bc.INPUT_keystatus
         enter = self.bc.INPUT_KEY_ENTER
@@ -172,6 +154,25 @@ class testPreRun(unittest.TestCase):
 
         self.bc.INPUT_userinput(released, enter)
         self.assertEqual(keystatus[enter], click)
+
+    def test_scheduler(self):
+        # Test if fregister is fully initialized
+        fregister = self.ffi.unpack(self.bc.SCHEDULER_fregister,
+                                    self.bc.SCHEDULER_CALLBACK_LAST)
+        for fptr in fregister:
+            fptr = self.ffi.cast("void*", fptr)
+            self.assertNotEqual(fptr, self.nullptr)
+        # Test queue is circular
+        size = self.bc.SCHEDULER_LOW_PRIORITY_QUEUE_SIZE
+        tasks = self.ffi.unpack(self.bc.SCHEDULER_low_priority_tasks, size)
+        last = tasks[-1]
+        nextptr = self.ffi.cast("void*", last.nextTask)
+        for task in tasks:
+            # Are tasks fid's properly initialized?
+            self.assertEqual(task.fid, self.bc.SCHEDULER_CALLBACK_LAST)
+            fptr = self.ffi.cast("void*", cffi.FFI().addressof(task))
+            self.assertEqual(nextptr, fptr)
+            nextptr = self.ffi.cast("void*", task.nextTask)
 
 if __name__ == "main":
     unittest.main()

@@ -1,13 +1,15 @@
 //Definitions only for testing purposes
 extern volatile uint8_t SYSTEM_run, SYSTEM_exec, SYSTEM_event_timer, PINA, PINB, DDRB;
 volatile extern uint16_t TCNT1,TCNT2;
+typedef void (*Callback)();
 int main();
+void test();
 void core();
 void prestart_routine();
 void PCINT0_vect();
 void SPI0_STC_vect();
 void TIMER2_COMPA_vect();
-#define SCHEDULER_LOW_PRIORITY_QUEUE_SIZE ...
+//#define SCHEDULER_LOW_PRIORITY_QUEUE_SIZE ...
 #define BIT0 1
 #define BIT1 2
 #define BIT2 4
@@ -16,7 +18,7 @@ void TIMER2_COMPA_vect();
 #define BIT5 32
 #define BIT6 64
 #define BIT7 128
-typedef void (*Fptr)();
+/*typedef void (*Fptr)();
 typedef struct LowPriorityTask
 {
     uint8_t fid;
@@ -34,7 +36,7 @@ extern LowPriorityTask SCHEDULER_low_priority_tasks[];
 extern LowPriorityTask* SCHEDULER_final_task;
 extern LowPriorityTask* SCHEDULER_active_task;
 void SCHEDULER_checkLowPriorityTasks();
-
+*/
 #define USART_EOT ...
 #define USART_EOT_COUNT ...
 #define USART_TX_BUFFER_SIZE ...
@@ -87,16 +89,10 @@ enum COUNTERSFEED_FEEDID
     COUNTERSFEED_FEEDID_SPEED,
     COUNTERSFEED_FEEDID_LAST
 };
-extern uint16_t COUNTERSFEED_feed[][2]; 
+extern uint16_t COUNTERSFEED_feed[][2];
 inline void COUNTERSFEED_pushfeed(uint8_t index);
 
-typedef void (*RenderingCallback)();
-typedef struct MainDisplayRenderer
-{
-	RenderingCallback render;
-	struct MainDisplayRenderer* nextRenderer;
-	uint8_t picID;
-}MainDisplayRenderer;
+
 
 enum NEXTION_MD
 {
@@ -109,10 +105,33 @@ enum NEXTION_MD
 	NEXTION_MD_LAST
 };
 
-int8_t NEXTION_switch_maindisplay();
+typedef enum NEXTION_COMPONENTTYPE
+{
+	NEXTION_COMPONENTTYPE_PIC,
+	NEXTION_COMPONENTTYPE_TEXT
+}NEXTION_Componenttype_t;
+
+typedef struct NEXTION_Component
+{
+	uint8_t picID_default;
+	uint8_t picID_selected;
+	NEXTION_Componenttype_t type;
+}NEXTION_Component;
+typedef struct NEXTION_MDComponent
+{
+	//
+	uint8_t picID_default;
+	uint8_t picID_selected;
+	NEXTION_Componenttype_t type;
+	//Inherited from component
+	Callback render;
+	struct NEXTION_MDComponent* nextRenderer;
+}NEXTION_MDComponent;
+
+void NEXTION_switch_maindisplay();
 extern char NEXTION_eot[4];
-extern MainDisplayRenderer NEXTION_maindisplay_renderers[];
-extern MainDisplayRenderer* NEXTION_maindisplay_renderer;
+extern NEXTION_MDComponent NEXTION_maindisplay_renderers[];
+extern NEXTION_MDComponent* NEXTION_maindisplay_renderer;
 
 enum
 {
@@ -190,12 +209,12 @@ extern TIMER_watch* TIMER_active_watch;
 extern TIMER_watch TIMER_watches[2];
 extern char TIMER_formated[12];
 
-typedef enum INPUT_COMPONENT
+typedef enum INPUT_COMPONENTID
 {
-    INPUT_COMPONENT_NONE = 0,
+	INPUT_COMPONENT_NONE = 0,
 	INPUT_COMPONENT_MAINDISPLAY = 2,
 	INPUT_COMPONENT_WATCH
-}INPUT_Component_t;
+}INPUT_ComponentID_t;
 
 typedef enum INPUT_KEYSTATUS
 {
@@ -213,10 +232,21 @@ typedef enum INPUT_KEY
 	INPUT_KEY_LAST
 }INPUT_Key_t;
 
-void INPUT_update();
-void INPUT_userinput(INPUT_Keystatus_t keystatus, INPUT_Key_t key);
-extern INPUT_Keystatus_t INPUT_keystatus[INPUT_KEY_LAST];
-extern INPUT_Component_t INPUT_active_component;
+typedef struct INPUT_Component
+{
+	INPUT_ComponentID_t componentID;
+	Callback on_click;
+	Callback on_hold;
+	NEXTION_Component* nextion_component;
+}INPUT_Component;
+
 extern uint8_t INPUT_active_page;
+extern INPUT_Keystatus_t INPUT_keystatus[INPUT_KEY_LAST];
+extern INPUT_Component INPUT_components[];
+extern INPUT_Component* INPUT_active_component;
+
+void INPUT_switch_maindisplay();
+void INPUT_userinput(INPUT_Keystatus_t keystatus, INPUT_Key_t key);
+void INPUT_update();
 
 extern const int16_t PROGRAMDATA_NTC_2200_INVERTED[];
