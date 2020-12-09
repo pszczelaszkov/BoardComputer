@@ -12,6 +12,9 @@
 #include <avr/io.h>
 #include <avr/sleep.h>
 #include <util/delay.h>
+#define ENTRY_ROUTINE void main()
+#else
+#define ENTRY_ROUTINE void test()
 #endif
 
 #include "utils.h"
@@ -44,38 +47,9 @@ void core()
 	NEXTION_update();
 }
 
-
-
-int main()
+ENTRY_ROUTINE
 {	
 	DDRD = 0x00;
-	PORTD = 0x00;
-	SET(DDRB,BIT0);
-	SET(DDRB,BIT4);
-	SET(DDRB,BIT7);
-	
-	//SCHEDULER_fregister[SCHEDULER_CALLBACK_USART_REGISTER] = USART_register;
-	//SCHEDULER_initialize();
-	NEXTION_initialize();
-	SENSORSFEED_initialize();
-	TIMER_initialize();
-	#ifndef __AVR__
-		if(SYSTEM_run)
-	#endif
-	prestart_routine();
-
-    while(SYSTEM_run)
-    {
-		while(!SYSTEM_exec)
-			sleep_cpu();
-		SYSTEM_exec = 0;
-		core();
-    }
-}
-
-void test()
-{	
-		DDRD = 0x00;
 	PORTD = 0x00;
 	SET(DDRB,BIT0);
 	SET(DDRB,BIT4);

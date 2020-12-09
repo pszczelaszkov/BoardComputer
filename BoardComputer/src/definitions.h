@@ -2,7 +2,6 @@
 extern volatile uint8_t SYSTEM_run, SYSTEM_exec, SYSTEM_event_timer, PINA, PINB, DDRB;
 volatile extern uint16_t TCNT1,TCNT2;
 typedef void (*Callback)();
-int main();
 void test();
 void core();
 void prestart_routine();
@@ -93,7 +92,7 @@ extern uint16_t COUNTERSFEED_feed[][2];
 inline void COUNTERSFEED_pushfeed(uint8_t index);
 
 
-
+#define NEXTION_OBJNAME_LEN ...
 enum NEXTION_MD
 {
 	NEXTION_MD_LPH,
@@ -115,21 +114,23 @@ typedef struct NEXTION_Component
 {
 	uint8_t picID_default;
 	uint8_t picID_selected;
+	const char* name;
 	NEXTION_Componenttype_t type;
 }NEXTION_Component;
 typedef struct NEXTION_MDComponent
 {
-	//
 	uint8_t picID_default;
 	uint8_t picID_selected;
+	const char* name;
 	NEXTION_Componenttype_t type;
-	//Inherited from component
+
 	Callback render;
 	struct NEXTION_MDComponent* nextRenderer;
 }NEXTION_MDComponent;
 
 void NEXTION_switch_maindisplay();
-extern char NEXTION_eot[4];
+extern char NEXTION_eot[];
+extern NEXTION_Component NEXTION_components[];
 extern NEXTION_MDComponent NEXTION_maindisplay_renderers[];
 extern NEXTION_MDComponent* NEXTION_maindisplay_renderer;
 
@@ -209,11 +210,13 @@ extern TIMER_watch* TIMER_active_watch;
 extern TIMER_watch TIMER_watches[2];
 extern char TIMER_formated[12];
 
+#define INPUT_ACTIVITY_DECAY_TICKS ...
 typedef enum INPUT_COMPONENTID
 {
 	INPUT_COMPONENT_NONE = 0,
 	INPUT_COMPONENT_MAINDISPLAY = 2,
-	INPUT_COMPONENT_WATCH
+	INPUT_COMPONENT_WATCH = 5,
+	INPUT_COMPONENT_WATCHSEL = 6
 }INPUT_ComponentID_t;
 
 typedef enum INPUT_KEYSTATUS
@@ -246,7 +249,8 @@ extern INPUT_Component INPUT_components[];
 extern INPUT_Component* INPUT_active_component;
 
 void INPUT_switch_maindisplay();
-void INPUT_userinput(INPUT_Keystatus_t keystatus, INPUT_Key_t key);
+void INPUT_userinput(INPUT_Keystatus_t keystatus, INPUT_Key_t key, INPUT_ComponentID_t componentID);
+INPUT_Component* INPUT_findcomponent(uint8_t componentID);
 void INPUT_update();
 
 extern const int16_t PROGRAMDATA_NTC_2200_INVERTED[];

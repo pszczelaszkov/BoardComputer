@@ -1,3 +1,4 @@
 # Cleanup
 
-- [ ] Collect repetitive char consts  
+- [ ] Collect repetitive char consts
+- [ ] Minimize use of init functions

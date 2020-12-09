@@ -5,8 +5,78 @@
 #include "timer.h"
 
 extern volatile uint8_t SYSTEM_event_timer;
+
+static const char str_txt[NEXTION_OBJNAME_LEN] = "txt"; 
+static const char str_wtd[NEXTION_OBJNAME_LEN] = "wtd"; 
+static const char str_wts[NEXTION_OBJNAME_LEN] = "wts";
+static const char str_mds[NEXTION_OBJNAME_LEN] = "mds";
+
+//Keep in order with enum NEXTION_COMPONENT
+NEXTION_Component NEXTION_components[] = {
+	{//watch
+		.type = NEXTION_COMPONENTTYPE_TEXT,
+		.picID_default = 1,
+		.picID_selected = 25,
+		.name = str_wtd
+	},
+	{//watchselect
+		.type = NEXTION_COMPONENTTYPE_PIC,
+		.picID_default = 2,
+		.picID_selected = 17,
+		.name = str_wts
+	}
+};
 NEXTION_MDComponent* NEXTION_maindisplay_renderer = NEXTION_MD_INITIAL_COMPONENT;
-NEXTION_MDComponent NEXTION_maindisplay_renderers[NEXTION_MAINDISPLAY_RENDERERS_SIZE];
+NEXTION_MDComponent NEXTION_maindisplay_renderers[] = {
+	{
+		.picID_default = 11,
+		.picID_selected = 22,
+		.name = str_mds,
+		.type = NEXTION_COMPONENTTYPE_PIC,
+		.render = NEXTION_renderer_md_lph,
+		.nextRenderer = &NEXTION_maindisplay_renderers[NEXTION_MD_LP100_AVG]
+	},
+	{
+		.picID_default = 12,
+		.picID_selected = 23,
+		.name = str_mds,
+		.type = NEXTION_COMPONENTTYPE_PIC,
+		.render = NEXTION_renderer_md_lp100,
+		.nextRenderer = &NEXTION_maindisplay_renderers[NEXTION_MD_LP100_AVG]
+	},
+	{
+		.picID_default = 13,
+		.picID_selected = 24,
+		.name = str_mds,
+		.type = NEXTION_COMPONENTTYPE_PIC,
+		.render = NEXTION_renderer_md_lp100_avg,
+		.nextRenderer = &NEXTION_maindisplay_renderers[NEXTION_MD_SPEED_AVG]
+	},
+	{
+		.picID_default = 14,
+		.picID_selected = 19,
+		.name = str_mds,
+		.type = NEXTION_COMPONENTTYPE_PIC,
+		.render = NEXTION_renderer_md_speed_avg,
+		.nextRenderer = &NEXTION_maindisplay_renderers[NEXTION_MD_INJ_T]
+	},
+	{
+		.picID_default = 15,
+		.picID_selected = 20,
+		.name = str_mds,
+		.type = NEXTION_COMPONENTTYPE_PIC,
+		.render = NEXTION_renderer_md_inj_t,
+		.nextRenderer = &NEXTION_maindisplay_renderers[NEXTION_MD_RANGE]
+	},
+	{
+		.picID_default = 16,
+		.picID_selected = 21,
+		.name = str_mds,
+		.type = NEXTION_COMPONENTTYPE_PIC,
+		.render = NEXTION_renderer_md_range,
+		.nextRenderer = &NEXTION_maindisplay_renderers[NEXTION_MD_LPH]
+	}
+};
 char NEXTION_eot[4];
 
 uint8_t NEXTION_send(char data[], uint8_t flush)
@@ -106,18 +176,39 @@ void NEXTION_renderer_md_range()
 	NEXTION_send(buffer, USART_HOLD);
 }
 
-void NEXTION_select_component(NEXTION_Component* component)
-{// w nextionie bedzie chyba jeszcze select decay time
+//Selects component by sending its data to display
+void NEXTION_select_component(NEXTION_Component* component, NEXTION_Componentstatus_t status)
+{
+	if(!component)
+		return;
 
+	uint8_t picid;
+	uint8_t offset = 3;
+	char buffer[12];
+	memcpy(buffer,component->name,3);
+	if(component->type == NEXTION_COMPONENTTYPE_PIC)
+	{
+		offset = 8;
+		memcpy(&buffer[3],".pic=",5);
+	}
+	else
+	{
+		offset = 9;
+		memcpy(&buffer[3],".picc=",6);
+	}
+	if(status == NEXTION_COMPONENTSTATUS_SELECTED)
+		picid = component->picID_selected;
+	else
+		picid = component->picID_default;
+
+	itoa(picid,&buffer[offset],10);
+	NEXTION_send(buffer,USART_FLUSH);
 }
 
 void NEXTION_switch_maindisplay()
 {
 	NEXTION_maindisplay_renderer = NEXTION_maindisplay_renderer->nextRenderer;
-	char buffer[] = "md.pic=  ";
-	uint8_t picid = NEXTION_maindisplay_renderer->picID_default;
-	itoa(picid,&buffer[7],10);
-	NEXTION_send(buffer,USART_FLUSH);
+	NEXTION_select_component((NEXTION_Component*)NEXTION_maindisplay_renderer, NEXTION_COMPONENTSTATUS_SELECTED);
 }
 
 int8_t NEXTION_switch_page(uint8_t page)
@@ -157,14 +248,14 @@ void NEXTION_update_ADC()
 
 void NEXTION_update_watch()
 {
-	const char WATCHTEMPLATE[]  = "w.txt=\"        \"";
+	const char WATCHTEMPLATE[]  = "wtd.txt=\"        \"";
 	char buffer[sizeof(WATCHTEMPLATE)];
 	strcpy(buffer,WATCHTEMPLATE);
 	
 	if(TIMER_active_watch == &TIMER_watches[TIMERTYPE_WATCH])
-		memcpy(&buffer[9],TIMER_formated,5);
+		memcpy(&buffer[11],TIMER_formated,5);
 	else
-		memcpy(&buffer[7],&TIMER_formated[3],8);
+		memcpy(&buffer[9],&TIMER_formated[3],8);
 
 	NEXTION_send(buffer,USART_HOLD);
 }
@@ -197,7 +288,7 @@ void NEXTION_initialize()
 	NEXTION_eot[2] = 0xFF;
 	NEXTION_eot[3] = 0x00;
 	
-	for(uint8_t i = 0;i < NEXTION_MD_LAST;i++)
+	/*for(uint8_t i = 0;i < NEXTION_MD_LAST;i++)
 	{
 		NEXTION_MDComponent* md_renderer = &NEXTION_maindisplay_renderers[i];
 		switch(i)
@@ -233,5 +324,5 @@ void NEXTION_initialize()
 				md_renderer->render = &NEXTION_renderer_md_range;
 			break;
 		};
-	}
+	}*/
 }

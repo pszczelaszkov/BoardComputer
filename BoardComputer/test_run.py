@@ -151,9 +151,9 @@ class testRun(unittest.TestCase):
                              test_packet["result"])
             self.bc.NEXTION_update_EGT()
             self.bc.USART_flush()
-            parse_nextion(self.bc,read_usart(self.bc), nextion_data)
+            parse_nextion(self.bc, read_usart(self.bc), nextion_data)
             self.assertEqual(nextion_data["txt"]["egt"],
-                                          test_packet["display"])
+                             test_packet["display"])
 
         # Last test should bring value to sensors feed (bits 14 to 5 inclusive)
         self.assertEqual(self.bc.SENSORSFEED_feed[self.bc.SENSORSFEED_FEEDID_EGT],
@@ -204,6 +204,33 @@ class testRun(unittest.TestCase):
         self.bc.TIMER_next_watch()
         #  miliseconds are not used in watch(wont be updated)
         self.assertEqual(formated_time(self)[:-3], b" 0:00:01")
+
+    def test_input(self):
+        keystatus = self.bc.INPUT_keystatus
+        enter = self.bc.INPUT_KEY_ENTER
+        down = self.bc.INPUT_KEY_DOWN
+        released = self.bc.INPUT_KEYSTATUS_RELEASED
+        pressed = self.bc.INPUT_KEYSTATUS_PRESSED
+        hold = self.bc.INPUT_KEYSTATUS_HOLD
+        click = self.bc.INPUT_KEYSTATUS_CLICK
+        maindisplay = self.bc.INPUT_COMPONENT_MAINDISPLAY
+        snapshotmd = self.bc.NEXTION_maindisplay_renderer
+
+        self.assertEqual(keystatus[enter], released)
+        self.bc.INPUT_userinput(pressed, enter, maindisplay)
+        self.bc.INPUT_userinput(released, enter, maindisplay)
+        self.assertEqual(keystatus[enter], click)
+        self.bc.INPUT_update()
+        self.assertEqual(keystatus[enter], released)
+        self.assertEqual(self.bc.INPUT_active_component.componentID, maindisplay)
+
+        parse_nextion(self.bc, read_usart(self.bc), nextion_data)
+        self.assertEqual(nextion_data["pic"]["mds"], '24')
+        for i in range(self.bc.INPUT_ACTIVITY_DECAY_TICKS):
+            self.bc.INPUT_update()
+        parse_nextion(self.bc, read_usart(self.bc), nextion_data)
+        self.assertEqual(nextion_data["pic"]["mds"], '13')
+        self.bc.NEXTION_maindisplay_renderer = snapshotmd
 
 
 if __name__ == "main":

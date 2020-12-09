@@ -33,19 +33,6 @@ class testPreRun(unittest.TestCase):
         self.assertEqual(self.bc.NEXTION_maindisplay_renderer,
                          self.bc.NEXTION_maindisplay_renderers[0])
 
-    def test_nextion_switch_maindisplay(self):
-        # Must have default renderer and be circular
-        initial = self.bc.NEXTION_maindisplay_renderer
-        desired = self.bc.NEXTION_maindisplay_renderers[0]
-        self.assertEqual(initial, desired)
-        temp = initial.nextRenderer
-        for i in range(self.bc.NEXTION_MD_LAST):
-            if temp == initial:
-                break
-            temp = temp.nextRenderer
-
-        self.assertEqual(initial, temp)
-
     def test_USART(self):
         write_usart(self.bc, 0x01, b"PING")
         response = read_usart(self.bc)
@@ -129,7 +116,7 @@ class testPreRun(unittest.TestCase):
         self.assertEqual(stopwatch.timer.miliseconds, 0)
         self.assertTrue(stopwatch.next_watch)
         self.assertTrue(self.bc.TIMER_active_watch)
-class placeholder:
+
     def test_input(self):
         keystatus = self.bc.INPUT_keystatus
         enter = self.bc.INPUT_KEY_ENTER
@@ -138,13 +125,13 @@ class placeholder:
         pressed = self.bc.INPUT_KEYSTATUS_PRESSED
         hold = self.bc.INPUT_KEYSTATUS_HOLD
         click = self.bc.INPUT_KEYSTATUS_CLICK
-        self.bc.INPUT_userinput(released, enter)
+        self.bc.INPUT_userinput(released, enter, 1)
         self.assertEqual(keystatus[enter], released)
 
-        self.bc.INPUT_userinput(pressed, enter)
+        self.bc.INPUT_userinput(pressed, enter, 1)
         self.assertEqual(keystatus[enter], pressed)
 
-        self.bc.INPUT_userinput(released, down)
+        self.bc.INPUT_userinput(released, down, 1)
         self.assertEqual(keystatus[enter], pressed)
 
         for i in range(8):
@@ -152,9 +139,12 @@ class placeholder:
         self.assertEqual(keystatus[enter], hold)
         self.assertEqual(keystatus[down], released)
 
-        self.bc.INPUT_userinput(released, enter)
+        self.bc.INPUT_userinput(released, enter, 1)
         self.assertEqual(keystatus[enter], click)
+        keystatus[enter] = released
 
+
+class placeholder:
     def test_scheduler(self):
         # Test if fregister is fully initialized
         fregister = self.ffi.unpack(self.bc.SCHEDULER_fregister,

@@ -11,6 +11,7 @@
 #include "inttypes.h"
 #include "utils.h"
 
+#define NEXTION_OBJNAME_LEN 3
 enum NEXTION_MD
 {
 	NEXTION_MD_LPH,
@@ -20,6 +21,18 @@ enum NEXTION_MD
 	NEXTION_MD_INJ_T,
 	NEXTION_MD_RANGE,
 	NEXTION_MD_LAST
+};
+typedef enum NEXTION_COMPONENTSTATUS
+{
+	NEXTION_COMPONENTSTATUS_DEFAULT,
+	NEXTION_COMPONENTSTATUS_SELECTED
+	
+}NEXTION_Componentstatus_t;
+
+enum NEXTION_COMPONENT
+{
+	NEXTION_COMPONENT_WATCH,
+	NEXTION_COMPONENT_WATCHSEL
 };
 
 typedef enum NEXTION_COMPONENTTYPE
@@ -34,23 +47,24 @@ typedef struct NEXTION_Component
 {
 	uint8_t picID_default;
 	uint8_t picID_selected;
+	const char* name;
 	NEXTION_Componenttype_t type;
 }NEXTION_Component;
 typedef struct NEXTION_MDComponent
 {
-	//
 	uint8_t picID_default;
 	uint8_t picID_selected;
+	const char* name;
 	NEXTION_Componenttype_t type;
-	//Inherited from component
+
 	Callback render;
 	struct NEXTION_MDComponent* nextRenderer;
 }NEXTION_MDComponent;
 
 extern char NEXTION_eot[];
+extern NEXTION_Component NEXTION_components[];
 extern NEXTION_MDComponent NEXTION_maindisplay_renderers[];
 extern NEXTION_MDComponent* NEXTION_maindisplay_renderer;
-
 
 uint8_t NEXTION_send(char data[], uint8_t flush);
 int8_t NEXTION_update();
@@ -61,7 +75,7 @@ void NEXTION_renderer_md_lp100_avg();
 void NEXTION_renderer_md_speed_avg();
 void NEXTION_renderer_md_inj_t();
 void NEXTION_renderer_md_range();
-void NEXTION_select_component(NEXTION_Component* component);
+void NEXTION_select_component(NEXTION_Component* component, NEXTION_Componentstatus_t status);
 void NEXTION_switch_maindisplay();
 void NEXTION_update_EGT();
 void NEXTION_update_ADC();

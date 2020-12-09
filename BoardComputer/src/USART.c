@@ -85,9 +85,9 @@ void USART_register()
 		#endif
 		case 0x65:
 			INPUT_active_page = USART_RX_buffer[1];
-			INPUT_active_component->componentID = USART_RX_buffer[2];
+			INPUT_ComponentID_t componentID = (INPUT_ComponentID_t)USART_RX_buffer[2];
 			INPUT_Keystatus_t keystatus = USART_RX_buffer[3];
-			INPUT_userinput(keystatus, INPUT_KEY_ENTER);
+			INPUT_userinput(keystatus, INPUT_KEY_ENTER, componentID);
 		break;
 	}
 	USART_RX_buffer_index = 0;//unlock

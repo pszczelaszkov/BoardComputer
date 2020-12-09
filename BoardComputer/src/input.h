@@ -11,11 +11,13 @@
 #include "timer.h"
 #include "NEXTION.h"
 
+#define INPUT_ACTIVITY_DECAY_TICKS 24
 typedef enum INPUT_COMPONENTID
 {
 	INPUT_COMPONENT_NONE = 0,
 	INPUT_COMPONENT_MAINDISPLAY = 2,
-	INPUT_COMPONENT_WATCH
+	INPUT_COMPONENT_WATCH = 5,
+	INPUT_COMPONENT_WATCHSEL = 6
 }INPUT_ComponentID_t;
 
 typedef enum INPUT_KEYSTATUS
@@ -42,13 +44,16 @@ typedef struct INPUT_Component
 	NEXTION_Component* nextion_component;
 }INPUT_Component;
 
-
+static const uint8_t components_count;
+static uint8_t activity_counter;
+static uint8_t pending_componentID;
 extern uint8_t INPUT_active_page;
 extern INPUT_Keystatus_t INPUT_keystatus[];
 extern INPUT_Component INPUT_components[];
 extern INPUT_Component* INPUT_active_component;
 
 void INPUT_switch_maindisplay();
-void INPUT_userinput(INPUT_Keystatus_t keystatus, INPUT_Key_t key);
+void INPUT_userinput(INPUT_Keystatus_t keystatus, INPUT_Key_t key, INPUT_ComponentID_t componentID);
+INPUT_Component* INPUT_findcomponent(uint8_t componentID);
 void INPUT_update();
 #endif

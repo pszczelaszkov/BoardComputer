@@ -47,6 +47,70 @@ class testInit(unittest.TestCase):
         self.assertTrue(self.bc.INPUT_KEYSTATUS_CLICK >
                         self.bc.INPUT_KEYSTATUS_HOLD)
 
+    def test_nextion_switch_maindisplay(self):
+        # Must have default renderer and be circular
+        initial = self.bc.NEXTION_maindisplay_renderer
+        desired = self.bc.NEXTION_maindisplay_renderers[0]
+        self.assertEqual(initial, desired)
+        temp = initial.nextRenderer
+        for i in range(self.bc.NEXTION_MD_LAST):
+            if temp == initial:
+                break
+            temp = temp.nextRenderer
+
+        self.assertEqual(initial, temp)
+
+    def test_nextion_components_cohesion(self):
+        pic = self.bc.NEXTION_COMPONENTTYPE_PIC
+        txt = self.bc.NEXTION_COMPONENTTYPE_TEXT
+        model = [
+            [1, 25, b"wtd", txt],
+            [2, 17, b"wts", pic]
+        ]
+        zipped = zip(self.ffi.unpack(self.bc.NEXTION_components, 2), model)
+        for t, m in zipped:
+            self.assertEqual(t.picID_default, m[0])
+            self.assertEqual(t.picID_selected, m[1])
+            name = self.ffi.unpack(t.name, self.bc.NEXTION_OBJNAME_LEN)
+            self.assertEqual(name, m[2])
+            self.assertEqual(t.type, m[3])
+
+    def test_nextion_MDcomponents_cohesion(self):
+        pic = self.bc.NEXTION_COMPONENTTYPE_PIC
+        model = [
+            [11, 22],
+            [12, 23],
+            [13, 24],
+            [14, 19],
+            [15, 20],
+            [16, 21]
+        ]
+        zipped = zip(self.ffi.unpack(self.bc.NEXTION_maindisplay_renderers, 6), model)
+        for t, m in zipped:
+            self.assertEqual(t.picID_default, m[0])
+            self.assertEqual(t.picID_selected, m[1])
+            name = self.ffi.unpack(t.name, self.bc.NEXTION_OBJNAME_LEN)
+            self.assertEqual(name, b"mds")
+            self.assertEqual(t.type, pic)
+
+    def test_input_components_cohesion(self):
+        model = [
+            [self.bc.INPUT_COMPONENT_MAINDISPLAY, b"mds"],
+            [self.bc.INPUT_COMPONENT_WATCH, b"wtd"],
+            [self.bc.INPUT_COMPONENT_WATCHSEL, b"wts"]
+        ]
+
+        nullptr = self.bc.INPUT_findcomponent(self.bc.INPUT_COMPONENT_NONE)
+        self.assertFalse(nullptr)
+        for sample in model:
+            component = self.bc.INPUT_findcomponent(sample[0])
+            self.assertTrue(component)
+            name = component.nextion_component.name
+            name = self.ffi.unpack(name, self.bc.NEXTION_OBJNAME_LEN)
+            self.assertEqual(name, sample[1])
+
+        self.assertTrue(self.bc.INPUT_active_component)
+
 
 if __name__ == "main":
     unittest.main()
