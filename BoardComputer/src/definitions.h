@@ -91,7 +91,7 @@ enum COUNTERSFEED_FEEDID
 extern uint16_t COUNTERSFEED_feed[][2];
 inline void COUNTERSFEED_pushfeed(uint8_t index);
 
-
+#define NEXTION_SELECT_DECAY_TICKS ...
 #define NEXTION_OBJNAME_LEN ...
 enum NEXTION_MD
 {
@@ -168,6 +168,7 @@ extern enum SENSORSFEED_EGT_TRANSMISSION_STATUS
 
 void SENSORSFEED_update_EGT();
 void NEXTION_update_EGT();
+void NEXTION_update_select_decay();
 extern uint8_t SPDR0;
 extern uint16_t SENSORSFEED_max6675_data;
 
@@ -210,7 +211,6 @@ extern TIMER_watch* TIMER_active_watch;
 extern TIMER_watch TIMER_watches[2];
 extern char TIMER_formated[12];
 
-#define INPUT_ACTIVITY_DECAY_TICKS ...
 typedef enum INPUT_COMPONENTID
 {
 	INPUT_COMPONENT_NONE = 0,

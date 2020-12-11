@@ -9,10 +9,13 @@ INPUT_Component INPUT_components[] = {
 	},
 	{
 		.componentID = INPUT_COMPONENT_WATCH,
+		.on_click = TIMER_watch_toggle,
+		.on_hold = TIMER_watch_zero,
 		.nextion_component = &NEXTION_components[NEXTION_COMPONENT_WATCH]
 	},
 	{
 		.componentID = INPUT_COMPONENT_WATCHSEL,
+		.on_click = TIMER_next_watch,
 		.nextion_component = &NEXTION_components[NEXTION_COMPONENT_WATCHSEL]
 	}
 };
@@ -33,7 +36,6 @@ void INPUT_switch_maindisplay()
 //Called from ISR, keep fit
 void INPUT_userinput(INPUT_Keystatus_t keystatus, INPUT_Key_t key, INPUT_ComponentID_t componentID)
 {	
-	activity_counter = INPUT_ACTIVITY_DECAY_TICKS;
 	if(componentID)
 		pending_componentID = componentID;
 	else
@@ -80,33 +82,35 @@ INPUT_Component* INPUT_findcomponent(uint8_t componentID)
         return 0; 
 }
 
-void INPUT_update()
+INPUT_Component* INPUT_getnextcomponent()
 {
-	if(activity_counter)
-	{
-		activity_counter--;
-		if(activity_counter == 0)
-			NEXTION_select_component(INPUT_active_component->nextion_component,NEXTION_COMPONENTSTATUS_DEFAULT);
-	}
-
-	for(uint8_t i = 0; i < INPUT_KEY_LAST; i++)
-	{	
-		uint8_t status = INPUT_keystatus[i];
-		if(status > INPUT_KEYSTATUS_RELEASED && status < INPUT_KEYSTATUS_HOLD)
-		{
-			INPUT_keystatus[i]++;
-			activity_counter = INPUT_ACTIVITY_DECAY_TICKS;
-		}
-	}
-
 	if(pending_componentID)
 	{
 		INPUT_Component* component = INPUT_findcomponent(pending_componentID);
 		pending_componentID = 0;
-		if(component)
-			INPUT_active_component = component;
+		if(component && component != INPUT_active_component)
+		{
+			return component;
+		}
+	}
+	return 0;
+}
+
+void INPUT_update()
+{	
+	for(uint8_t i = 0; i < INPUT_KEY_LAST; i++)
+	{	
+		uint8_t status = INPUT_keystatus[i];
+		if(status > INPUT_KEYSTATUS_RELEASED && status < INPUT_KEYSTATUS_HOLD)
+			INPUT_keystatus[i]++;
 	}
 
+	INPUT_Component* nextcomponent = INPUT_getnextcomponent();
+	if(nextcomponent)
+	{
+		NEXTION_set_componentstatus((NEXTION_Component*)INPUT_active_component->nextion_component, NEXTION_COMPONENTSTATUS_DEFAULT);
+		INPUT_active_component = nextcomponent;
+	}
 	switch(INPUT_keystatus[INPUT_KEY_ENTER])
 	{	
 		Callback callback;
@@ -115,10 +119,13 @@ void INPUT_update()
 			if(callback)
 				callback();
 			INPUT_keystatus[INPUT_KEY_ENTER] = INPUT_KEYSTATUS_RELEASED;
+			NEXTION_set_componentstatus((NEXTION_Component*)INPUT_active_component->nextion_component, NEXTION_COMPONENTSTATUS_SELECTED);
 		break;
+		case INPUT_KEYSTATUS_HOLD:
 			callback = INPUT_active_component->on_hold;
 			if(callback)
 				callback();
+			NEXTION_set_componentstatus((NEXTION_Component*)INPUT_active_component->nextion_component, NEXTION_COMPONENTSTATUS_SELECTED);
 		break;
 
 	}

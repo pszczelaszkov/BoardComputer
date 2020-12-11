@@ -177,11 +177,15 @@ void NEXTION_renderer_md_range()
 }
 
 //Selects component by sending its data to display
-void NEXTION_select_component(NEXTION_Component* component, NEXTION_Componentstatus_t status)
+void NEXTION_set_componentstatus(NEXTION_Component* component, NEXTION_Componentstatus_t status)
 {
 	if(!component)
 		return;
 
+	if(status == NEXTION_COMPONENTSTATUS_SELECTED)
+		selection_counter = NEXTION_SELECT_DECAY_TICKS;
+
+	selected_component = component;
 	uint8_t picid;
 	uint8_t offset = 3;
 	char buffer[12];
@@ -202,13 +206,12 @@ void NEXTION_select_component(NEXTION_Component* component, NEXTION_Componentsta
 		picid = component->picID_default;
 
 	itoa(picid,&buffer[offset],10);
-	NEXTION_send(buffer,USART_FLUSH);
+	NEXTION_send(buffer,USART_HOLD);
 }
 
 void NEXTION_switch_maindisplay()
 {
 	NEXTION_maindisplay_renderer = NEXTION_maindisplay_renderer->nextRenderer;
-	NEXTION_select_component((NEXTION_Component*)NEXTION_maindisplay_renderer, NEXTION_COMPONENTSTATUS_SELECTED);
 }
 
 int8_t NEXTION_switch_page(uint8_t page)
@@ -260,8 +263,19 @@ void NEXTION_update_watch()
 	NEXTION_send(buffer,USART_HOLD);
 }
 
+void NEXTION_update_select_decay()
+{
+	if(selection_counter)
+	{
+		selection_counter--;
+		if(!selection_counter)
+			NEXTION_set_componentstatus(selected_component, NEXTION_COMPONENTSTATUS_DEFAULT);
+	}
+}
+
 int8_t NEXTION_update()
-{			
+{	
+
 	uint8_t timer = SYSTEM_event_timer;	
 	switch(timer)
 	{

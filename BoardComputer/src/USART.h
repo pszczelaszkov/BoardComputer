@@ -12,7 +12,7 @@
 #define USART_FLUSH 1
 #define USART_BAUDRATE 12
 #define USART_RX_BUFFER_SIZE 32
-#define USART_TX_BUFFER_SIZE 64
+#define USART_TX_BUFFER_SIZE 128
 #define USART_EOT 0xff//End of transmission
 #define USART_EOT_COUNT 3//EOT must appear EOT_COUNT times in a row to be valid.
 

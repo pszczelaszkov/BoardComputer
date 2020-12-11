@@ -11,6 +11,7 @@
 #include "inttypes.h"
 #include "utils.h"
 
+#define NEXTION_SELECT_DECAY_TICKS 24
 #define NEXTION_OBJNAME_LEN 3
 enum NEXTION_MD
 {
@@ -65,6 +66,8 @@ extern char NEXTION_eot[];
 extern NEXTION_Component NEXTION_components[];
 extern NEXTION_MDComponent NEXTION_maindisplay_renderers[];
 extern NEXTION_MDComponent* NEXTION_maindisplay_renderer;
+static NEXTION_Component* selected_component;
+static uint8_t selection_counter;
 
 uint8_t NEXTION_send(char data[], uint8_t flush);
 int8_t NEXTION_update();
@@ -75,10 +78,11 @@ void NEXTION_renderer_md_lp100_avg();
 void NEXTION_renderer_md_speed_avg();
 void NEXTION_renderer_md_inj_t();
 void NEXTION_renderer_md_range();
-void NEXTION_select_component(NEXTION_Component* component, NEXTION_Componentstatus_t status);
+void NEXTION_set_componentstatus(NEXTION_Component* component, NEXTION_Componentstatus_t status);
 void NEXTION_switch_maindisplay();
 void NEXTION_update_EGT();
 void NEXTION_update_ADC();
 void NEXTION_update_watch();
+void NEXTION_update_select_decay();
 void NEXTION_initialize();
 #endif /* NEXTION_H_ */

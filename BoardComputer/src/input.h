@@ -11,7 +11,6 @@
 #include "timer.h"
 #include "NEXTION.h"
 
-#define INPUT_ACTIVITY_DECAY_TICKS 24
 typedef enum INPUT_COMPONENTID
 {
 	INPUT_COMPONENT_NONE = 0,
@@ -45,7 +44,6 @@ typedef struct INPUT_Component
 }INPUT_Component;
 
 static const uint8_t components_count;
-static uint8_t activity_counter;
 static uint8_t pending_componentID;
 extern uint8_t INPUT_active_page;
 extern INPUT_Keystatus_t INPUT_keystatus[];
