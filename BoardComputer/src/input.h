@@ -54,4 +54,5 @@ void INPUT_switch_maindisplay();
 void INPUT_userinput(INPUT_Keystatus_t keystatus, INPUT_Key_t key, INPUT_ComponentID_t componentID);
 INPUT_Component* INPUT_findcomponent(uint8_t componentID);
 void INPUT_update();
+static INPUT_Component* getnextcomponent();
 #endif

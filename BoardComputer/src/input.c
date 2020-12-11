@@ -82,7 +82,7 @@ INPUT_Component* INPUT_findcomponent(uint8_t componentID)
         return 0; 
 }
 
-INPUT_Component* INPUT_getnextcomponent()
+INPUT_Component* getnextcomponent()
 {
 	if(pending_componentID)
 	{
@@ -105,7 +105,7 @@ void INPUT_update()
 			INPUT_keystatus[i]++;
 	}
 
-	INPUT_Component* nextcomponent = INPUT_getnextcomponent();
+	INPUT_Component* nextcomponent = getnextcomponent();
 	if(nextcomponent)
 	{
 		NEXTION_set_componentstatus((NEXTION_Component*)INPUT_active_component->nextion_component, NEXTION_COMPONENTSTATUS_DEFAULT);
@@ -119,13 +119,13 @@ void INPUT_update()
 			if(callback)
 				callback();
 			INPUT_keystatus[INPUT_KEY_ENTER] = INPUT_KEYSTATUS_RELEASED;
-			NEXTION_set_componentstatus((NEXTION_Component*)INPUT_active_component->nextion_component, NEXTION_COMPONENTSTATUS_SELECTED);
+			NEXTION_set_componentstatus(INPUT_active_component->nextion_component, NEXTION_COMPONENTSTATUS_SELECTED);
 		break;
 		case INPUT_KEYSTATUS_HOLD:
 			callback = INPUT_active_component->on_hold;
 			if(callback)
 				callback();
-			NEXTION_set_componentstatus((NEXTION_Component*)INPUT_active_component->nextion_component, NEXTION_COMPONENTSTATUS_SELECTED);
+			NEXTION_set_componentstatus(INPUT_active_component->nextion_component, NEXTION_COMPONENTSTATUS_SELECTED);
 		break;
 
 	}

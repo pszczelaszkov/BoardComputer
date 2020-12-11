@@ -182,11 +182,24 @@ void NEXTION_set_componentstatus(NEXTION_Component* component, NEXTION_Component
 	if(!component)
 		return;
 
-	if(status == NEXTION_COMPONENTSTATUS_SELECTED)
-		selection_counter = NEXTION_SELECT_DECAY_TICKS;
-
-	selected_component = component;
 	uint8_t picid;
+	if(status == NEXTION_COMPONENTSTATUS_SELECTED)
+	{
+				
+		selection_counter = NEXTION_SELECT_DECAY_TICKS;
+		if(selected_component == component)
+			return;
+		picid = component->picID_selected;
+		selected_component = component;
+	}
+	else
+	{
+		if(!selection_counter)
+			return;
+		picid = component->picID_default;
+		selected_component = 0;
+	}
+
 	uint8_t offset = 3;
 	char buffer[12];
 	memcpy(buffer,component->name,3);
@@ -200,11 +213,11 @@ void NEXTION_set_componentstatus(NEXTION_Component* component, NEXTION_Component
 		offset = 9;
 		memcpy(&buffer[3],".picc=",6);
 	}
-	if(status == NEXTION_COMPONENTSTATUS_SELECTED)
+	/*if(status == NEXTION_COMPONENTSTATUS_SELECTED)
 		picid = component->picID_selected;
 	else
 		picid = component->picID_default;
-
+	*/
 	itoa(picid,&buffer[offset],10);
 	NEXTION_send(buffer,USART_HOLD);
 }
@@ -267,15 +280,17 @@ void NEXTION_update_select_decay()
 {
 	if(selection_counter)
 	{
-		selection_counter--;
-		if(!selection_counter)
+		if(selection_counter == 1)
 			NEXTION_set_componentstatus(selected_component, NEXTION_COMPONENTSTATUS_DEFAULT);
+		
+		selection_counter--;
 	}
 }
 
 int8_t NEXTION_update()
 {	
 
+	NEXTION_update_select_decay();
 	uint8_t timer = SYSTEM_event_timer;	
 	switch(timer)
 	{
