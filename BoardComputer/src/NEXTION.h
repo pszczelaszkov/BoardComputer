@@ -62,12 +62,12 @@ typedef struct NEXTION_MDComponent
 	struct NEXTION_MDComponent* nextRenderer;
 }NEXTION_MDComponent;
 
+extern uint8_t NEXTION_selection_counter;
 extern char NEXTION_eot[];
 extern NEXTION_Component NEXTION_components[];
 extern NEXTION_MDComponent NEXTION_maindisplay_renderers[];
 extern NEXTION_MDComponent* NEXTION_maindisplay_renderer;
-static NEXTION_Component* selected_component;
-static uint8_t selection_counter;
+
 
 uint8_t NEXTION_send(char data[], uint8_t flush);
 int8_t NEXTION_update();

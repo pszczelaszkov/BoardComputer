@@ -169,6 +169,7 @@ extern enum SENSORSFEED_EGT_TRANSMISSION_STATUS
 void SENSORSFEED_update_EGT();
 void NEXTION_update_EGT();
 void NEXTION_update_select_decay();
+extern uint8_t NEXTION_selection_counter;
 extern uint8_t SPDR0;
 extern uint16_t SENSORSFEED_max6675_data;
 

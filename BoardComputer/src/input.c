@@ -1,20 +1,23 @@
 #include "input.h"
-
+#include "bitwise.h"
 
 INPUT_Component INPUT_components[] = {
 	{
 		.componentID = INPUT_COMPONENT_MAINDISPLAY,
+		.nextcomponentID = INPUT_COMPONENT_WATCH,
 		.on_click = INPUT_switch_maindisplay,
 		.nextion_component = (NEXTION_Component*)NEXTION_MD_INITIAL_COMPONENT
 	},
 	{
 		.componentID = INPUT_COMPONENT_WATCH,
+		.nextcomponentID = INPUT_COMPONENT_WATCHSEL,
 		.on_click = TIMER_watch_toggle,
 		.on_hold = TIMER_watch_zero,
 		.nextion_component = &NEXTION_components[NEXTION_COMPONENT_WATCH]
 	},
 	{
 		.componentID = INPUT_COMPONENT_WATCHSEL,
+		.nextcomponentID = INPUT_COMPONENT_MAINDISPLAY,
 		.on_click = TIMER_next_watch,
 		.nextion_component = &NEXTION_components[NEXTION_COMPONENT_WATCHSEL]
 	}
@@ -51,7 +54,7 @@ void INPUT_userinput(INPUT_Keystatus_t keystatus, INPUT_Key_t key, INPUT_Compone
 	}
 	else
 	{
-		if(INPUT_keystatus[key] > INPUT_KEYSTATUS_RELEASED)
+		if(INPUT_keystatus[key] > INPUT_KEYSTATUS_RELEASED && INPUT_keystatus[key] < INPUT_KEYSTATUS_HOLD)
 			keystatus = INPUT_KEYSTATUS_CLICK;
 	}
 	INPUT_keystatus[key] = keystatus;
@@ -82,8 +85,66 @@ INPUT_Component* INPUT_findcomponent(uint8_t componentID)
         return 0; 
 }
 
-INPUT_Component* getnextcomponent()
+
+void INPUT_update()
 {
+	for(uint8_t i = 0; i < INPUT_KEY_LAST; i++)
+	{	
+		uint8_t status = INPUT_keystatus[i];
+		if(status > INPUT_KEYSTATUS_RELEASED && status < INPUT_KEYSTATUS_HOLD)
+		{
+			INPUT_keystatus[i]++;
+		}
+	}
+
+	if(INPUT_keystatus[INPUT_KEY_ENTER] || INPUT_keystatus[INPUT_KEY_DOWN] == INPUT_KEYSTATUS_CLICK)
+	{
+		INPUT_Component* nextcomponent = getnextcomponent();
+		if(nextcomponent)
+		{
+			//Try to deselect current component if active
+			NEXTION_set_componentstatus(INPUT_active_component->nextion_component, NEXTION_COMPONENTSTATUS_DEFAULT);
+			INPUT_active_component = nextcomponent;
+		}
+		NEXTION_set_componentstatus(INPUT_active_component->nextion_component, NEXTION_COMPONENTSTATUS_SELECTED);
+	}
+
+	switch(INPUT_keystatus[INPUT_KEY_ENTER])
+	{	
+		Callback callback;
+		case INPUT_KEYSTATUS_CLICK:
+			callback = INPUT_active_component->on_click;
+			if(callback)
+				callback();
+			INPUT_keystatus[INPUT_KEY_ENTER] = INPUT_KEYSTATUS_RELEASED;
+		break;
+		case INPUT_KEYSTATUS_HOLD:
+			callback = INPUT_active_component->on_hold;
+			if(callback)
+				callback();
+		break;
+	}
+}
+
+void INPUT_initialize()
+{	
+	#ifdef __AVR__
+	CLEAR(PORTD,BIT2|BIT3);
+	CLEAR(DDRD,BIT2|BIT3);
+	EICRA = (1 << ISC00) | (1 << ISC10);//Any logical change
+	EIMSK = 3;//Enable INT0&1
+	#endif
+}
+
+static INPUT_Component* getnextcomponent()
+{
+	if(INPUT_keystatus[INPUT_KEY_DOWN] == INPUT_KEYSTATUS_CLICK)
+	{
+		if(NEXTION_selection_counter)
+			pending_componentID = INPUT_active_component->nextcomponentID;
+
+		INPUT_keystatus[INPUT_KEY_DOWN] = INPUT_KEYSTATUS_RELEASED;
+	}
 	if(pending_componentID)
 	{
 		INPUT_Component* component = INPUT_findcomponent(pending_componentID);
@@ -96,37 +157,14 @@ INPUT_Component* getnextcomponent()
 	return 0;
 }
 
-void INPUT_update()
-{	
-	for(uint8_t i = 0; i < INPUT_KEY_LAST; i++)
-	{	
-		uint8_t status = INPUT_keystatus[i];
-		if(status > INPUT_KEYSTATUS_RELEASED && status < INPUT_KEYSTATUS_HOLD)
-			INPUT_keystatus[i]++;
-	}
+ISR(INT0_vect)
+{
+	uint8_t keystatus = !READ(PIND,BIT2);
+	INPUT_userinput((INPUT_Keystatus_t)keystatus,INPUT_KEY_ENTER,INPUT_COMPONENT_NONE);
+}
 
-	INPUT_Component* nextcomponent = getnextcomponent();
-	if(nextcomponent)
-	{
-		NEXTION_set_componentstatus((NEXTION_Component*)INPUT_active_component->nextion_component, NEXTION_COMPONENTSTATUS_DEFAULT);
-		INPUT_active_component = nextcomponent;
-	}
-	switch(INPUT_keystatus[INPUT_KEY_ENTER])
-	{	
-		Callback callback;
-		case INPUT_KEYSTATUS_CLICK:
-			callback = INPUT_active_component->on_click;
-			if(callback)
-				callback();
-			INPUT_keystatus[INPUT_KEY_ENTER] = INPUT_KEYSTATUS_RELEASED;
-			NEXTION_set_componentstatus(INPUT_active_component->nextion_component, NEXTION_COMPONENTSTATUS_SELECTED);
-		break;
-		case INPUT_KEYSTATUS_HOLD:
-			callback = INPUT_active_component->on_hold;
-			if(callback)
-				callback();
-			NEXTION_set_componentstatus(INPUT_active_component->nextion_component, NEXTION_COMPONENTSTATUS_SELECTED);
-		break;
-
-	}
+ISR(INT1_vect)
+{
+	uint8_t keystatus = !READ(PIND,BIT3);
+	INPUT_userinput((INPUT_Keystatus_t)keystatus,INPUT_KEY_DOWN,INPUT_COMPONENT_NONE);
 }

@@ -133,16 +133,18 @@ class testPreRun(unittest.TestCase):
 
         self.bc.INPUT_userinput(released, down, 1)
         self.assertEqual(keystatus[enter], pressed)
-
+        self.assertEqual(keystatus[down], released)
+ 
         for i in range(8):
             self.bc.INPUT_update()
         self.assertEqual(keystatus[enter], hold)
         self.assertEqual(keystatus[down], released)
 
         self.bc.INPUT_userinput(released, enter, 1)
-        self.assertEqual(keystatus[enter], click)
-        keystatus[enter] = released
-
+        self.assertEqual(keystatus[enter], released)
+        self.bc.NEXTION_selection_counter = 1
+        self.bc.NEXTION_update_select_decay()
+        self.bc.USART_flush()
 
 class placeholder:
     def test_scheduler(self):

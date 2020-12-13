@@ -12,6 +12,6 @@
 #define TOGGLE(var,mask) var ^= mask
 #define SET(var,mask) var |= mask
 #define CLEAR(var,mask) var &= ~mask
-#define READ(var,mask) var & mask
+#define READ(var,mask) (var & mask)
 
 #endif

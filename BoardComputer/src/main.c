@@ -60,6 +60,7 @@ ENTRY_ROUTINE
 	NEXTION_initialize();
 	SENSORSFEED_initialize();
 	TIMER_initialize();
+	INPUT_initialize();
 	#ifndef __AVR__
 		if(SYSTEM_run)
 	#endif

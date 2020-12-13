@@ -8,6 +8,6 @@
 - [ ] More flexible buffer on USART
 - [x] Timer/Stopwatch
 - [ ] Outside temp 0.5 C mark
-- [ ] Better handling of user input
+- [x] Better handling of user input
 - [ ] Exec component near MD?
   

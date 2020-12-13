@@ -225,12 +225,12 @@ class testRun(unittest.TestCase):
         self.assertEqual(self.bc.INPUT_active_component.componentID, maindisplay)
         self.bc.USART_flush()
         parse_nextion(self.bc, read_usart(self.bc), nextion_data)
-        self.assertEqual(nextion_data["pic"]["mds"], '24')
+        self.assertEqual(nextion_data["pic"]["mds"], '22')
         for i in range(self.bc.NEXTION_SELECT_DECAY_TICKS):
             self.bc.NEXTION_update_select_decay()
             self.bc.USART_flush()
         parse_nextion(self.bc, read_usart(self.bc), nextion_data)
-        self.assertEqual(nextion_data["pic"]["mds"], '13')
+        self.assertEqual(nextion_data["pic"]["mds"], '11')
         self.bc.NEXTION_maindisplay_renderer = snapshotmd
 
 

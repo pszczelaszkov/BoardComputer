@@ -10,6 +10,8 @@ static const char str_txt[NEXTION_OBJNAME_LEN] = "txt";
 static const char str_wtd[NEXTION_OBJNAME_LEN] = "wtd"; 
 static const char str_wts[NEXTION_OBJNAME_LEN] = "wts";
 static const char str_mds[NEXTION_OBJNAME_LEN] = "mds";
+static NEXTION_Component* selected_component;
+uint8_t NEXTION_selection_counter;
 
 //Keep in order with enum NEXTION_COMPONENT
 NEXTION_Component NEXTION_components[] = {
@@ -186,7 +188,7 @@ void NEXTION_set_componentstatus(NEXTION_Component* component, NEXTION_Component
 	if(status == NEXTION_COMPONENTSTATUS_SELECTED)
 	{
 				
-		selection_counter = NEXTION_SELECT_DECAY_TICKS;
+		NEXTION_selection_counter = NEXTION_SELECT_DECAY_TICKS;
 		if(selected_component == component)
 			return;
 		picid = component->picID_selected;
@@ -194,7 +196,7 @@ void NEXTION_set_componentstatus(NEXTION_Component* component, NEXTION_Component
 	}
 	else
 	{
-		if(!selection_counter)
+		if(!NEXTION_selection_counter)
 			return;
 		picid = component->picID_default;
 		selected_component = 0;
@@ -213,11 +215,6 @@ void NEXTION_set_componentstatus(NEXTION_Component* component, NEXTION_Component
 		offset = 9;
 		memcpy(&buffer[3],".picc=",6);
 	}
-	/*if(status == NEXTION_COMPONENTSTATUS_SELECTED)
-		picid = component->picID_selected;
-	else
-		picid = component->picID_default;
-	*/
 	itoa(picid,&buffer[offset],10);
 	NEXTION_send(buffer,USART_HOLD);
 }
@@ -278,12 +275,12 @@ void NEXTION_update_watch()
 
 void NEXTION_update_select_decay()
 {
-	if(selection_counter)
+	if(NEXTION_selection_counter)
 	{
-		if(selection_counter == 1)
+		if(NEXTION_selection_counter == 1)
 			NEXTION_set_componentstatus(selected_component, NEXTION_COMPONENTSTATUS_DEFAULT);
 		
-		selection_counter--;
+		NEXTION_selection_counter--;
 	}
 }
 

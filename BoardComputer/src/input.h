@@ -38,6 +38,7 @@ typedef enum INPUT_KEY
 typedef struct INPUT_Component
 {
 	INPUT_ComponentID_t componentID;
+	INPUT_ComponentID_t nextcomponentID;
 	Callback on_click;
 	Callback on_hold;
 	NEXTION_Component* nextion_component;
@@ -54,5 +55,8 @@ void INPUT_switch_maindisplay();
 void INPUT_userinput(INPUT_Keystatus_t keystatus, INPUT_Key_t key, INPUT_ComponentID_t componentID);
 INPUT_Component* INPUT_findcomponent(uint8_t componentID);
 void INPUT_update();
+void INPUT_initialize();
 static INPUT_Component* getnextcomponent();
+ISR(INT0_vect);
+ISR(INT1_vect);
 #endif
