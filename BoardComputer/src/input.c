@@ -11,7 +11,7 @@ INPUT_Component INPUT_components[] = {
 	{
 		.componentID = INPUT_COMPONENT_WATCH,
 		.nextcomponentID = INPUT_COMPONENT_WATCHSEL,
-		.on_click = TIMER_watch_toggle,
+		//.on_click = TIMER_watch_toggle,
 		.on_hold = TIMER_watch_zero,
 		.nextion_component = &NEXTION_components[NEXTION_COMPONENT_WATCH]
 	},
@@ -34,6 +34,7 @@ void INPUT_switch_maindisplay()
 {
 	NEXTION_switch_maindisplay();
 	INPUT_active_component->nextion_component = (NEXTION_Component*)NEXTION_maindisplay_renderer;
+	NEXTION_set_componentstatus(INPUT_active_component->nextion_component, NEXTION_COMPONENTSTATUS_SELECTED);
 };
 
 //Called from ISR, keep fit
@@ -46,9 +47,9 @@ void INPUT_userinput(INPUT_Keystatus_t keystatus, INPUT_Key_t key, INPUT_Compone
 
 	if(keystatus == INPUT_KEYSTATUS_PRESSED)
 	{
-		if(componentID == INPUT_COMPONENT_WATCH)
+		if(componentID == INPUT_COMPONENT_WATCH && key == INPUT_KEY_ENTER)
 		{	
-			if(TIMER_active_watch == &TIMER_watches[TIMERTYPE_STOPWATCH] && key == INPUT_KEY_ENTER)
+			if(TIMER_active_watch == &TIMER_watches[TIMERTYPE_STOPWATCH])
 				TIMER_watch_toggle(TIMER_active_watch);
 		}
 	}

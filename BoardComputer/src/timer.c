@@ -46,10 +46,10 @@ uint8_t TIMER_increment(TIMER_watch* watch)
     uint8_t format_flag = 0;
     
     watch->timer.miliseconds += TIMER_MILISECOND_WEIGHT;
-    format_flag = FORMATFLAG_MILISECONDS; 
-    if(watch->timer.miliseconds == 200)//FP 7+1
+    format_flag = FORMATFLAG_MILISECONDS;
+    if(watch->timer.miliseconds >= 200)//FP 7+1
     {
-        watch->timer.miliseconds = 0;
+        watch->timer.miliseconds -= 200;
         watch->timer.seconds++;
         format_flag = FORMATFLAG_SECONDS;  
         if(watch->timer.seconds == 60)
