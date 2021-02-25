@@ -7,4 +7,6 @@ If Github is still not supporting them, use browser [Extension](https://chrome.g
 Otherwise documentation wouldn't be that fancy.
 ### Content
 - [Building&Testing](build.md)
+- [Software Layout](software.md)
 - [Hardware Layout](hardware.md)
+
