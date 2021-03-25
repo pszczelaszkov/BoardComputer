@@ -1,3 +1,4 @@
+PYTHON_VER = 3.9
 test:
 	python3 mainwrapper.py
 	gcc -fpic -c src/USART.c -O1 -o bin/USART_.o
@@ -9,8 +10,8 @@ test:
 	gcc -fpic -c src/utils.c -O1 -o bin/utils_.o
 	gcc -fpic -c src/programdata.c -O1 -o bin/programdata_.o
 	gcc -fpic -c src/average.c -O1 -o bin/average_.o
-	gcc -fpic -c src/main_.c -I/usr/include/python3.8 -O1 -o bin/main_.o
-	gcc -shared bin/*_.o -lpython3.8 -o bin/main_.so
+	gcc -fpic -c src/main_.c -I/usr/include/python${PYTHON_VER} -O1 -o bin/main_.o
+	gcc -shared bin/*_.o -lpython${PYTHON_VER} -o bin/main_.so
 
 boardcomputer:
 	avr-gcc -c src/main.c -O1 -mmcu=atmega324pb -fshort-enums -o bin/main.o
