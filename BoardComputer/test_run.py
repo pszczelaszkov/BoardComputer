@@ -167,8 +167,8 @@ class testRun(unittest.TestCase):
             return time
 
         self.bc.TCNT2 = 14
-        self.bc.TIMER_watch_zero(self.bc.TIMER_active_watch)
-        self.bc.TIMER_watch_toggle(self.bc.TIMER_active_watch)
+        self.bc.TIMER_watch_zero()
+        self.bc.TIMER_watch_toggle()
         #  Day Cycle
         for i in range(3601*8):
             self.bc.TIMER_update()
@@ -183,7 +183,7 @@ class testRun(unittest.TestCase):
             self.bc.TIMER_update()
         # its not in counting state yet
         self.assertEqual(formated_time(self), b" 0:00:00:00")
-        self.bc.TIMER_watch_toggle(self.bc.TIMER_active_watch)
+        self.bc.TIMER_watch_toggle()
         # now is
         for i in range(5):
             self.bc.TIMER_update()
@@ -198,7 +198,7 @@ class testRun(unittest.TestCase):
         self.bc.TIMER_next_watch()
         self.assertEqual(formated_time(self), b" 0:00:01:25")
         #  nothing changed, zero stopwatch
-        self.bc.TIMER_watch_zero(self.bc.TIMER_active_watch)
+        self.bc.TIMER_watch_zero()
         self.assertEqual(formated_time(self), b" 0:00:00:00")
         #  stopwatch at zero, check if watch is not affected
         self.bc.TIMER_next_watch()

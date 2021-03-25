@@ -204,8 +204,8 @@ enum TIMER_TIMERTYPE
 
 uint8_t TIMER_counter_to_miliseconds();
 void TIMER_update();
-void TIMER_watch_zero(TIMER_watch* timer);
-void TIMER_watch_toggle(TIMER_watch* timer);
+void TIMER_watch_zero();
+void TIMER_watch_toggle();
 void TIMER_next_watch();
 
 extern TIMER_watch* TIMER_active_watch;

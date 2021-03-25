@@ -70,24 +70,23 @@ uint8_t TIMER_increment(TIMER_watch* watch)
     return format_flag; 
 }
 
-void TIMER_watch_toggle(TIMER_watch* watch)
+void TIMER_watch_toggle()
 {
-    if(watch->timer.watchstatus == TIMER_WATCHSTATUS_COUNTING)
+    if(TIMER_active_watch->timer.watchstatus == TIMER_WATCHSTATUS_COUNTING)
     {
-        watch->timer.watchstatus = TIMER_WATCHSTATUS_STOP;
+        TIMER_active_watch->timer.watchstatus = TIMER_WATCHSTATUS_STOP;
         //in fact thats the only moment when counter could be ahead of event timer.
-        watch->timer.miliseconds += TIMER_counter_to_miliseconds() << 1;
+        TIMER_active_watch->timer.miliseconds += TIMER_counter_to_miliseconds() << 1;
     }
     else
-        watch->timer.watchstatus = TIMER_WATCHSTATUS_COUNTING;
+        TIMER_active_watch->timer.watchstatus = TIMER_WATCHSTATUS_COUNTING;
 }
 
-void TIMER_watch_zero(TIMER_watch* watch)
+void TIMER_watch_zero()
 {
-    watch->timer.watchstatus = TIMER_WATCHSTATUS_ZERO;
-    memset(&watch->timer,0x0,sizeof(watch->timer));
-    if(TIMER_active_watch == watch)
-        TIMER_format(watch, FORMATFLAG_HOURS);
+    TIMER_active_watch->timer.watchstatus = TIMER_WATCHSTATUS_ZERO;
+    memset(&TIMER_active_watch->timer,0x0,sizeof(TIMER_active_watch->timer));
+    TIMER_format(TIMER_active_watch, FORMATFLAG_HOURS);
 }
 
 void TIMER_next_watch()

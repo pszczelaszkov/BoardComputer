@@ -102,7 +102,7 @@ class testPreRun(unittest.TestCase):
         watch = cffi.FFI().addressof(watch)
         self.assertEqual(watch.timer.watchstatus,
                          self.bc.TIMER_WATCHSTATUS_COUNTING)
-        self.bc.TIMER_watch_toggle(watch)
+        self.bc.TIMER_watch_toggle()
         self.assertEqual(watch.timer.watchstatus,
                          self.bc.TIMER_WATCHSTATUS_STOP)
         stopwatch = self.bc.TIMER_watches[self.bc.TIMERTYPE_STOPWATCH]
@@ -111,11 +111,13 @@ class testPreRun(unittest.TestCase):
         stopwatch.timer.seconds = 2
         stopwatch.timer.minutes = 1
         stopwatch.timer.hours = 40
-        self.bc.TIMER_watch_zero(stopwatch)
+        self.bc.TIMER_next_watch()
+        self.bc.TIMER_watch_zero()
         self.assertEqual(stopwatch.timer.hours, 0)
         self.assertEqual(stopwatch.timer.miliseconds, 0)
         self.assertTrue(stopwatch.next_watch)
         self.assertTrue(self.bc.TIMER_active_watch)
+        self.bc.TIMER_active_watch = watch
 
     def test_input(self):
         keystatus = self.bc.INPUT_keystatus

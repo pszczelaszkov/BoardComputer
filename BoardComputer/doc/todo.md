@@ -11,5 +11,5 @@
 - [x] Better handling of user input
 - [ ] Exec component near MD?
 - [x] Correct Maindisplay switching/ Timer behaviour
-- [ ] Stopwatch zeroing
+- [x] Stopwatch zeroing
   
