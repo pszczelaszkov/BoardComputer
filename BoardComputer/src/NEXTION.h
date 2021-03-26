@@ -53,10 +53,7 @@ typedef struct NEXTION_Component
 }NEXTION_Component;
 typedef struct NEXTION_MDComponent
 {
-	uint8_t picID_default;
-	uint8_t picID_selected;
-	const char* name;
-	NEXTION_Componenttype_t type;
+	NEXTION_Component parent;
 
 	Callback render;
 	struct NEXTION_MDComponent* nextRenderer;

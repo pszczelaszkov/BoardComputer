@@ -31,50 +31,62 @@ NEXTION_Component NEXTION_components[] = {
 NEXTION_MDComponent* NEXTION_maindisplay_renderer = NEXTION_MD_INITIAL_COMPONENT;
 NEXTION_MDComponent NEXTION_maindisplay_renderers[] = {
 	{
-		.picID_default = 11,
-		.picID_selected = 22,
-		.name = str_mds,
-		.type = NEXTION_COMPONENTTYPE_PIC,
+		.parent = {
+			.picID_default = 11,
+			.picID_selected = 22,
+			.name = str_mds,
+			.type = NEXTION_COMPONENTTYPE_PIC
+		},
 		.render = NEXTION_renderer_md_lph,
 		.nextRenderer = &NEXTION_maindisplay_renderers[NEXTION_MD_LP100_AVG]
 	},
 	{
-		.picID_default = 12,
-		.picID_selected = 23,
-		.name = str_mds,
-		.type = NEXTION_COMPONENTTYPE_PIC,
+		.parent = {
+			.picID_default = 12,
+			.picID_selected = 23,
+			.name = str_mds,
+			.type = NEXTION_COMPONENTTYPE_PIC
+		},
 		.render = NEXTION_renderer_md_lp100,
 		.nextRenderer = &NEXTION_maindisplay_renderers[NEXTION_MD_LP100_AVG]
 	},
 	{
-		.picID_default = 13,
-		.picID_selected = 24,
-		.name = str_mds,
-		.type = NEXTION_COMPONENTTYPE_PIC,
+		.parent = {
+			.picID_default = 13,
+			.picID_selected = 24,
+			.name = str_mds,
+			.type = NEXTION_COMPONENTTYPE_PIC
+		},
 		.render = NEXTION_renderer_md_lp100_avg,
 		.nextRenderer = &NEXTION_maindisplay_renderers[NEXTION_MD_SPEED_AVG]
 	},
 	{
-		.picID_default = 14,
-		.picID_selected = 19,
-		.name = str_mds,
-		.type = NEXTION_COMPONENTTYPE_PIC,
+		.parent = {
+			.picID_default = 14,
+			.picID_selected = 19,
+			.name = str_mds,
+			.type = NEXTION_COMPONENTTYPE_PIC
+		},
 		.render = NEXTION_renderer_md_speed_avg,
 		.nextRenderer = &NEXTION_maindisplay_renderers[NEXTION_MD_INJ_T]
 	},
 	{
-		.picID_default = 15,
-		.picID_selected = 20,
-		.name = str_mds,
-		.type = NEXTION_COMPONENTTYPE_PIC,
+		.parent = {
+			.picID_default = 15,
+			.picID_selected = 20,
+			.name = str_mds,
+			.type = NEXTION_COMPONENTTYPE_PIC
+		},
 		.render = NEXTION_renderer_md_inj_t,
 		.nextRenderer = &NEXTION_maindisplay_renderers[NEXTION_MD_RANGE]
 	},
 	{
-		.picID_default = 16,
-		.picID_selected = 21,
-		.name = str_mds,
-		.type = NEXTION_COMPONENTTYPE_PIC,
+		.parent = {
+			.picID_default = 16,
+			.picID_selected = 21,
+			.name = str_mds,
+			.type = NEXTION_COMPONENTTYPE_PIC
+		},
 		.render = NEXTION_renderer_md_range,
 		.nextRenderer = &NEXTION_maindisplay_renderers[NEXTION_MD_LPH]
 	}

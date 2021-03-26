@@ -87,11 +87,11 @@ class testInit(unittest.TestCase):
         ]
         zipped = zip(self.ffi.unpack(self.bc.NEXTION_maindisplay_renderers, 6), model)
         for t, m in zipped:
-            self.assertEqual(t.picID_default, m[0])
-            self.assertEqual(t.picID_selected, m[1])
-            name = self.ffi.unpack(t.name, self.bc.NEXTION_OBJNAME_LEN)
+            self.assertEqual(t.parent.picID_default, m[0])
+            self.assertEqual(t.parent.picID_selected, m[1])
+            name = self.ffi.unpack(t.parent.name, self.bc.NEXTION_OBJNAME_LEN)
             self.assertEqual(name, b"mds")
-            self.assertEqual(t.type, pic)
+            self.assertEqual(t.parent.type, pic)
 
     def test_input_components_cohesion(self):
         model = [

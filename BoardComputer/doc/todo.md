@@ -12,4 +12,5 @@
 - [ ] Exec component near MD?
 - [x] Correct Maindisplay switching/ Timer behaviour
 - [x] Stopwatch zeroing
+- [ ] Numpad
   
