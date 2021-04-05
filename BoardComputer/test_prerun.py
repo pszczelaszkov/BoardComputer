@@ -24,16 +24,8 @@ class testPreRun(unittest.TestCase):
         # After init, status should be ready
         self.assertEqual(self.bc.ADCMULTIPLEXER, 0)
 
-    def test_nextion(self):
-        # EOT must be null-terminated triple 0xff
-        eot = self.ffi.unpack(self.bc.NEXTION_eot, 4)
-        for byte in eot[0:3]:
-            self.assertEqual(byte, 0xff)
-        self.assertEqual(eot[3], 0)
-        self.assertEqual(self.bc.NEXTION_maindisplay_renderer,
-                         self.bc.NEXTION_maindisplay_renderers[0])
-
     def test_USART(self):
+        self.bc.USART_TX_clear()
         write_usart(self.bc, 0x01, b"PING")
         response = read_usart(self.bc)
         self.assertEqual(response[:4], b"PONG")
@@ -64,7 +56,6 @@ class testPreRun(unittest.TestCase):
         self.bc.COUNTERSFEED_pushfeed(self.bc.COUNTERSFEED_FEEDID_FUELPS)
         self.assertEqual(self.bc.COUNTERSFEED_feed[fuelindex][0], 15535)
         self.assertEqual(self.bc.COUNTERSFEED_feed[injtindex][0], 15535)
-
 
     def test_average(self):
         for i in range(2):

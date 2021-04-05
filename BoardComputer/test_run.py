@@ -29,13 +29,14 @@ class testRun(unittest.TestCase):
         #cls.bcThread.start()
 
     def test_analog(self):
-        parse_nextion(self.bc, read_usart(self.bc), nextion_data)
+        self.bc.USART_TX_clear()
+        #parse_nextion(self.bc, read_usart(self.bc), nextion_data)
         # ADC range -1, last is TANK input, its handled by maindisplay
         for i in range(self.bc.SENSORSFEED_ADC_CHANNELS):
             ADC_channel = self.bc.ADMUX & 0x0f
             self.bc.ADC = ADC[ADC_channel]
             self.bc.ADC_vect()
-
+        #Problem z przekazaniem updatu na boardid?
         exec_cycle(self.bc)
         parse_nextion(self.bc, read_usart(self.bc), nextion_data)
         for i in range(self.bc.SENSORSFEED_ADC_CHANNELS):
@@ -43,9 +44,9 @@ class testRun(unittest.TestCase):
                 self.assertEqual(int(nextion_data["val"]["a"+str(i)]),
                                  self.bc.PROGRAMDATA_NTC_2200_INVERTED[ADC[i]])
 
-    def test_nextion_maindisplay(self):
+    def test_uiboard_maindisplay(self):
+        self.bc.USART_TX_clear()
         # Cuz of chain of events, test needs to dive into countersfeed
-        maindisplay_id = self.bc.INPUT_COMPONENT_MAINDISPLAY
         TANK_ID = self.bc.SENSORSFEED_FEEDID_TANK
         SPEED_ID = self.bc.COUNTERSFEED_FEEDID_SPEED
         FUEL_ID = self.bc.COUNTERSFEED_FEEDID_FUELPS
@@ -54,6 +55,11 @@ class testRun(unittest.TestCase):
         INJT_ID = self.bc.COUNTERSFEED_FEEDID_INJT
         ticks_100m = 540
         speed_modifier = ticks_100m/360
+
+        def execute_activecomponent():
+            active_component = self.bc.UIBOARD_maindisplay_activecomponent
+            active_component.executable_component.execute()
+
         # Fuelps is raw tickcount per injection, however speed is in kph.
         packets = [
             {"fuelps": 2700, "ccm": 700, "speed": 0, "assert": " 0.9"},
@@ -79,7 +85,7 @@ class testRun(unittest.TestCase):
             self.bc.COUNTERSFEED_feed[SPEED_ID][0] = int(raw_speed)
             self.bc.SENSORSFEED_update_fuel()
             self.bc.SENSORSFEED_update_speed()
-            self.bc.NEXTION_maindisplay_renderer.render()
+            execute_activecomponent()
             self.bc.USART_flush()
             self.bc.AVERAGE_clear(self.bc.AVERAGE_BUFFER_LP100)
             self.bc.AVERAGE_clear(self.bc.AVERAGE_BUFFER_SPEED)
@@ -90,45 +96,46 @@ class testRun(unittest.TestCase):
         # Fast checkup of averages, only format is tested
         # Average itself is tested in prerun
         # LP100_AVG
-        self.bc.NEXTION_switch_maindisplay()
+        self.bc.UIBOARD_switch_maindisplay()
         read_usart(self.bc)
         self.bc.SENSORSFEED_feed[LP100_AVG_ID] = 12 << 8
-        self.bc.NEXTION_maindisplay_renderer.render()
+        execute_activecomponent()
         self.bc.USART_flush()
         parse_nextion(self.bc, read_usart(self.bc),
                       nextion_data)
         self.assertEqual(nextion_data['txt']['mdv'], "12.0")
         # SPEED_AVG
-        self.bc.NEXTION_switch_maindisplay()
+        self.bc.UIBOARD_switch_maindisplay()
         read_usart(self.bc)
         self.bc.SENSORSFEED_feed[SPEED_AVG_ID] = (90 << 8)
-        self.bc.NEXTION_maindisplay_renderer.render()
+        execute_activecomponent()
         self.bc.USART_flush()
         parse_nextion(self.bc, read_usart(self.bc),
                       nextion_data)
         self.assertEqual(nextion_data['txt']['mdv'], " 90")
         self.bc.SENSORSFEED_feed[SPEED_AVG_ID] = 0
         # INJ_T
-        self.bc.NEXTION_switch_maindisplay()
+        self.bc.UIBOARD_switch_maindisplay()
         read_usart(self.bc)
         self.bc.COUNTERSFEED_feed[INJT_ID][0] = 150
-        self.bc.NEXTION_maindisplay_renderer.render()
+        self.bc.UIBOARD_maindisplay_activecomponent.executable_component.execute()
         self.bc.USART_flush()
         parse_nextion(self.bc, read_usart(self.bc),
                       nextion_data)
         self.assertEqual(nextion_data['txt']['mdv'], " 1.1")
         # RANGE
-        self.bc.NEXTION_switch_maindisplay()
+        self.bc.UIBOARD_switch_maindisplay()
         read_usart(self.bc)
         self.bc.SENSORSFEED_feed[TANK_ID] = 70
         self.bc.SENSORSFEED_feed[LP100_AVG_ID] = 12 << 8
-        self.bc.NEXTION_maindisplay_renderer.render()
+        execute_activecomponent()
         self.bc.USART_flush()
         parse_nextion(self.bc, read_usart(self.bc),
                       nextion_data)
         self.assertEqual(nextion_data['txt']['mdv'], " 583")
 
     def test_EGT(self):
+        self.bc.USART_TX_clear()
         packets = [
             {"test": 0xffff, "result": self.bc.SENSORSFEED_EGT_STATUS_UNKN,
              "display": "----"},
@@ -149,7 +156,7 @@ class testRun(unittest.TestCase):
             self.bc.SENSORSFEED_update_EGT()
             self.assertEqual(self.bc.SENSORSFEED_EGT_status,
                              test_packet["result"])
-            self.bc.NEXTION_update_EGT()
+            self.bc.UIBOARD_update_EGT()
             self.bc.USART_flush()
             parse_nextion(self.bc, read_usart(self.bc), nextion_data)
             self.assertEqual(nextion_data["txt"]["egt"],
@@ -206,6 +213,7 @@ class testRun(unittest.TestCase):
         self.assertEqual(formated_time(self)[:-3], b" 0:00:01")
 
     def test_input(self):
+        self.bc.USART_TX_clear()
         keystatus = self.bc.INPUT_keystatus
         enter = self.bc.INPUT_KEY_ENTER
         down = self.bc.INPUT_KEY_DOWN
@@ -214,7 +222,7 @@ class testRun(unittest.TestCase):
         hold = self.bc.INPUT_KEYSTATUS_HOLD
         click = self.bc.INPUT_KEYSTATUS_CLICK
         maindisplay = self.bc.INPUT_COMPONENT_MAINDISPLAY
-        snapshotmd = self.bc.NEXTION_maindisplay_renderer
+        snapshotmd = self.bc.UIBOARD_maindisplay_activecomponent
 
         self.assertEqual(keystatus[enter], released)
         self.bc.INPUT_userinput(pressed, enter, maindisplay)
@@ -231,7 +239,7 @@ class testRun(unittest.TestCase):
             self.bc.USART_flush()
         parse_nextion(self.bc, read_usart(self.bc), nextion_data)
         self.assertEqual(nextion_data["pic"]["mds"], '13')
-        self.bc.NEXTION_maindisplay_renderer = snapshotmd
+        self.bc.UIBOARD_maindisplay_activecomponent = snapshotmd
 
 
 if __name__ == "main":

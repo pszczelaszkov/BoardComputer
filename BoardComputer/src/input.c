@@ -1,25 +1,26 @@
 #include "input.h"
+#include "UI/board.h"
 #include "bitwise.h"
 
+//Map all possible input components
 INPUT_Component INPUT_components[] = {
 	{
 		.componentID = INPUT_COMPONENT_MAINDISPLAY,
 		.nextcomponentID = INPUT_COMPONENT_WATCH,
 		.on_click = INPUT_switch_maindisplay,
-		.nextion_component = (NEXTION_Component*)NEXTION_MD_INITIAL_COMPONENT
+		.nextion_component = (NEXTION_Component*)UIBOARD_MD_INITIAL_COMPONENT
 	},
 	{
 		.componentID = INPUT_COMPONENT_WATCH,
 		.nextcomponentID = INPUT_COMPONENT_WATCHSEL,
-		//.on_click = TIMER_watch_toggle,
 		.on_hold = TIMER_watch_zero,
-		.nextion_component = &NEXTION_components[NEXTION_COMPONENT_WATCH]
+		.nextion_component = &UIBOARD_components[UIBOARD_COMPONENT_WATCH]
 	},
 	{
 		.componentID = INPUT_COMPONENT_WATCHSEL,
 		.nextcomponentID = INPUT_COMPONENT_MAINDISPLAY,
 		.on_click = TIMER_next_watch,
-		.nextion_component = &NEXTION_components[NEXTION_COMPONENT_WATCHSEL]
+		.nextion_component = &UIBOARD_components[UIBOARD_COMPONENT_WATCHSEL]
 	}
 };
 
@@ -32,8 +33,8 @@ uint8_t INPUT_active_page;
 
 void INPUT_switch_maindisplay()
 {
-	NEXTION_switch_maindisplay();
-	INPUT_active_component->nextion_component = (NEXTION_Component*)NEXTION_maindisplay_renderer;
+	UIBOARD_switch_maindisplay();
+	INPUT_active_component->nextion_component = (NEXTION_Component*)UIBOARD_maindisplay_activecomponent;
 	NEXTION_set_componentstatus(INPUT_active_component->nextion_component, NEXTION_COMPONENTSTATUS_SELECTED);
 };
 
@@ -137,7 +138,7 @@ void INPUT_initialize()
 	#endif
 }
 
-static INPUT_Component* getnextcomponent()
+INPUT_Component* getnextcomponent()
 {
 	if(INPUT_keystatus[INPUT_KEY_DOWN] == INPUT_KEYSTATUS_CLICK)
 	{

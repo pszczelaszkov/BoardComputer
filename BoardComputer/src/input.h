@@ -9,8 +9,7 @@
 #define __INPUT__
 
 #include "timer.h"
-#include "NEXTION.h"
-
+#include "nextion.h"
 typedef enum INPUT_COMPONENTID
 {
 	INPUT_COMPONENT_NONE = 0,
@@ -56,7 +55,7 @@ void INPUT_userinput(INPUT_Keystatus_t keystatus, INPUT_Key_t key, INPUT_Compone
 INPUT_Component* INPUT_findcomponent(uint8_t componentID);
 void INPUT_update();
 void INPUT_initialize();
-static INPUT_Component* getnextcomponent();
+INPUT_Component* getnextcomponent();
 ISR(INT0_vect);
 ISR(INT1_vect);
 #endif

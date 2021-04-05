@@ -1,97 +1,26 @@
-#include "NEXTION.h"
+#include "nextion.h"
 #include "USART.h"
 #include "sensorsfeed.h"
 #include "ProgramData.h"
 #include "timer.h"
+#include "UI/board.h"
 
-extern volatile uint8_t SYSTEM_event_timer;
+enum PAGE
+{
+	PAGE_init = 1,
+	PAGE_BOARD = 0
+};
 
-static const char str_txt[NEXTION_OBJNAME_LEN] = "txt"; 
-static const char str_wtd[NEXTION_OBJNAME_LEN] = "wtd"; 
-static const char str_wts[NEXTION_OBJNAME_LEN] = "wts";
-static const char str_mds[NEXTION_OBJNAME_LEN] = "mds";
 static NEXTION_Component* selected_component;
+static uint8_t active_page;
 uint8_t NEXTION_selection_counter;
 
-//Keep in order with enum NEXTION_COMPONENT
-NEXTION_Component NEXTION_components[] = {
-	{//watch
-		.type = NEXTION_COMPONENTTYPE_TEXT,
-		.picID_default = 1,
-		.picID_selected = 25,
-		.name = str_wtd
-	},
-	{//watchselect
-		.type = NEXTION_COMPONENTTYPE_PIC,
-		.picID_default = 2,
-		.picID_selected = 17,
-		.name = str_wts
-	}
+char NEXTION_eot[] = {0xff,0xff,0xff,0x00};
+
+static Callback pages_callbacks[]=
+{
+	[PAGE_BOARD] = UIBOARD_update
 };
-NEXTION_MDComponent* NEXTION_maindisplay_renderer = NEXTION_MD_INITIAL_COMPONENT;
-NEXTION_MDComponent NEXTION_maindisplay_renderers[] = {
-	{
-		.parent = {
-			.picID_default = 11,
-			.picID_selected = 22,
-			.name = str_mds,
-			.type = NEXTION_COMPONENTTYPE_PIC
-		},
-		.render = NEXTION_renderer_md_lph,
-		.nextRenderer = &NEXTION_maindisplay_renderers[NEXTION_MD_LP100_AVG]
-	},
-	{
-		.parent = {
-			.picID_default = 12,
-			.picID_selected = 23,
-			.name = str_mds,
-			.type = NEXTION_COMPONENTTYPE_PIC
-		},
-		.render = NEXTION_renderer_md_lp100,
-		.nextRenderer = &NEXTION_maindisplay_renderers[NEXTION_MD_LP100_AVG]
-	},
-	{
-		.parent = {
-			.picID_default = 13,
-			.picID_selected = 24,
-			.name = str_mds,
-			.type = NEXTION_COMPONENTTYPE_PIC
-		},
-		.render = NEXTION_renderer_md_lp100_avg,
-		.nextRenderer = &NEXTION_maindisplay_renderers[NEXTION_MD_SPEED_AVG]
-	},
-	{
-		.parent = {
-			.picID_default = 14,
-			.picID_selected = 19,
-			.name = str_mds,
-			.type = NEXTION_COMPONENTTYPE_PIC
-		},
-		.render = NEXTION_renderer_md_speed_avg,
-		.nextRenderer = &NEXTION_maindisplay_renderers[NEXTION_MD_INJ_T]
-	},
-	{
-		.parent = {
-			.picID_default = 15,
-			.picID_selected = 20,
-			.name = str_mds,
-			.type = NEXTION_COMPONENTTYPE_PIC
-		},
-		.render = NEXTION_renderer_md_inj_t,
-		.nextRenderer = &NEXTION_maindisplay_renderers[NEXTION_MD_RANGE]
-	},
-	{
-		.parent = {
-			.picID_default = 16,
-			.picID_selected = 21,
-			.name = str_mds,
-			.type = NEXTION_COMPONENTTYPE_PIC
-		},
-		.render = NEXTION_renderer_md_range,
-		.nextRenderer = &NEXTION_maindisplay_renderers[NEXTION_MD_LPH]
-	}
-};
-char NEXTION_eot[4];
 
 uint8_t NEXTION_send(char data[], uint8_t flush)
 {
@@ -99,95 +28,6 @@ uint8_t NEXTION_send(char data[], uint8_t flush)
 		return USART_send(NEXTION_eot,USART_FLUSH & flush);
 		
 	return 0;
-}
-
-void NEXTION_renderer_md_lph()
-{
-	char buffer[] = "mdv.txt=\"  .0\"";
-	if(SENSORSFEED_feed[SENSORSFEED_FEEDID_SPEED])
-		NEXTION_maindisplay_renderer = &NEXTION_maindisplay_renderers[NEXTION_MD_LP100];
-		
-	uint8_t liters = SENSORSFEED_feed[SENSORSFEED_FEEDID_LPH] >> 8;
-	uint16_t fraction = (SENSORSFEED_feed[SENSORSFEED_FEEDID_LPH] & 0x00ff)*FP8_weight;
-	if(liters > 99)
-	{
-		liters = 99;
-		fraction = 9999;
-	}
-	rightconcat_short(&buffer[9],liters,2);
-	if(fraction > 999)
-		rightnconcat_short(&buffer[9], fraction, 4, 1);
-	NEXTION_send(buffer, USART_HOLD);
-}
-
-void NEXTION_renderer_md_lp100()
-{	
-	char buffer[] = "mdv.txt=\"  .0\"";
-	uint16_t fraction, lp100;
-	uint8_t liters;
-	if(!SENSORSFEED_feed[SENSORSFEED_FEEDID_SPEED])
-	{
-		NEXTION_maindisplay_renderer = &NEXTION_maindisplay_renderers[NEXTION_MD_LPH];
-		return;
-	}
-
-	lp100 = SENSORSFEED_feed[SENSORSFEED_FEEDID_LP100];
-	liters = lp100 >> 8;
-	fraction = (lp100 & 0x00ff) * FP8_weight;
-	rightconcat_short(&buffer[9], liters, 2);
-	if(fraction > 999)
-		rightnconcat_short(&buffer[9], fraction, 4, 1);
-	NEXTION_send(buffer, USART_HOLD);
-}
-
-void NEXTION_renderer_md_lp100_avg()
-{
-	char buffer[] = "mdv.txt=\"  .0\"";
-	uint16_t lp100 = SENSORSFEED_feed[SENSORSFEED_FEEDID_LP100_AVG];
-	uint8_t liters = lp100 >> 8;
-	uint16_t fraction = (lp100 & 0x00ff) * FP8_weight;
-	rightconcat_short(&buffer[9], liters ,2);
-	if(fraction > 999)
-		rightnconcat_short(&buffer[9], fraction, 4, 1);
-	NEXTION_send(buffer, USART_HOLD);
-}
-
-void NEXTION_renderer_md_speed_avg()
-{
-	char buffer[] = "mdv.txt=\"  0\"";
-	uint16_t speed = SENSORSFEED_feed[SENSORSFEED_FEEDID_SPEED_AVG] >> 8;
-	rightconcat_short(&buffer[9], speed, 3);
-	NEXTION_send(buffer, USART_HOLD);
-}
-
-void NEXTION_renderer_md_inj_t()
-{
-	char buffer[] = "mdv.txt=\"  .0\"";
-	uint8_t integral;
-	uint16_t fraction;
-	uint16_t fuel_time = COUNTERSFEED_feed[COUNTERSFEED_FEEDID_INJT][FRONTBUFFER];
-	fuel_time = fuel_time*SENSORSFEED_injtmodifier;
-	integral = fuel_time >> 8;
-	fraction = (fuel_time & 0xff) * FP8_weight;
-
-	rightconcat_short(&buffer[9], integral, 2);
-	if(fraction > 999)
-		rightnconcat_short(&buffer[9], fraction, 4, 1);
-	NEXTION_send(buffer, USART_HOLD);
-}
-
-void NEXTION_renderer_md_range()
-{
-	char buffer[] = "mdv.txt=\"   0\"";
-	uint8_t tank = SENSORSFEED_feed[SENSORSFEED_FEEDID_TANK];
-	uint8_t lp100 = SENSORSFEED_feed[SENSORSFEED_FEEDID_LP100_AVG] >> 8;
-	uint16_t range = 0;
-
-	if(lp100)
-		range = tank*100/lp100;
-
-	rightconcat_short(&buffer[9], range, 4);
-	NEXTION_send(buffer, USART_HOLD);
 }
 
 //Selects component by sending its data to display
@@ -229,11 +69,6 @@ void NEXTION_set_componentstatus(NEXTION_Component* component, NEXTION_Component
 	}
 	itoa(picid,&buffer[offset],10);
 	NEXTION_send(buffer,USART_HOLD);
-}
-
-void NEXTION_switch_maindisplay()
-{
-	NEXTION_maindisplay_renderer = NEXTION_maindisplay_renderer->nextRenderer;
 }
 
 int8_t NEXTION_switch_page(uint8_t page)
@@ -298,69 +133,9 @@ void NEXTION_update_select_decay()
 
 int8_t NEXTION_update()
 {	
-
 	NEXTION_update_select_decay();
-	uint8_t timer = SYSTEM_event_timer;	
-	switch(timer)
-	{
-		case 0:
-			NEXTION_update_ADC();
-			NEXTION_update_EGT();
-		break;
-		case 2:
-		case 5:
-			NEXTION_maindisplay_renderer->render();
-		break;
-	}
-	NEXTION_update_watch();
-	USART_flush();
-	
+	Callback page_callback = pages_callbacks[active_page];
+	if(page_callback)
+		page_callback();
 	return 0;
-}
-
-void NEXTION_initialize()
-{
-	initializeUSART();
-	NEXTION_eot[0] = 0xFF;
-	NEXTION_eot[1] = 0xFF;
-	NEXTION_eot[2] = 0xFF;
-	NEXTION_eot[3] = 0x00;
-	
-	/*for(uint8_t i = 0;i < NEXTION_MD_LAST;i++)
-	{
-		NEXTION_MDComponent* md_renderer = &NEXTION_maindisplay_renderers[i];
-		switch(i)
-		{	
-			case NEXTION_MD_LPH:
-				md_renderer->picID_default = 11;
-				md_renderer->nextRenderer = &NEXTION_maindisplay_renderers[NEXTION_MD_LP100_AVG];
-				md_renderer->render = NEXTION_renderer_md_lph;
-			break;
-			case NEXTION_MD_LP100:
-				md_renderer->picID_default = 12;
-				md_renderer->nextRenderer = &NEXTION_maindisplay_renderers[NEXTION_MD_LP100_AVG];
-				md_renderer->render = NEXTION_renderer_md_lp100;
-			break;
-			case NEXTION_MD_LP100_AVG:
-				md_renderer->picID_default = 13;
-				md_renderer->nextRenderer = &NEXTION_maindisplay_renderers[NEXTION_MD_SPEED_AVG];
-				md_renderer->render = NEXTION_renderer_md_lp100_avg;
-			break;
-			case NEXTION_MD_SPEED_AVG:
-				md_renderer->picID_default = 14;
-				md_renderer->nextRenderer = &NEXTION_maindisplay_renderers[NEXTION_MD_INJ_T];
-				md_renderer->render = NEXTION_renderer_md_speed_avg;
-			break;
-			case NEXTION_MD_INJ_T:
-				md_renderer->picID_default = 15;
-				md_renderer->nextRenderer = &NEXTION_maindisplay_renderers[NEXTION_MD_RANGE];
-				md_renderer->render = &NEXTION_renderer_md_inj_t;
-			break;
-			case NEXTION_MD_RANGE:
-				md_renderer->picID_default = 16;
-				md_renderer->nextRenderer = &NEXTION_maindisplay_renderers[NEXTION_MD_LPH];
-				md_renderer->render = &NEXTION_renderer_md_range;
-			break;
-		};
-	}*/
 }

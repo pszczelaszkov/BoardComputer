@@ -47,27 +47,34 @@ class testInit(unittest.TestCase):
         self.assertTrue(self.bc.INPUT_KEYSTATUS_CLICK >
                         self.bc.INPUT_KEYSTATUS_HOLD)
 
-    def test_nextion_switch_maindisplay(self):
-        # Must have default renderer and be circular
-        initial = self.bc.NEXTION_maindisplay_renderer
-        desired = self.bc.NEXTION_maindisplay_renderers[0]
+    def test_nextion(self):
+        # EOT must be null-terminated triple 0xff
+        eot = self.ffi.unpack(self.bc.NEXTION_eot, 4)
+        for byte in eot[0:3]:
+            self.assertEqual(byte, 0xff)
+        self.assertEqual(eot[3], 0)
+
+    def test_uiboard_switch_maindisplay(self):
+        # Must have default component and be circular
+        initial = self.bc.UIBOARD_maindisplay_activecomponent
+        desired = self.bc.UIBOARD_maindisplay_components[0]
         self.assertEqual(initial, desired)
-        temp = initial.nextRenderer
-        for i in range(self.bc.NEXTION_MD_LAST):
+        temp = initial.nextComponent
+        for i in range(self.bc.UIBOARD_MD_LAST):
             if temp == initial:
                 break
-            temp = temp.nextRenderer
+            temp = temp.nextComponent
 
         self.assertEqual(initial, temp)
 
-    def test_nextion_components_cohesion(self):
+    def test_uiboard_components_cohesion(self):
         pic = self.bc.NEXTION_COMPONENTTYPE_PIC
         txt = self.bc.NEXTION_COMPONENTTYPE_TEXT
         model = [
             [1, 25, b"wtd", txt],
             [2, 17, b"wts", pic]
         ]
-        zipped = zip(self.ffi.unpack(self.bc.NEXTION_components, 2), model)
+        zipped = zip(self.ffi.unpack(self.bc.UIBOARD_components, 2), model)
         for t, m in zipped:
             self.assertEqual(t.picID_default, m[0])
             self.assertEqual(t.picID_selected, m[1])
@@ -75,7 +82,7 @@ class testInit(unittest.TestCase):
             self.assertEqual(name, m[2])
             self.assertEqual(t.type, m[3])
 
-    def test_nextion_MDcomponents_cohesion(self):
+    def test_uiboard_MDcomponents_cohesion(self):
         pic = self.bc.NEXTION_COMPONENTTYPE_PIC
         model = [
             [11, 22],
@@ -85,13 +92,17 @@ class testInit(unittest.TestCase):
             [15, 20],
             [16, 21]
         ]
-        zipped = zip(self.ffi.unpack(self.bc.NEXTION_maindisplay_renderers, 6), model)
+        zipped = zip(self.ffi.unpack(self.bc.UIBOARD_maindisplay_components, 6), model)
         for t, m in zipped:
-            self.assertEqual(t.parent.picID_default, m[0])
-            self.assertEqual(t.parent.picID_selected, m[1])
-            name = self.ffi.unpack(t.parent.name, self.bc.NEXTION_OBJNAME_LEN)
+            component = t.executable_component.component
+            self.assertEqual(component.picID_default, m[0])
+            self.assertEqual(component.picID_selected, m[1])
+            name = self.ffi.unpack(component.name, self.bc.NEXTION_OBJNAME_LEN)
             self.assertEqual(name, b"mds")
-            self.assertEqual(t.parent.type, pic)
+            self.assertEqual(component.type, pic)
+
+        self.assertEqual(self.bc.UIBOARD_maindisplay_activecomponent,
+                         self.bc.UIBOARD_maindisplay_components[0])
 
     def test_input_components_cohesion(self):
         model = [

@@ -93,15 +93,15 @@ inline void COUNTERSFEED_pushfeed(uint8_t index);
 
 #define NEXTION_SELECT_DECAY_TICKS ...
 #define NEXTION_OBJNAME_LEN ...
-enum NEXTION_MD
+enum UIBOARD_MD
 {
-	NEXTION_MD_LPH,
-	NEXTION_MD_LP100,
-	NEXTION_MD_LP100_AVG,
-	NEXTION_MD_SPEED_AVG,
-	NEXTION_MD_INJ_T,
-	NEXTION_MD_RANGE,
-	NEXTION_MD_LAST
+	UIBOARD_MD_LPH,
+	UIBOARD_MD_LP100,
+	UIBOARD_MD_LP100_AVG,
+	UIBOARD_MD_SPEED_AVG,
+	UIBOARD_MD_INJ_T,
+	UIBOARD_MD_RANGE,
+	UIBOARD_MD_LAST
 };
 
 typedef enum NEXTION_COMPONENTTYPE
@@ -117,19 +117,23 @@ typedef struct NEXTION_Component
 	const char* name;
 	NEXTION_Componenttype_t type;
 }NEXTION_Component;
-typedef struct NEXTION_MDComponent
+
+typedef struct NEXTION_Executable_Component
 {
-	NEXTION_Component parent;
+	NEXTION_Component component;
+	Callback execute;
+}NEXTION_Executable_Component;
+typedef struct UIBOARD_MDComponent
+{
+	NEXTION_Executable_Component executable_component;
+	struct UIBOARD_MDComponent* nextComponent;
+}UIBOARD_MDComponent;
 
-	Callback render;
-	struct NEXTION_MDComponent* nextRenderer;
-}NEXTION_MDComponent;
-
-void NEXTION_switch_maindisplay();
+void UIBOARD_switch_maindisplay();
 extern char NEXTION_eot[];
-extern NEXTION_Component NEXTION_components[];
-extern NEXTION_MDComponent NEXTION_maindisplay_renderers[];
-extern NEXTION_MDComponent* NEXTION_maindisplay_renderer;
+extern NEXTION_Component UIBOARD_components[];
+extern UIBOARD_MDComponent UIBOARD_maindisplay_components[];
+extern UIBOARD_MDComponent* UIBOARD_maindisplay_activecomponent;
 
 enum
 {
@@ -164,7 +168,7 @@ extern enum SENSORSFEED_EGT_TRANSMISSION_STATUS
 }SENSORSFEED_EGT_transmission_status;
 
 void SENSORSFEED_update_EGT();
-void NEXTION_update_EGT();
+void UIBOARD_update_EGT();
 void NEXTION_update_select_decay();
 extern uint8_t NEXTION_selection_counter;
 extern uint8_t SPDR0;

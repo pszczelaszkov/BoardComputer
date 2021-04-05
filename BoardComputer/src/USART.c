@@ -56,7 +56,7 @@ uint8_t USART_send(char data[],uint8_t flush)
 	return 1;
 }
 
-void initializeUSART()
+void USART_initialize()
 {
     //USART_parsing_function = USARTonUSART;
 	if(USART_TX_buffer_index == USART_TX_BUFFER_SIZE)//just a guard

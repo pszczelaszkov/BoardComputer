@@ -14,18 +14,18 @@
 #include <util/delay.h>
 #define ENTRY_ROUTINE void main()
 #else
+#include "UI/board.h"
+#include "ProgramData.h"
+#include "utils.h"
 #define ENTRY_ROUTINE void test()
 #endif
 
-#include "utils.h"
 #include "USART.h"
-#include "NEXTION.h"
-//#include "scheduler.h"
 #include "sensorsfeed.h"
-#include "ProgramData.h"
 #include "timer.h"
+#include "nextion.h"
 #include "input.h"
-#include <stdio.h>
+
 volatile uint8_t SYSTEM_run = 1;
 volatile uint8_t SYSTEM_exec;
 volatile uint8_t SYSTEM_event_timer;//Represent fraction of second in values from 0 to 7. 
@@ -45,10 +45,11 @@ void core()
 	SENSORSFEED_update();
 	INPUT_update();
 	NEXTION_update();
+	USART_flush();
 }
 
 ENTRY_ROUTINE
-{	
+{
 	DDRD = 0x00;
 	PORTD = 0x00;
 	SET(DDRB,BIT0);
@@ -57,10 +58,11 @@ ENTRY_ROUTINE
 	
 	//SCHEDULER_fregister[SCHEDULER_CALLBACK_USART_REGISTER] = USART_register;
 	//SCHEDULER_initialize();
-	NEXTION_initialize();
 	SENSORSFEED_initialize();
 	TIMER_initialize();
 	INPUT_initialize();
+	USART_initialize();
+
 	#ifndef __AVR__
 		if(SYSTEM_run)
 	#endif
