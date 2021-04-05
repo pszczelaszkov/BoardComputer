@@ -2,7 +2,7 @@
  * @ Author: Your name
  * @ Create Time: 1970-01-01 01:00:00
  * @ Modified by: Your name
- * @ Modified time: 2020-11-30 20:45:03
+ * @ Modified time: 2021-04-05 23:02:02
  * @ Description:
  */
 
@@ -13,6 +13,7 @@
 #include <avr/io.h>
 #include <avr/interrupt.h>
 #include <util/atomic.h>
+#include "system.h"
 #endif
 
 #define SCHEDULER_LOW_PRIORITY_QUEUE_SIZE 5
@@ -40,7 +41,6 @@ LowPriorityTask SCHEDULER_low_priority_tasks[SCHEDULER_LOW_PRIORITY_QUEUE_SIZE];
 LowPriorityTask* SCHEDULER_final_task;
 LowPriorityTask* SCHEDULER_active_task;
 
-volatile extern uint8_t SYSTEM_run;
 /*
 Safe only when called from single IRQ, for nested IRQ or main thread use call within ATOMIC block. 
 */

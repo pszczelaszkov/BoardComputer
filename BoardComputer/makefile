@@ -11,6 +11,7 @@ test:
 	gcc -fpic -c src/utils.c -O1 -o bin/utils_.o
 	gcc -fpic -c src/programdata.c -O1 -o bin/programdata_.o
 	gcc -fpic -c src/average.c -O1 -o bin/average_.o
+	gcc -fpic -c src/system.c -O1 -o bin/system_.o
 	gcc -fpic -c src/main_.c -I/usr/include/python${PYTHON_VER} -O1 -o bin/main_.o
 	gcc -shared bin/*_.o -lpython${PYTHON_VER} -o bin/main_.so
 
@@ -25,6 +26,7 @@ boardcomputer:
 	avr-gcc -c src/timer.c -O1 -mmcu=atmega324pb -fshort-enums -o bin/timer.o
 	avr-gcc -c src/utils.c -O1 -mmcu=atmega324pb -fshort-enums -o bin/utils.o
 	avr-gcc -c src/average.c -O1 -mmcu=atmega324pb -fshort-enums -o bin/average.o
+	avr-gcc -c src/system.c -O1 -mmcu=atmega324pb -fshort-enums -o bin/system.o
 	avr-gcc -c src/programdata.c -O1 -mmcu=atmega324pb -fshort-enums -o bin/programdata.o
 	avr-gcc -mmcu=atmega324pb bin/*.o -o bin/BoardComputer.elf
 	avr-objcopy -j .text -j .data -O ihex bin/BoardComputer.elf bin/BoardComputer.hex

@@ -1,10 +1,9 @@
 #include "sensorsfeed.h"
+#include "system.h"
 
 #ifndef __AVR__
 	uint8_t SPDR0;
 #endif
-
-extern volatile uint8_t SYSTEM_event_timer;
 
 enum SENSORSFEED_EGT_STATUS SENSORSFEED_EGT_status;
 enum SENSORSFEED_EGT_TRANSMISSION_STATUS SENSORSFEED_EGT_transmission_status;

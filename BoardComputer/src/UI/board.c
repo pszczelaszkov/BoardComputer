@@ -3,8 +3,8 @@
 #include "../ProgramData.h"
 #include "../timer.h"
 #include "../USART.h"
+#include "../system.h"
 
-extern volatile uint8_t SYSTEM_event_timer;
 static const char str_wtd[NEXTION_OBJNAME_LEN] = "wtd"; 
 static const char str_wts[NEXTION_OBJNAME_LEN] = "wts";
 static const char str_mds[NEXTION_OBJNAME_LEN] = "mds";
