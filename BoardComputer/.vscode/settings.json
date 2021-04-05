@@ -11,5 +11,7 @@
     ],
     "python.testing.pytestEnabled": false,
     "python.testing.nosetestsEnabled": false,
-    "python.testing.unittestEnabled": true
+    "python.testing.unittestEnabled": true,
+    // Columns at which to show vertical rulers
+    "editor.rulers": [120],
 }
