@@ -6,7 +6,6 @@
  */ 
 
 #define F_CPU 8000000
-#define EVENT_TIMER_ISR ISR(TIMER2_COMPA_vect)
 
 #ifdef __AVR__
 #include <avr/io.h>
@@ -38,7 +37,6 @@ void prestart_routine()
 void core()
 {	
 	TIMER_update();
-	//SCHEDULER_checkLowPriorityTasks();
 	SENSORSFEED_update();
 	INPUT_update();
 	NEXTION_update();
@@ -53,12 +51,11 @@ ENTRY_ROUTINE
 	SET(DDRB,BIT4);
 	SET(DDRB,BIT7);
 	
-	//SCHEDULER_fregister[SCHEDULER_CALLBACK_USART_REGISTER] = USART_register;
-	//SCHEDULER_initialize();
 	SENSORSFEED_initialize();
 	TIMER_initialize();
 	INPUT_initialize();
 	USART_initialize();
+	SYSTEM_initialize();
 
 	#ifndef __AVR__
 		if(SYSTEM_run)
@@ -73,18 +70,3 @@ ENTRY_ROUTINE
 		core();
     }
 }
-
-EVENT_TIMER_ISR
-{
-    SYSTEM_exec = 1;
-    switch(SYSTEM_event_timer)
-    {
-        case 7:
-			COUNTERSFEED_pushfeed(COUNTERSFEED_FEEDID_FUELPS);
-            SYSTEM_event_timer = 0;
-			return;
-        break;
-    }
-	SYSTEM_event_timer++;	
-}
-

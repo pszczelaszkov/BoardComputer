@@ -116,15 +116,6 @@ void TIMER_update()
 
 void TIMER_initialize()
 {
-    #ifdef __AVR__
-    //Event Timer
-    OCR2A = 15;// 1/8 seconds
-    ASSR = (1 << AS2);// async
-    TCCR2A = (1 << WGM21);// Clear on match
-    TCCR2B = (3 << CS21);// 256 prescaler
-    TIMSK2 = (1 << OCIE2A);// Enable IRQ
-    #endif
-
     TIMER_watches[TIMERTYPE_WATCH].next_watch = &TIMER_watches[TIMERTYPE_STOPWATCH];
     TIMER_watches[TIMERTYPE_STOPWATCH].next_watch = &TIMER_watches[TIMERTYPE_WATCH];
     TIMER_active_watch = &TIMER_watches[TIMERTYPE_WATCH];
