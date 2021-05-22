@@ -13,7 +13,7 @@
 
 #define NEXTION_SELECT_DECAY_TICKS 24
 #define NEXTION_OBJNAME_LEN 3
-//wskaznik na aktualne componenty potrzebny?
+
 typedef enum NEXTION_COMPONENTSTATUS
 {
 	NEXTION_COMPONENTSTATUS_DEFAULT,
@@ -24,7 +24,9 @@ typedef enum NEXTION_COMPONENTSTATUS
 typedef enum NEXTION_COMPONENTTYPE
 {
 	NEXTION_COMPONENTTYPE_PIC,
-	NEXTION_COMPONENTTYPE_TEXT
+	NEXTION_COMPONENTTYPE_TEXTFIELD,
+	NEXTION_COMPONENTTYPE_TEXT,
+	NEXTION_COMPONENTTYPE_SLIDER
 }NEXTION_Componenttype_t;
 
 typedef struct NEXTION_Component
@@ -41,13 +43,17 @@ typedef struct NEXTION_Executable_Component
 	Callback execute;
 }NEXTION_Executable_Component;
 
-//tutaj musi byc exec component?
+extern int8_t NEXTION_brightness;
 extern uint8_t NEXTION_selection_counter;
 extern char NEXTION_eot[];
+extern Callback_32 NEXTION_requested_data_handler;
 
 uint8_t NEXTION_send(char data[], uint8_t flush);
 int8_t NEXTION_update();
 int8_t NEXTION_switch_page(uint8_t page);
+
+void NEXTION_request_brightness();
+void NEXTION_set_brightness(uint8_t brightness);
 void NEXTION_set_componentstatus(NEXTION_Component* component, NEXTION_Componentstatus_t status);
 void NEXTION_update_select_decay();
 

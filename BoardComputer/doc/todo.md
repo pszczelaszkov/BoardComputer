@@ -12,8 +12,10 @@
 - [x] Correct Maindisplay switching/ Timer behaviour
 - [x] Stopwatch zeroing
 - [ ] Numpad
-- [ ] Board Config page
+- [x] Board Config page
 - [ ] ADC rendering rework
 - [x] Rework UI
 - [x] Create system.h with SYSTEM features
+- [ ] Rework nextion componenttypes to background type
+- [ ] More flexible RX UART
   

@@ -75,9 +75,9 @@ void USART_initialize()
 
 void USART_register()
 {
+	Callback_32 handler;
 	switch(USART_RX_buffer[0])
-	{
-		
+	{	
 		#ifndef __AVR__
 		case 0x01:
 			USART_test();
@@ -88,6 +88,14 @@ void USART_register()
 			INPUT_ComponentID_t componentID = (INPUT_ComponentID_t)USART_RX_buffer[2];
 			INPUT_Keystatus_t keystatus = USART_RX_buffer[3];
 			INPUT_userinput(keystatus, INPUT_KEY_ENTER, componentID);
+		break;
+		case 0x71:
+			handler = NEXTION_requested_data_handler;
+			if(handler)
+			{
+				handler(*(uint32_t*)&USART_RX_buffer[1]);
+				NEXTION_requested_data_handler = 0;
+			}
 		break;
 	}
 	USART_RX_buffer_index = 0;//unlock

@@ -31,7 +31,9 @@ void prestart_routine()
 	SENSORSFEED_EGT_CONVERSION;
 	SENSORSFEED_update();
 	_delay_ms(1000);
-	NEXTION_switch_page(0);
+	NEXTION_request_brightness();
+	NEXTION_switch_page(2);
+	USART_flush();
 }
 
 void core()

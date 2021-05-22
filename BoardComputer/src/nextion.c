@@ -4,22 +4,26 @@
 #include "ProgramData.h"
 #include "timer.h"
 #include "UI/board.h"
+#include "UI/boardconfig.h"
 
 enum PAGE
 {
-	PAGE_init = 1,
-	PAGE_BOARD = 0
+	PAGE_init = 0,
+	PAGE_BOARD = 1,
+	PAGE_BOARDCONFIG = 2
 };
 
 static NEXTION_Component* selected_component;
-static uint8_t active_page;
+static Callback page_callback;
+Callback_32 NEXTION_requested_data_handler;
 uint8_t NEXTION_selection_counter;
-
+int8_t NEXTION_brightness = -1;
 char NEXTION_eot[] = {0xff,0xff,0xff,0x00};
 
 static Callback pages_callbacks[]=
 {
-	[PAGE_BOARD] = UIBOARD_update
+	[PAGE_BOARD] = UIBOARD_update,
+	[PAGE_BOARDCONFIG] = UIBOARDCONFIG_update
 };
 
 uint8_t NEXTION_send(char data[], uint8_t flush)
@@ -57,7 +61,7 @@ void NEXTION_set_componentstatus(NEXTION_Component* component, NEXTION_Component
 	uint8_t offset = 3;
 	char buffer[12];
 	memcpy(buffer,component->name,3);
-	if(component->type == NEXTION_COMPONENTTYPE_PIC)
+	if(component->type == NEXTION_COMPONENTTYPE_PIC || component->type == NEXTION_COMPONENTTYPE_TEXTFIELD)
 	{
 		offset = 8;
 		memcpy(&buffer[3],".pic=",5);
@@ -73,12 +77,13 @@ void NEXTION_set_componentstatus(NEXTION_Component* component, NEXTION_Component
 
 int8_t NEXTION_switch_page(uint8_t page)
 {
-	char buffer[] = "page  ";
-	if(page > 9)
+	char buffer[] = "page   ";
+	if(page >= 0xff)
 		return 0;
-	  
-	rightnconcat_short(&buffer[5], page, 0, 1);
-	return NEXTION_send(buffer,USART_FLUSH);
+	
+	page_callback = pages_callbacks[page];
+	itoa(page, &buffer[5],10);
+	return NEXTION_send(buffer,USART_HOLD);
 }
 
 void NEXTION_update_EGT()
@@ -130,11 +135,28 @@ void NEXTION_update_select_decay()
 		NEXTION_selection_counter--;
 	}
 }
+void handler_brightness(uint32_t data)
+{
+	NEXTION_brightness = data;
+}
+
+void NEXTION_request_brightness()
+{
+	if(NEXTION_send("get dim",USART_HOLD))
+		NEXTION_requested_data_handler = handler_brightness;
+}
+
+void NEXTION_set_brightness(uint8_t brightness)
+{
+	char buffer[] = "dim=   ";
+	itoa(brightness,&buffer[4],10);
+	if(NEXTION_send(buffer,USART_HOLD))
+		NEXTION_brightness = brightness;
+}
 
 int8_t NEXTION_update()
 {	
 	NEXTION_update_select_decay();
-	Callback page_callback = pages_callbacks[active_page];
 	if(page_callback)
 		page_callback();
 	return 0;

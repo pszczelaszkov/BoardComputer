@@ -31,7 +31,7 @@
 extern const uint8_t FP8_weight;
 extern const uint16_t FP16_weight;
 typedef void (*Callback)();
-
+typedef void (*Callback_32)(uint32_t);
 void rightconcat_short(char* dest, int16_t value, uint8_t spacing);
 void rightnconcat_short(char* dest, int16_t value, uint8_t spacing, uint8_t n);
 #endif
