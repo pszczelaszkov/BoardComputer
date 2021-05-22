@@ -24,17 +24,17 @@ void TIMER_format(TIMER_watch* timer, uint8_t format_flag)
             memcpy(TIMER_formated,ASCIIDOUBLESPACE,2);
             rightconcat_short(TIMER_formated,timer->timer.hours,2);
         case FORMATFLAG_MINUTES:
-            memcpy(&TIMER_formated[3],ASCIIDOUBLEZERO,2);
-            rightconcat_short(&TIMER_formated[3],timer->timer.minutes,2);
+            memcpy(&TIMER_formated[TIMER_FORMATEDMM],ASCIIDOUBLEZERO,2);
+            rightconcat_short(&TIMER_formated[TIMER_FORMATEDMM],timer->timer.minutes,2);
         case FORMATFLAG_SECONDS:
-            memcpy(&TIMER_formated[6],ASCIIDOUBLEZERO,2);
-            rightconcat_short(&TIMER_formated[6],timer->timer.seconds,2);
+            memcpy(&TIMER_formated[TIMER_FORMATEDSS],ASCIIDOUBLEZERO,2);
+            rightconcat_short(&TIMER_formated[TIMER_FORMATEDSS],timer->timer.seconds,2);
         case FORMATFLAG_MILISECONDS:
             if(TIMER_active_watch != &TIMER_watches[TIMERTYPE_WATCH])
             {
                 uint8_t miliseconds = timer->timer.miliseconds>>1;
-                memcpy(&TIMER_formated[9],ASCIIDOUBLEZERO,2);
-                rightconcat_short(&TIMER_formated[9],miliseconds,2);
+                memcpy(&TIMER_formated[TIMER_FORMATEDMS],ASCIIDOUBLEZERO,2);
+                rightconcat_short(&TIMER_formated[TIMER_FORMATEDMS],miliseconds,2);
             }
         break;
     }

@@ -48,6 +48,14 @@ enum TIMER_TIMERTYPE
     TIMERTYPE_LAST
 };
 
+enum TIMER_FORMATED
+{
+    TIMER_FORMATEDHH = 0,
+    TIMER_FORMATEDMM = 3,
+    TIMER_FORMATEDSS = 6,
+    TIMER_FORMATEDMS = 9
+};
+
 extern const uint8_t TIMER_REGISTER_WEIGHT;
 extern const uint8_t TIMER_MILISECOND_WEIGHT;
 extern TIMER_watch* TIMER_active_watch;
