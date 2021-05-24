@@ -1,5 +1,6 @@
 #include "input.h"
 #include "UI/board.h"
+#include "UI/boardconfig.h"
 #include "bitwise.h"
 
 //Map all possible input components
@@ -21,7 +22,41 @@ INPUT_Component INPUT_components[] = {
 		.nextcomponentID = INPUT_COMPONENT_MAINDISPLAY,
 		.on_click = TIMER_next_watch,
 		.nextion_component = &UIBOARD_components[UIBOARD_COMPONENT_WATCHSEL]
-	}
+	},
+	{
+		.componentID = INPUT_COMPONENT_CONFIGWHH,
+		.nextcomponentID = INPUT_COMPONENT_CONFIGWMM,
+		.nextion_component = (NEXTION_Component*)&UIBOARDCONFIG_executable_components[UIBOARDCONFIG_COMPONENT_WHH]
+	},
+	{
+		.componentID = INPUT_COMPONENT_CONFIGWMM,
+		.nextcomponentID = INPUT_COMPONENT_CONFIGWSS,
+		.nextion_component = (NEXTION_Component*)&UIBOARDCONFIG_executable_components[UIBOARDCONFIG_COMPONENT_WMM]
+	},
+	{
+		.componentID = INPUT_COMPONENT_CONFIGWSS,
+		.nextcomponentID = INPUT_COMPONENT_CONFIGDBS,
+		.nextion_component = (NEXTION_Component*)&UIBOARDCONFIG_executable_components[UIBOARDCONFIG_COMPONENT_WSS]
+	},
+	{
+		.componentID = INPUT_COMPONENT_CONFIGIPM,
+		.nextcomponentID = INPUT_COMPONENT_CONFIGCCM,
+		.nextion_component = (NEXTION_Component*)&UIBOARDCONFIG_executable_components[UIBOARDCONFIG_COMPONENT_IPM]
+	},
+	{
+		.componentID = INPUT_COMPONENT_CONFIGCCM,
+		.nextcomponentID = INPUT_COMPONENT_CONFIGWHH,
+		.nextion_component = (NEXTION_Component*)&UIBOARDCONFIG_executable_components[UIBOARDCONFIG_COMPONENT_CCM]
+	},
+	{
+		.componentID = INPUT_COMPONENT_CONFIGDBS,
+		.nextcomponentID = INPUT_COMPONENT_CONFIGBCK,
+		.nextion_component = (NEXTION_Component*)&UIBOARDCONFIG_executable_components[UIBOARDCONFIG_COMPONENT_DBS]
+	},
+	{
+		.componentID = INPUT_COMPONENT_CONFIGBCK,
+		.nextcomponentID = INPUT_COMPONENT_CONFIGIPM
+	},
 };
 
 static const uint8_t components_count = sizeof(INPUT_components)/sizeof(INPUT_Component);

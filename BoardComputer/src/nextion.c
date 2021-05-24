@@ -6,13 +6,6 @@
 #include "UI/board.h"
 #include "UI/boardconfig.h"
 
-enum PAGE
-{
-	PAGE_init = 0,
-	PAGE_BOARD = 1,
-	PAGE_BOARDCONFIG = 2
-};
-
 static NEXTION_Component* selected_component;
 static Callback page_callback;
 Callback_32 NEXTION_requested_data_handler;
@@ -22,8 +15,8 @@ char NEXTION_eot[] = {0xff,0xff,0xff,0x00};
 
 static Callback pages_callbacks[]=
 {
-	[PAGE_BOARD] = UIBOARD_update,
-	[PAGE_BOARDCONFIG] = UIBOARDCONFIG_update
+	[NEXTION_PAGE_BOARD] = UIBOARD_update,
+	[NEXTION_PAGE_BOARDCONFIG] = UIBOARDCONFIG_update
 };
 
 uint8_t NEXTION_send(char data[], uint8_t flush)

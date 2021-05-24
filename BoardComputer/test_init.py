@@ -108,7 +108,13 @@ class testInit(unittest.TestCase):
         model = [
             [self.bc.INPUT_COMPONENT_MAINDISPLAY, b"mds"],
             [self.bc.INPUT_COMPONENT_WATCH, b"wtd"],
-            [self.bc.INPUT_COMPONENT_WATCHSEL, b"wts"]
+            [self.bc.INPUT_COMPONENT_WATCHSEL, b"wts"],
+            [self.bc.INPUT_COMPONENT_CONFIGIPM, b"ipm"],
+            [self.bc.INPUT_COMPONENT_CONFIGCCM, b"ccm"],
+            [self.bc.INPUT_COMPONENT_CONFIGDBS, b"dbs"],
+            [self.bc.INPUT_COMPONENT_CONFIGWHH, b"whh"],
+            [self.bc.INPUT_COMPONENT_CONFIGWMM, b"wmm"],
+            [self.bc.INPUT_COMPONENT_CONFIGWSS, b"wss"],
         ]
 
         nullptr = self.bc.INPUT_findcomponent(self.bc.INPUT_COMPONENT_NONE)

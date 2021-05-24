@@ -28,9 +28,13 @@ class testRun(unittest.TestCase):
         #cls.bcThread = Thread(target=cls.bc.main, daemon=True)
         #cls.bcThread.start()
 
+    def setUp(self):
+        self.bc.NEXTION_switch_page(1)
+        exec_cycle(self.bc)
+        parse_nextion(self.bc, read_usart(self.bc), nextion_data)
+        return super().setUp()
+
     def test_analog(self):
-        self.bc.USART_TX_clear()
-        #parse_nextion(self.bc, read_usart(self.bc), nextion_data)
         # ADC range -1, last is TANK input, its handled by maindisplay
         for i in range(self.bc.SENSORSFEED_ADC_CHANNELS):
             ADC_channel = self.bc.ADMUX & 0x0f
