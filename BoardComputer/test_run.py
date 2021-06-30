@@ -1,5 +1,4 @@
 import unittest
-import cffi
 from math import ceil
 from threading import Thread
 from helpers import write_usart, read_usart, max6675_response, parse_nextion, exec_cycle, click, load
@@ -13,8 +12,7 @@ ADC = [10, 2, 3, 4, 5, 6, 7, 8]
 class testRun(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.bc = load("main")
-        cls.ffi = cffi.FFI()
+        cls.bc,cls.ffi = load("main", "definitions.h")
         cls.nullptr = cls.ffi.NULL
         cls.usart_eot = int.to_bytes(cls.bc.USART_EOT,
                                      1,
@@ -40,7 +38,6 @@ class testRun(unittest.TestCase):
             ADC_channel = self.bc.ADMUX & 0x0f
             self.bc.ADC = ADC[ADC_channel]
             self.bc.ADC_vect()
-        #Problem z przekazaniem updatu na boardid?
         exec_cycle(self.bc)
         parse_nextion(self.bc, read_usart(self.bc), nextion_data)
         for i in range(self.bc.SENSORSFEED_ADC_CHANNELS):
@@ -49,7 +46,6 @@ class testRun(unittest.TestCase):
                                  self.bc.PROGRAMDATA_NTC_2200_INVERTED[ADC[i]])
 
     def test_uiboard_maindisplay(self):
-        self.bc.USART_TX_clear()
         # Cuz of chain of events, test needs to dive into countersfeed
         TANK_ID = self.bc.SENSORSFEED_FEEDID_TANK
         SPEED_ID = self.bc.COUNTERSFEED_FEEDID_SPEED
@@ -139,7 +135,6 @@ class testRun(unittest.TestCase):
         self.assertEqual(nextion_data['txt']['mdv'], " 583")
 
     def test_EGT(self):
-        self.bc.USART_TX_clear()
         packets = [
             {"test": 0xffff, "result": self.bc.SENSORSFEED_EGT_STATUS_UNKN,
              "display": "----"},
@@ -216,24 +211,31 @@ class testRun(unittest.TestCase):
         #  miliseconds are not used in watch(wont be updated)
         self.assertEqual(formated_time(self)[:-3], b" 0:00:01")
 
-    def test_input(self):
-        self.bc.USART_TX_clear()
+    def test_input_enter(self):
         keystatus = self.bc.INPUT_keystatus
         enter = self.bc.INPUT_KEY_ENTER
-        down = self.bc.INPUT_KEY_DOWN
         released = self.bc.INPUT_KEYSTATUS_RELEASED
         pressed = self.bc.INPUT_KEYSTATUS_PRESSED
         hold = self.bc.INPUT_KEYSTATUS_HOLD
         click = self.bc.INPUT_KEYSTATUS_CLICK
-        maindisplay = self.bc.INPUT_COMPONENT_MAINDISPLAY
-        snapshotmd = self.bc.UIBOARD_maindisplay_activecomponent
+        nonecomponent = self.bc.INPUT_COMPONENT_NONE
 
         self.assertEqual(keystatus[enter], released)
-        self.bc.INPUT_userinput(pressed, enter, maindisplay)
-        self.bc.INPUT_userinput(released, enter, maindisplay)
-        self.assertEqual(keystatus[enter], click)
-        self.bc.INPUT_update()
+        self.bc.INPUT_userinput(pressed, enter, nonecomponent)
+        for i in range(hold):
+            self.bc.INPUT_update()
+        self.assertEqual(keystatus[enter], hold)
+        self.bc.INPUT_userinput(released, enter, nonecomponent)
         self.assertEqual(keystatus[enter], released)
+        self.bc.INPUT_userinput(pressed, enter, nonecomponent)
+        self.bc.INPUT_userinput(released, enter, nonecomponent)
+        self.assertEqual(keystatus[enter], click)
+        self.bc.INPUT_userinput(released, enter, nonecomponent)
+        self.assertEqual(keystatus[enter], released)
+
+    def tst_boardinput_md(self):
+        maindisplay = self.bc.INPUT_COMPONENT_MAINDISPLAY
+        snapshotmd = self.bc.UIBOARD_maindisplay_activecomponent
         self.assertEqual(self.bc.INPUT_active_component.componentID, maindisplay)
         self.bc.USART_flush()
         parse_nextion(self.bc, read_usart(self.bc), nextion_data)
@@ -244,7 +246,6 @@ class testRun(unittest.TestCase):
         parse_nextion(self.bc, read_usart(self.bc), nextion_data)
         self.assertEqual(nextion_data["pic"]["mds"], '13')
         self.bc.UIBOARD_maindisplay_activecomponent = snapshotmd
-
 
 if __name__ == "main":
     unittest.main()

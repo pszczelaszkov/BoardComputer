@@ -1,5 +1,4 @@
 import unittest
-import cffi
 from helpers import load
 # This test class should be launched first to check global definitions
 
@@ -10,8 +9,7 @@ from helpers import load
 class testInit(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.bc = load("main")
-        cls.ffi = cffi.FFI()
+        cls.bc, cls.ffi = load("main", "definitions.h")
         cls.nullptr = cls.ffi.NULL
 
     def test_USART(self):
@@ -68,22 +66,22 @@ class testInit(unittest.TestCase):
         self.assertEqual(initial, temp)
 
     def test_uiboard_components_cohesion(self):
-        pic = self.bc.NEXTION_COMPONENTTYPE_PIC
-        txt = self.bc.NEXTION_COMPONENTTYPE_TEXT
+        image = self.bc.NEXTION_HIGHLIGHTTYPE_IMAGE
+        croppedimage = self.bc.NEXTION_HIGHLIGHTTYPE_CROPPEDIMAGE
         model = [
-            [1, 25, b"wtd", txt],
-            [2, 17, b"wts", pic]
+            [1, 25, b"wtd", croppedimage],
+            [2, 17, b"wts", image]
         ]
         zipped = zip(self.ffi.unpack(self.bc.UIBOARD_components, 2), model)
         for t, m in zipped:
-            self.assertEqual(t.picID_default, m[0])
-            self.assertEqual(t.picID_selected, m[1])
+            self.assertEqual(t.value_default, m[0])
+            self.assertEqual(t.value_selected, m[1])
             name = self.ffi.unpack(t.name, self.bc.NEXTION_OBJNAME_LEN)
             self.assertEqual(name, m[2])
-            self.assertEqual(t.type, m[3])
+            self.assertEqual(t.highlighttype, m[3])
 
     def test_uiboard_MDcomponents_cohesion(self):
-        pic = self.bc.NEXTION_COMPONENTTYPE_PIC
+        image = self.bc.NEXTION_HIGHLIGHTTYPE_IMAGE
         model = [
             [11, 22],
             [12, 23],
@@ -95,11 +93,11 @@ class testInit(unittest.TestCase):
         zipped = zip(self.ffi.unpack(self.bc.UIBOARD_maindisplay_components, 6), model)
         for t, m in zipped:
             component = t.executable_component.component
-            self.assertEqual(component.picID_default, m[0])
-            self.assertEqual(component.picID_selected, m[1])
+            self.assertEqual(component.value_default, m[0])
+            self.assertEqual(component.value_selected, m[1])
             name = self.ffi.unpack(component.name, self.bc.NEXTION_OBJNAME_LEN)
             self.assertEqual(name, b"mds")
-            self.assertEqual(component.type, pic)
+            self.assertEqual(component.highlighttype, image)
 
         self.assertEqual(self.bc.UIBOARD_maindisplay_activecomponent,
                          self.bc.UIBOARD_maindisplay_components[0])

@@ -5,11 +5,15 @@ import importlib
 import glob
 
 
-def load(filename):
+def load(filename,definitions):
     # import and return resulting module
     module = importlib.import_module('bin.' + filename + '_')
-    fileList = glob.glob('bin/' + filename + '_*')
-    return module.lib
+    glob.glob('bin/' + filename + '_*')
+    with open('src/'+ definitions) as definitions_file:
+        ffi = cffi.FFI()
+        ffi.cdef(definitions_file.read())
+
+    return module.lib, ffi
 
 
 def exec_cycle(module):
@@ -18,12 +22,14 @@ def exec_cycle(module):
     #while module.exec is True:
      #   pass
 
+
 def max6675_response(module, test_response):
     for i in range(2):
         module.SPDR0 = (test_response & 0xff00) >> 8  # MSB first
         test_response = test_response << 8
         module.SPI0_STC_vect()
         yield
+
 
 def read_usart(module):
     response = bytearray()
@@ -33,9 +39,11 @@ def read_usart(module):
 
     return response
 
+
 def click(module, id):
     write_usart(module, 0x65, [0, id, 1])
     return read_usart(module)
+
 
 def write_usart(module, header, message, force_register=True):
     usart_eot = int.to_bytes(module.USART_EOT,

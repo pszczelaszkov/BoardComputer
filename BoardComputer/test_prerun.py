@@ -11,8 +11,7 @@ def cast_void(ffi, variable):
 class testPreRun(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.bc = load("main")
-        cls.ffi = cffi.FFI()
+        cls.bc, cls.ffi = load("main", "definitions.h")
         cls.nullptr = cls.ffi.NULL
         cls.bc.SYSTEM_run = False
         cls.bc.test()
