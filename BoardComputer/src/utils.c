@@ -7,19 +7,8 @@
     uint8_t PORTD, PORTB, PIND;
     uint8_t ADC;
     uint8_t ADMUX, ADSC, ADCSRA;
-    /* reverse:  reverse string s in place */
-    void reverse(char s[])
-    {
-        int i, j;
-        char c;
-
-        for (i = 0, j = strlen(s)-1; i<j; i++, j--) {
-            c = s[i];
-            s[i] = s[j];
-            s[j] = c;
-        }
-    }
-    /* itoa:  convert n to characters in s */
+    void _delay_ms(int dummy){}
+        /* itoa:  convert n to characters in s */
     void itoa(int n, char s[],int dummy)
     {
         int i, sign;
@@ -35,11 +24,36 @@
         s[i] = '\0';
         reverse(s);
     }
-    void _delay_ms(int dummy){}
 #endif
 
 const uint8_t FP8_weight = 10000/0xff;
 const uint16_t FP16_weight = SENSORSFEED_HIGH_PRECISION_BASE/0xffff;
+
+/* reverse:  reverse string s in place */
+void reverse(char s[])
+{
+    uint8_t i, j;
+    char c;
+
+    for (i = 0, j = strlen(s)-1; i<j; i++, j--) {
+        c = s[i];
+        s[i] = s[j];
+        s[j] = c;
+    }
+}
+/* uitoa:  convert unsigned n to characters in s */
+void uitoa(uint16_t n, char s[])
+{
+    uint8_t i;
+
+    i = 0;
+    do {       /* generate digits in reverse order */
+        s[i++] = n % 10 + '0';   /* get next digit */
+    } while ((n /= 10) > 0);     /* delete it */
+    s[i] = '\0';
+    reverse(s);
+}
+
 //Concatenate right aligned integer.
 void rightconcat_short(char* dest, int16_t value, uint8_t spacing)
 {

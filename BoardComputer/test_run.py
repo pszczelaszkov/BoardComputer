@@ -47,6 +47,8 @@ class testRun(unittest.TestCase):
 
     def test_uiboard_maindisplay(self):
         # Cuz of chain of events, test needs to dive into countersfeed
+        #Needs rework
+        firstcomponent = self.bc.UIBOARD_maindisplay_components[0]
         TANK_ID = self.bc.SENSORSFEED_FEEDID_TANK
         SPEED_ID = self.bc.COUNTERSFEED_FEEDID_SPEED
         FUEL_ID = self.bc.COUNTERSFEED_FEEDID_FUELPS
@@ -60,6 +62,7 @@ class testRun(unittest.TestCase):
             active_component = self.bc.UIBOARD_maindisplay_activecomponent
             active_component.executable_component.execute()
 
+        self.bc.UIBOARD_maindisplay_activecomponent = self.ffi.addressof(firstcomponent)
         # Fuelps is raw tickcount per injection, however speed is in kph.
         packets = [
             {"fuelps": 2700, "ccm": 700, "speed": 0, "assert": " 0.9"},
@@ -133,6 +136,35 @@ class testRun(unittest.TestCase):
         parse_nextion(self.bc, read_usart(self.bc),
                       nextion_data)
         self.assertEqual(nextion_data['txt']['mdv'], " 583")
+
+
+    def test_uiboard_modify_dbs(self):
+        step = 5
+        self.bc.NEXTION_set_brightness(0)
+        self.assertEqual(self.bc.NEXTION_brightness, 0)
+        for i in range(int(100/step)):
+            self.bc.UIBOARDCONFIG_modify_dbs()
+            exec_cycle(self.bc)
+            read_usart(self.bc)
+
+        self.assertEqual(self.bc.NEXTION_brightness, 100)
+        for i in range(8):
+            self.bc.UIBOARDCONFIG_modify_dbs()
+            exec_cycle(self.bc)
+            read_usart(self.bc)
+            self.assertEqual(self.bc.NEXTION_brightness, 100)
+
+
+        self.bc.UIBOARDCONFIG_modify_dbs()
+        self.assertEqual(self.bc.NEXTION_brightness, 0)
+
+
+    def test_nextion_set_brightness(self):
+        self.bc.NEXTION_set_brightness(100)
+        self.assertEqual(self.bc.NEXTION_brightness, 100)
+        self.bc.NEXTION_set_brightness(0)
+        self.assertEqual(self.bc.NEXTION_brightness, 0)
+
 
     def test_EGT(self):
         packets = [
@@ -211,41 +243,47 @@ class testRun(unittest.TestCase):
         #  miliseconds are not used in watch(wont be updated)
         self.assertEqual(formated_time(self)[:-3], b" 0:00:01")
 
-    def test_input_enter(self):
-        keystatus = self.bc.INPUT_keystatus
-        enter = self.bc.INPUT_KEY_ENTER
-        released = self.bc.INPUT_KEYSTATUS_RELEASED
-        pressed = self.bc.INPUT_KEYSTATUS_PRESSED
-        hold = self.bc.INPUT_KEYSTATUS_HOLD
-        click = self.bc.INPUT_KEYSTATUS_CLICK
-        nonecomponent = self.bc.INPUT_COMPONENT_NONE
 
-        self.assertEqual(keystatus[enter], released)
-        self.bc.INPUT_userinput(pressed, enter, nonecomponent)
-        for i in range(hold):
-            self.bc.INPUT_update()
-        self.assertEqual(keystatus[enter], hold)
-        self.bc.INPUT_userinput(released, enter, nonecomponent)
-        self.assertEqual(keystatus[enter], released)
-        self.bc.INPUT_userinput(pressed, enter, nonecomponent)
-        self.bc.INPUT_userinput(released, enter, nonecomponent)
-        self.assertEqual(keystatus[enter], click)
-        self.bc.INPUT_userinput(released, enter, nonecomponent)
-        self.assertEqual(keystatus[enter], released)
+    def test_nextion_selection(self):
+        selectionvalue = 100
+        objname_length = self.bc.NEXTION_OBJNAME_LEN
+        status_selected = self.bc.NEXTION_COMPONENTSTATUS_SELECTED
+        decay_ticks = self.bc.NEXTION_SELECT_DECAY_TICKS
 
-    def tst_boardinput_md(self):
-        maindisplay = self.bc.INPUT_COMPONENT_MAINDISPLAY
-        snapshotmd = self.bc.UIBOARD_maindisplay_activecomponent
-        self.assertEqual(self.bc.INPUT_active_component.componentID, maindisplay)
+        name = self.ffi.new('const char['+str(objname_length)+']', b'tst')
+        component = self.ffi.new("NEXTION_Component*")
+        component.value_selected = selectionvalue
+        component.name = name
+        component.highlighttype = self.bc.NEXTION_HIGHLIGHTTYPE_IMAGE
+        component = self.ffi.cast("void*", component)
+        self.bc.NEXTION_set_componentstatus(component, status_selected)
         self.bc.USART_flush()
+ 
         parse_nextion(self.bc, read_usart(self.bc), nextion_data)
-        self.assertEqual(nextion_data["pic"]["mds"], '24')
-        for i in range(self.bc.NEXTION_SELECT_DECAY_TICKS):
+        self.assertEqual(int(nextion_data['pic']['tst']), selectionvalue)
+
+
+    def test_nextion_selection_decay(self):
+        defaultvalue = 50
+        objname_length = self.bc.NEXTION_OBJNAME_LEN
+        status_selected = self.bc.NEXTION_COMPONENTSTATUS_SELECTED
+        decay_ticks = self.bc.NEXTION_SELECT_DECAY_TICKS
+
+        name = self.ffi.new('const char['+str(objname_length)+']', b'tst')
+        component = self.ffi.new("NEXTION_Component*")
+        component.value_default = defaultvalue
+        component.name = name
+        component.highlighttype = self.bc.NEXTION_HIGHLIGHTTYPE_IMAGE
+        component = self.ffi.cast("void*", component)
+        self.bc.NEXTION_set_componentstatus(component, status_selected)
+
+        for i in range(decay_ticks):
             self.bc.NEXTION_update_select_decay()
-            self.bc.USART_flush()
+        self.bc.USART_flush()
+
         parse_nextion(self.bc, read_usart(self.bc), nextion_data)
-        self.assertEqual(nextion_data["pic"]["mds"], '13')
-        self.bc.UIBOARD_maindisplay_activecomponent = snapshotmd
+        self.assertEqual(int(nextion_data['pic']['tst']), defaultvalue)
+
 
 if __name__ == "main":
     unittest.main()

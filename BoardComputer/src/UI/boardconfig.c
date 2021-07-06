@@ -4,8 +4,7 @@
 #include "../utils.h"
 #include "../sensorsfeed.h"
 #include "../timer.h"
-
-static uint8_t update_dbs = 1;
+#include "../input.h"
 
 static const char ipm_str[NEXTION_OBJNAME_LEN] = "ipm";
 static const char ccm_str[NEXTION_OBJNAME_LEN] = "ccm";
@@ -28,9 +27,9 @@ NEXTION_Executable_Component UIBOARDCONFIG_executable_components[] =
         .component = 
         {
             .name = ipm_str,
-            .type = NEXTION_COMPONENTTYPE_TEXTFIELD,
-            .picID_default = 26,
-            .picID_selected = 25
+            .highlighttype = NEXTION_HIGHLIGHTTYPE_BACKCOLOR,
+            .value_default = WHITE,
+            .value_selected = BRIGHTBLUE
         },
         .execute = display_ipm
     },
@@ -39,9 +38,9 @@ NEXTION_Executable_Component UIBOARDCONFIG_executable_components[] =
         .component = 
         {
             .name = ccm_str,
-            .type = NEXTION_COMPONENTTYPE_TEXTFIELD,
-            .picID_default = 26,
-            .picID_selected = 25
+            .highlighttype = NEXTION_HIGHLIGHTTYPE_BACKCOLOR,
+            .value_default = WHITE,
+            .value_selected = BRIGHTBLUE
         },
         .execute = display_ccm
     },
@@ -50,9 +49,9 @@ NEXTION_Executable_Component UIBOARDCONFIG_executable_components[] =
         .component = 
         {
             .name = whh_str,
-            .type = NEXTION_COMPONENTTYPE_TEXTFIELD,
-            .picID_default = 26,
-            .picID_selected = 25
+            .highlighttype = NEXTION_HIGHLIGHTTYPE_BACKCOLOR,
+            .value_default = WHITE,
+            .value_selected = BRIGHTBLUE
         },
         .execute = display_whh
     },
@@ -61,9 +60,9 @@ NEXTION_Executable_Component UIBOARDCONFIG_executable_components[] =
         .component = 
         {
             .name = wmm_str,
-            .type = NEXTION_COMPONENTTYPE_TEXTFIELD,
-            .picID_default = 26,
-            .picID_selected = 25
+            .highlighttype = NEXTION_HIGHLIGHTTYPE_BACKCOLOR,
+            .value_default = WHITE,
+            .value_selected = BRIGHTBLUE
         },
         .execute = display_wmm
     },
@@ -72,9 +71,9 @@ NEXTION_Executable_Component UIBOARDCONFIG_executable_components[] =
         .component = 
         {
             .name = wss_str,
-            .type = NEXTION_COMPONENTTYPE_TEXTFIELD,
-            .picID_default = 26,
-            .picID_selected = 25
+            .highlighttype = NEXTION_HIGHLIGHTTYPE_BACKCOLOR,
+            .value_default = WHITE,
+            .value_selected = BRIGHTBLUE
         },
         .execute = display_wss
     },
@@ -83,9 +82,9 @@ NEXTION_Executable_Component UIBOARDCONFIG_executable_components[] =
         .component = 
         {
             .name = dbs_str,
-            .type = NEXTION_COMPONENTTYPE_SLIDER,
-            .picID_default = 26,
-            .picID_selected = 25
+            .highlighttype = NEXTION_HIGHLIGHTTYPE_FRONTCOLOR,
+            .value_default = BRIGHTBROWN,
+            .value_selected = BRIGHTBLUE
         },
         .execute = display_dbs
     }
@@ -108,43 +107,56 @@ void display_ccm()
 void display_whh()
 {
     char buffer[] = "whh.val=  ";
-    memcpy(&buffer[8],TIMER_formated,2);
 
-    if(buffer[8] == ' ')//double digit guard
-        buffer[8] = '0';
-
+	itoa((&TIMER_watches[TIMERTYPE_WATCH])->timer.hours,&buffer[8],10);
 	NEXTION_send(buffer, USART_HOLD);
 }
 
 void display_wmm()
 {
     char buffer[] = "wmm.val=  ";
-    memcpy(&buffer[8],&TIMER_formated[TIMER_FORMATEDMM],2);
+	itoa((&TIMER_watches[TIMERTYPE_WATCH])->timer.minutes,&buffer[8],10);
 	NEXTION_send(buffer, USART_HOLD);
 }
 
 void display_wss()
 {
     char buffer[] = "wss.val=  ";
-    memcpy(&buffer[8],&TIMER_formated[TIMER_FORMATEDSS],2);
+	itoa((&TIMER_watches[TIMERTYPE_WATCH])->timer.seconds,&buffer[8],10);
 	NEXTION_send(buffer, USART_HOLD);
 }
 
 void display_dbs()
 {
-    if(!update_dbs)
+    static uint8_t dbsvalue;
+    if(dbsvalue == NEXTION_brightness)
         return;
-
-    update_dbs = 0;
+    
     char buffer[] = "dbs.val=   ";
     itoa(NEXTION_brightness,&buffer[8],10);
-	NEXTION_send(buffer, USART_HOLD);
+	if(NEXTION_send(buffer, USART_HOLD))
+        dbsvalue = NEXTION_brightness;
 }
 
-void UIBOARDCONFIG_set_brightness(uint8_t brightness)
+void UIBOARDCONFIG_modify_dbs()
 {
-    NEXTION_set_brightness(brightness);
-    update_dbs = 1;
+    const uint8_t step = 5;
+    static uint8_t autoreload_counter;
+    if(autoreload_counter)
+    {
+        if(NEXTION_add_brightness(step,0))
+            autoreload_counter--;
+    }
+    else
+    {
+        NEXTION_add_brightness(step,1);
+        autoreload_counter = 8;//full cycle
+    }
+}
+
+void UIBOARDCONFIG_setup()
+{
+    INPUT_active_component = INPUT_findcomponent(INPUT_COMPONENT_CONFIGBCK);
 }
 
 void UIBOARDCONFIG_update()

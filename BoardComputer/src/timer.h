@@ -7,7 +7,6 @@
 
 #ifndef __TIMER__
 #define __TIMER__
-#include <stdlib.h>
 #include <string.h>
 #include "utils.h"
 

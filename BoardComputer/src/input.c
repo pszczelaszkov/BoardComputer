@@ -19,9 +19,15 @@ INPUT_Component INPUT_components[] = {
 	},
 	{
 		.componentID = INPUT_COMPONENT_WATCHSEL,
-		.nextcomponentID = INPUT_COMPONENT_MAINDISPLAY,
+		.nextcomponentID = INPUT_COMPONENT_CONFIG,
 		.on_click = TIMER_next_watch,
 		.nextion_component = &UIBOARD_components[UIBOARD_COMPONENT_WATCHSEL]
+	},
+	{
+		.componentID = INPUT_COMPONENT_CONFIG,
+		.nextcomponentID = INPUT_COMPONENT_MAINDISPLAY,
+		.nextion_component = &UIBOARD_components[UIBOARD_COMPONENT_CONFIG],
+		.on_click = UIBOARD_callback_config
 	},
 	{
 		.componentID = INPUT_COMPONENT_CONFIGWHH,
@@ -51,20 +57,22 @@ INPUT_Component INPUT_components[] = {
 	{
 		.componentID = INPUT_COMPONENT_CONFIGDBS,
 		.nextcomponentID = INPUT_COMPONENT_CONFIGBCK,
-		.nextion_component = (NEXTION_Component*)&UIBOARDCONFIG_executable_components[UIBOARDCONFIG_COMPONENT_DBS]
+		.nextion_component = (NEXTION_Component*)&UIBOARDCONFIG_executable_components[UIBOARDCONFIG_COMPONENT_DBS],
+		.on_click = NEXTION_request_brightness,
+		.on_hold = UIBOARDCONFIG_modify_dbs
 	},
 	{
 		.componentID = INPUT_COMPONENT_CONFIGBCK,
-		.nextcomponentID = INPUT_COMPONENT_CONFIGIPM
+		.nextcomponentID = INPUT_COMPONENT_CONFIGIPM,
+		.nextion_component = &NEXTION_common_bckcomponent,
+		.on_click = NEXTION_set_previous_page,
 	},
 };
 
 static const uint8_t components_count = sizeof(INPUT_components)/sizeof(INPUT_Component);
-static uint8_t activity_counter;
 static uint8_t pending_componentID;
 INPUT_Keystatus_t INPUT_keystatus[INPUT_KEY_LAST];
-INPUT_Component* INPUT_active_component = &INPUT_components[0];
-uint8_t INPUT_active_page;
+INPUT_Component* INPUT_active_component = NULL;
 
 void INPUT_switch_maindisplay()
 {
@@ -77,10 +85,14 @@ void INPUT_switch_maindisplay()
 void INPUT_userinput(INPUT_Keystatus_t keystatus, INPUT_Key_t key, INPUT_ComponentID_t componentID)
 {	
 	if(componentID)
-		pending_componentID = componentID;
+	{
+			pending_componentID = componentID;
+	}
 	else
-		componentID = INPUT_active_component->componentID;
-
+	{
+		if(INPUT_active_component)
+			componentID = INPUT_active_component->componentID;
+	}
 	if(keystatus == INPUT_KEYSTATUS_PRESSED)
 	{
 		if(componentID == INPUT_COMPONENT_WATCH && key == INPUT_KEY_ENTER)
@@ -137,29 +149,33 @@ void INPUT_update()
 	if(INPUT_keystatus[INPUT_KEY_ENTER] || INPUT_keystatus[INPUT_KEY_DOWN] == INPUT_KEYSTATUS_CLICK)
 	{
 		INPUT_Component* nextcomponent = getnextcomponent();
-		if(nextcomponent)
+		if(INPUT_active_component)
 		{
 			//Try to deselect current component if active
 			NEXTION_set_componentstatus(INPUT_active_component->nextion_component, NEXTION_COMPONENTSTATUS_DEFAULT);
-			INPUT_active_component = nextcomponent;
+			if(nextcomponent)
+				INPUT_active_component = nextcomponent;
+			NEXTION_set_componentstatus(INPUT_active_component->nextion_component, NEXTION_COMPONENTSTATUS_SELECTED);
 		}
-		NEXTION_set_componentstatus(INPUT_active_component->nextion_component, NEXTION_COMPONENTSTATUS_SELECTED);
 	}
-
-	switch(INPUT_keystatus[INPUT_KEY_ENTER])
-	{	
-		Callback callback;
-		case INPUT_KEYSTATUS_CLICK:
-			callback = INPUT_active_component->on_click;
-			if(callback)
-				callback();
-			INPUT_keystatus[INPUT_KEY_ENTER] = INPUT_KEYSTATUS_RELEASED;
-		break;
-		case INPUT_KEYSTATUS_HOLD:
-			callback = INPUT_active_component->on_hold;
-			if(callback)
-				callback();
-		break;
+	
+	if (INPUT_active_component)
+	{
+		switch(INPUT_keystatus[INPUT_KEY_ENTER])
+		{	
+			Callback callback;
+			case INPUT_KEYSTATUS_CLICK:
+				callback = INPUT_active_component->on_click;
+				if(callback)
+					callback();
+				INPUT_keystatus[INPUT_KEY_ENTER] = INPUT_KEYSTATUS_RELEASED;
+			break;
+			case INPUT_KEYSTATUS_HOLD:
+				callback = INPUT_active_component->on_hold;
+				if(callback)
+					callback();
+			break;
+		}
 	}
 }
 
@@ -177,7 +193,7 @@ INPUT_Component* getnextcomponent()
 {
 	if(INPUT_keystatus[INPUT_KEY_DOWN] == INPUT_KEYSTATUS_CLICK)
 	{
-		if(NEXTION_selection_counter)
+		if(NEXTION_selection_counter && INPUT_active_component)
 			pending_componentID = INPUT_active_component->nextcomponentID;
 
 		INPUT_keystatus[INPUT_KEY_DOWN] = INPUT_KEYSTATUS_RELEASED;

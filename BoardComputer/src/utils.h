@@ -9,7 +9,7 @@
 #ifndef __UTILS__
 #define __UTILS__
 #ifdef __AVR__
-    #include <stdlib.h>
+#include<stdlib.h>
 #else
     #include <inttypes.h>
     #define ISR(...) void __VA_ARGS__()
@@ -23,11 +23,12 @@
     /* reverse:  reverse string s in place */
     void reverse(char s[]);
     /* itoa:  convert n to characters in s */
-    void itoa(int n, char s[],int dummy);
+     void itoa(int n, char s[],int dummy);
     void _delay_ms(int dummy);
 #endif
 #include <string.h>
 #include "sensorsfeed.h"
+void uitoa(uint16_t n, char s[]);
 extern const uint8_t FP8_weight;
 extern const uint16_t FP16_weight;
 typedef void (*Callback)();

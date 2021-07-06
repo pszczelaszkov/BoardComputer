@@ -5,19 +5,49 @@
 #include "timer.h"
 #include "UI/board.h"
 #include "UI/boardconfig.h"
+#include "input.h"
 
 static NEXTION_Component* selected_component;
+static NEXTION_PageID_t last_pageID;
+static NEXTION_PageID_t active_pageID;
 static Callback page_callback;
+static const char str_bck[NEXTION_OBJNAME_LEN] = "bck";
+
 Callback_32 NEXTION_requested_data_handler;
 uint8_t NEXTION_selection_counter;
-int8_t NEXTION_brightness = -1;
+uint8_t NEXTION_brightness;
 char NEXTION_eot[] = {0xff,0xff,0xff,0x00};
 
-static Callback pages_callbacks[]=
+static struct Page
 {
-	[NEXTION_PAGE_BOARD] = UIBOARD_update,
-	[NEXTION_PAGE_BOARDCONFIG] = UIBOARDCONFIG_update
+	Callback callback_update;
+	Callback callback_setup; 
+}pages[] = 
+{
+	[NEXTION_PAGEID_BOARD]=
+	{
+		.callback_setup = UIBOARD_setup,
+		.callback_update = UIBOARD_update
+	},
+	[NEXTION_PAGEID_BOARDCONFIG]=
+	{
+		.callback_setup = UIBOARDCONFIG_setup,
+		.callback_update = UIBOARDCONFIG_update
+	}
+
 };
+
+NEXTION_Component NEXTION_common_bckcomponent = {
+		.highlighttype = NEXTION_HIGHLIGHTTYPE_IMAGE,
+		.value_default = 28,
+		.value_selected = 29,
+		.name = str_bck
+};
+
+void handler_brightness(uint32_t data)
+{
+	NEXTION_brightness = data;
+}
 
 uint8_t NEXTION_send(char data[], uint8_t flush)
 {
@@ -33,49 +63,77 @@ void NEXTION_set_componentstatus(NEXTION_Component* component, NEXTION_Component
 	if(!component)
 		return;
 
-	uint8_t picid;
+	uint16_t value;
 	if(status == NEXTION_COMPONENTSTATUS_SELECTED)
 	{
 				
 		NEXTION_selection_counter = NEXTION_SELECT_DECAY_TICKS;
 		if(selected_component == component)
 			return;
-		picid = component->picID_selected;
+		value = component->value_selected;
 		selected_component = component;
 	}
 	else
 	{
 		if(!NEXTION_selection_counter)
 			return;
-		picid = component->picID_default;
-		selected_component = 0;
+		value = component->value_default;
+		selected_component = NULL;
 	}
 
-	uint8_t offset = 3;
-	char buffer[12];
-	memcpy(buffer,component->name,3);
-	if(component->type == NEXTION_COMPONENTTYPE_PIC || component->type == NEXTION_COMPONENTTYPE_TEXTFIELD)
+	char buffer[16];
+	char* highlight_type;
+	uint8_t iterator = 3;
+	uint8_t highlight_type_len;
+	memcpy(buffer,component->name,iterator);
+	buffer[iterator] = '.';
+	iterator++;
+	switch(component->highlighttype)
 	{
-		offset = 8;
-		memcpy(&buffer[3],".pic=",5);
+		case NEXTION_HIGHLIGHTTYPE_IMAGE:
+			highlight_type = "pic";
+		break;
+		case NEXTION_HIGHLIGHTTYPE_IMAGE2:
+			highlight_type = "pic2";
+		break;
+		case NEXTION_HIGHLIGHTTYPE_CROPPEDIMAGE:
+			highlight_type = "picc";
+		break;
+		case NEXTION_HIGHLIGHTTYPE_BACKCOLOR:
+			highlight_type = "bco";
+		break;
+		case NEXTION_HIGHLIGHTTYPE_FRONTCOLOR:
+			highlight_type = "pco";
 	}
-	else
-	{
-		offset = 9;
-		memcpy(&buffer[3],".picc=",6);
-	}
-	itoa(picid,&buffer[offset],10);
+	highlight_type_len = strlen(highlight_type);
+	memcpy(&buffer[iterator],highlight_type,highlight_type_len);
+	iterator += highlight_type_len;
+	buffer[iterator] = '=';
+	iterator++;
+
+	uitoa(value,&buffer[iterator]);
 	NEXTION_send(buffer,USART_HOLD);
 }
 
-int8_t NEXTION_switch_page(uint8_t page)
+int8_t NEXTION_switch_page(NEXTION_PageID_t pageID)
 {
 	char buffer[] = "page   ";
-	if(page >= 0xff)
+	if(pageID >= 0xff)
 		return 0;
 	
-	page_callback = pages_callbacks[page];
-	itoa(page, &buffer[5],10);
+	NEXTION_selection_counter = 1;
+	NEXTION_update_select_decay();
+	INPUT_active_component = NULL;
+
+	last_pageID = active_pageID;
+	active_pageID = pageID;
+	struct Page newpage = pages[pageID];
+	Callback setup = newpage.callback_setup;
+	if(setup)
+		setup();
+	page_callback = newpage.callback_update;
+	
+	itoa(pageID, &buffer[5],10);
 	return NEXTION_send(buffer,USART_HOLD);
 }
 
@@ -128,15 +186,26 @@ void NEXTION_update_select_decay()
 		NEXTION_selection_counter--;
 	}
 }
-void handler_brightness(uint32_t data)
-{
-	NEXTION_brightness = data;
-}
 
 void NEXTION_request_brightness()
 {
 	if(NEXTION_send("get dim",USART_HOLD))
 		NEXTION_requested_data_handler = handler_brightness;
+}
+
+uint8_t NEXTION_add_brightness(uint8_t value, uint8_t autoreload)
+{
+    uint8_t brightness = NEXTION_brightness+value;
+    if(brightness > 100)
+    {
+		if(autoreload)
+	   		brightness = 0;
+		else
+			return 1;
+	}
+    NEXTION_set_brightness(brightness);
+	
+	return 0;
 }
 
 void NEXTION_set_brightness(uint8_t brightness)
@@ -145,6 +214,11 @@ void NEXTION_set_brightness(uint8_t brightness)
 	itoa(brightness,&buffer[4],10);
 	if(NEXTION_send(buffer,USART_HOLD))
 		NEXTION_brightness = brightness;
+}
+
+void NEXTION_set_previous_page()
+{
+	NEXTION_switch_page(last_pageID);
 }
 
 int8_t NEXTION_update()

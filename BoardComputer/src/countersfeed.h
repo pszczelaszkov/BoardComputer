@@ -10,7 +10,6 @@
 #ifdef __AVR__
 #include <avr/io.h>
 #include <avr/interrupt.h>
-#include <stdlib.h>
 #else
 #include "utils.h"
 #endif

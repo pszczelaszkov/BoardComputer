@@ -20,6 +20,7 @@ enum UIBOARDCONFIG_COMPONENT
 };
 
 extern NEXTION_Executable_Component UIBOARDCONFIG_executable_components[];
+void UIBOARDCONFIG_setup();
 void UIBOARDCONFIG_update();
-void UIBOARDCONFIG_set_brightness(uint8_t brightness);
+void UIBOARDCONFIG_modify_dbs();
 #endif

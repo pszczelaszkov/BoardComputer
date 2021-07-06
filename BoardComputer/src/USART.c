@@ -83,9 +83,8 @@ void USART_register()
 			USART_test();
 		break;
 		#endif
-		case 0x65:
-			INPUT_active_page = USART_RX_buffer[1];
-			INPUT_ComponentID_t componentID = (INPUT_ComponentID_t)USART_RX_buffer[2];
+		case 0x65:;
+			INPUT_ComponentID_t componentID = (INPUT_ComponentID_t)(USART_RX_buffer[2]|USART_RX_buffer[1] << 4);
 			INPUT_Keystatus_t keystatus = USART_RX_buffer[3];
 			INPUT_userinput(keystatus, INPUT_KEY_ENTER, componentID);
 		break;
@@ -94,7 +93,7 @@ void USART_register()
 			if(handler)
 			{
 				handler(*(uint32_t*)&USART_RX_buffer[1]);
-				NEXTION_requested_data_handler = 0;
+				NEXTION_requested_data_handler = NULL;
 			}
 		break;
 	}

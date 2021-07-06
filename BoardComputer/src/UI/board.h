@@ -24,7 +24,8 @@ enum UIBOARD_MD
 enum UIBOARD_COMPONENT
 {
 	UIBOARD_COMPONENT_WATCH,
-	UIBOARD_COMPONENT_WATCHSEL
+	UIBOARD_COMPONENT_WATCHSEL,
+	UIBOARD_COMPONENT_CONFIG
 };
 
 #define UIBOARD_MD_INITIAL_COMPONENT &UIBOARD_maindisplay_components[0]
@@ -45,10 +46,12 @@ void UIBOARD_renderer_md_lp100_avg();
 void UIBOARD_renderer_md_speed_avg();
 void UIBOARD_renderer_md_inj_t();
 void UIBOARD_renderer_md_range();
+void UIBOARD_callback_config();
 void UIBOARD_switch_maindisplay();
 void UIBOARD_update_EGT();
 void UIBOARD_update_ADC();
 void UIBOARD_update_watch();
 void UIBOARD_update();
+void UIBOARD_setup();
 
 #endif /* UIBOARD_H_ */

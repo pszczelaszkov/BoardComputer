@@ -14,6 +14,7 @@
 #define ENTRY_ROUTINE void main()
 #else
 #include "UI/board.h"
+#include "UI/boardconfig.h"
 #include "ProgramData.h"
 #include "utils.h"
 #define ENTRY_ROUTINE void test()
@@ -32,7 +33,7 @@ void prestart_routine()
 	SENSORSFEED_update();
 	_delay_ms(1000);
 	NEXTION_request_brightness();
-	NEXTION_switch_page(2);
+	NEXTION_switch_page(1);
 	USART_flush();
 }
 

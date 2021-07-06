@@ -104,18 +104,47 @@ enum UIBOARD_MD
 	UIBOARD_MD_LAST
 };
 
-typedef enum NEXTION_COMPONENTTYPE
+typedef enum NEXTION_HIGHLIGHTTYPE
 {
-	NEXTION_COMPONENTTYPE_PIC,
-	NEXTION_COMPONENTTYPE_TEXT
-}NEXTION_Componenttype_t;
+	NEXTION_HIGHLIGHTTYPE_IMAGE,
+	NEXTION_HIGHLIGHTTYPE_IMAGE2,
+	NEXTION_HIGHLIGHTTYPE_CROPPEDIMAGE,
+	NEXTION_HIGHLIGHTTYPE_BACKCOLOR,
+	NEXTION_HIGHLIGHTTYPE_FRONTCOLOR
+}NEXTION_Highlighttype_t;
+
+typedef enum NEXTION_COMPONENTSTATUS
+{
+	NEXTION_COMPONENTSTATUS_DEFAULT,
+	NEXTION_COMPONENTSTATUS_SELECTED,
+	NEXTION_COMPONENTSTATUS_WARNING
+	
+}NEXTION_Componentstatus_t;
+
+enum UIBOARDCONFIG_COMPONENT
+{
+	UIBOARDCONFIG_COMPONENT_IPM,
+	UIBOARDCONFIG_COMPONENT_CCM,
+    UIBOARDCONFIG_COMPONENT_WHH,
+    UIBOARDCONFIG_COMPONENT_WMM,
+    UIBOARDCONFIG_COMPONENT_WSS,
+    UIBOARDCONFIG_COMPONENT_DBS,
+    UIBOARDCONFIG_COMPONENT_LAST
+};
+
+typedef enum NEXTION_PAGEID
+{
+	NEXTION_PAGEID_INIT = 0,
+	NEXTION_PAGEID_BOARD = 1,
+	NEXTION_PAGEID_BOARDCONFIG = 2
+}NEXTION_PageID_t;
 
 typedef struct NEXTION_Component
 {
-	uint8_t picID_default;
-	uint8_t picID_selected;
 	const char* name;
-	NEXTION_Componenttype_t type;
+	uint16_t value_default;
+	uint16_t value_selected;
+	NEXTION_Highlighttype_t highlighttype;
 }NEXTION_Component;
 
 typedef struct NEXTION_Executable_Component
@@ -132,6 +161,14 @@ typedef struct UIBOARD_MDComponent
 void UIBOARD_switch_maindisplay();
 extern char NEXTION_eot[];
 extern NEXTION_Component UIBOARD_components[];
+void NEXTION_set_componentstatus(NEXTION_Component* component, NEXTION_Componentstatus_t status);
+void NEXTION_set_brightness(uint8_t brightness);
+extern uint8_t NEXTION_brightness;
+void UIBOARDCONFIG_modify_dbs();
+
+extern NEXTION_Executable_Component UIBOARDCONFIG_executable_components[];
+extern NEXTION_Component NEXTION_common_bckcomponent;
+
 extern UIBOARD_MDComponent UIBOARD_maindisplay_components[];
 extern UIBOARD_MDComponent* UIBOARD_maindisplay_activecomponent;
 
@@ -170,7 +207,7 @@ extern enum SENSORSFEED_EGT_TRANSMISSION_STATUS
 void SENSORSFEED_update_EGT();
 void UIBOARD_update_EGT();
 void NEXTION_update_select_decay();
-int8_t NEXTION_switch_page(uint8_t page);
+int8_t NEXTION_switch_page(NEXTION_PageID_t pageID);
 extern uint8_t NEXTION_selection_counter;
 extern uint8_t SPDR0;
 extern uint16_t SENSORSFEED_max6675_data;
@@ -220,6 +257,7 @@ typedef enum INPUT_COMPONENTID
 	INPUT_COMPONENT_MAINDISPLAY,
 	INPUT_COMPONENT_WATCH,
 	INPUT_COMPONENT_WATCHSEL,
+	INPUT_COMPONENT_CONFIG,
 	INPUT_COMPONENT_CONFIGWHH,
 	INPUT_COMPONENT_CONFIGWMM,
 	INPUT_COMPONENT_CONFIGWSS,
@@ -253,7 +291,6 @@ typedef struct INPUT_Component
 	NEXTION_Component* nextion_component;
 }INPUT_Component;
 
-extern uint8_t INPUT_active_page;
 extern INPUT_Keystatus_t INPUT_keystatus[INPUT_KEY_LAST];
 extern INPUT_Component INPUT_components[];
 extern INPUT_Component* INPUT_active_component;

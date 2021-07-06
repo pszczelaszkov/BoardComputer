@@ -109,7 +109,7 @@ class testPreRun(unittest.TestCase):
         self.assertTrue(self.bc.TIMER_active_watch)
         self.bc.TIMER_active_watch = watch
 
-    def test_input(self):
+    def test_input_keystatus(self):
         keystatus = self.bc.INPUT_keystatus
         enter = self.bc.INPUT_KEY_ENTER
         down = self.bc.INPUT_KEY_DOWN
@@ -117,26 +117,31 @@ class testPreRun(unittest.TestCase):
         pressed = self.bc.INPUT_KEYSTATUS_PRESSED
         hold = self.bc.INPUT_KEYSTATUS_HOLD
         click = self.bc.INPUT_KEYSTATUS_CLICK
-        self.bc.INPUT_userinput(released, enter, 1)
+        nonecomponent = self.bc.INPUT_COMPONENT_NONE
+
+
+        self.bc.INPUT_userinput(released, enter, nonecomponent)
         self.assertEqual(keystatus[enter], released)
 
-        self.bc.INPUT_userinput(pressed, enter, 1)
+        self.bc.INPUT_userinput(pressed, enter, nonecomponent)
         self.assertEqual(keystatus[enter], pressed)
 
-        self.bc.INPUT_userinput(released, down, 1)
+        self.bc.INPUT_userinput(released, down, nonecomponent)
         self.assertEqual(keystatus[enter], pressed)
         self.assertEqual(keystatus[down], released)
- 
-        for i in range(8):
+
+        for i in range(hold):
             self.bc.INPUT_update()
+
         self.assertEqual(keystatus[enter], hold)
         self.assertEqual(keystatus[down], released)
 
-        self.bc.INPUT_userinput(released, enter, 1)
+        self.bc.INPUT_userinput(released, enter, nonecomponent)
         self.assertEqual(keystatus[enter], released)
-        self.bc.NEXTION_selection_counter = 1
-        self.bc.NEXTION_update_select_decay()
-        self.bc.USART_flush()
+
+        self.bc.INPUT_userinput(pressed, enter, nonecomponent)
+        self.bc.INPUT_userinput(released, enter, nonecomponent)
+        self.assertEqual(keystatus[enter], click)
 
 class placeholder:
     def test_scheduler(self):

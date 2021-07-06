@@ -4,25 +4,34 @@
 #include "../timer.h"
 #include "../USART.h"
 #include "../system.h"
+#include "../input.h"
 
 static const char str_wtd[NEXTION_OBJNAME_LEN] = "wtd"; 
 static const char str_wts[NEXTION_OBJNAME_LEN] = "wts";
 static const char str_mds[NEXTION_OBJNAME_LEN] = "mds";
+static const char str_cfg[NEXTION_OBJNAME_LEN] = "cfg";
 
 NEXTION_Component UIBOARD_components[] = {
 	[UIBOARD_COMPONENT_WATCH]=
 	{
-		.type = NEXTION_COMPONENTTYPE_TEXT,
-		.picID_default = 1,
-		.picID_selected = 25,
+		.highlighttype = NEXTION_HIGHLIGHTTYPE_CROPPEDIMAGE,
+		.value_default = 1,
+		.value_selected = 25,
 		.name = str_wtd
 	},
 	[UIBOARD_COMPONENT_WATCHSEL]=
 	{
-		.type = NEXTION_COMPONENTTYPE_PIC,
-		.picID_default = 2,
-		.picID_selected = 17,
+		.highlighttype = NEXTION_HIGHLIGHTTYPE_IMAGE,
+		.value_default = 2,
+		.value_selected = 17,
 		.name = str_wts
+	},
+	[UIBOARD_COMPONENT_CONFIG]=
+	{
+		.highlighttype = NEXTION_HIGHLIGHTTYPE_IMAGE,
+		.value_default = 3,
+		.value_selected = 18,
+		.name = str_cfg
 	}
 };
 
@@ -34,10 +43,10 @@ UIBOARD_MDComponent UIBOARD_maindisplay_components[] = {
 		{
 			.component = 			
 			{
-				.picID_default = 11,
-				.picID_selected = 22,
+				.value_default = 11,
+				.value_selected = 22,
 				.name = str_mds,
-				.type = NEXTION_COMPONENTTYPE_PIC
+				.highlighttype = NEXTION_HIGHLIGHTTYPE_IMAGE
 			},
 			.execute = UIBOARD_renderer_md_lph,
 		},
@@ -49,10 +58,10 @@ UIBOARD_MDComponent UIBOARD_maindisplay_components[] = {
 		{
 			.component = 			
 			{
-				.picID_default = 12,
-				.picID_selected = 23,
+				.value_default = 12,
+				.value_selected = 23,
 				.name = str_mds,
-				.type = NEXTION_COMPONENTTYPE_PIC
+				.highlighttype = NEXTION_HIGHLIGHTTYPE_IMAGE
 			},
 			.execute = UIBOARD_renderer_md_lp100
 		},
@@ -64,10 +73,10 @@ UIBOARD_MDComponent UIBOARD_maindisplay_components[] = {
 		{
 			.component = 		
 			{
-				.picID_default = 13,
-				.picID_selected = 24,
+				.value_default = 13,
+				.value_selected = 24,
 				.name = str_mds,
-				.type = NEXTION_COMPONENTTYPE_PIC
+				.highlighttype = NEXTION_HIGHLIGHTTYPE_IMAGE
 			},
 			.execute = UIBOARD_renderer_md_lp100_avg
 		},
@@ -79,10 +88,10 @@ UIBOARD_MDComponent UIBOARD_maindisplay_components[] = {
 		{
 			.component =  			
 			{
-				.picID_default = 14,
-				.picID_selected = 19,
+				.value_default = 14,
+				.value_selected = 19,
 				.name = str_mds,
-				.type = NEXTION_COMPONENTTYPE_PIC
+				.highlighttype = NEXTION_HIGHLIGHTTYPE_IMAGE
 			},
 			.execute = UIBOARD_renderer_md_speed_avg
 		},
@@ -94,10 +103,10 @@ UIBOARD_MDComponent UIBOARD_maindisplay_components[] = {
 		{
 			.component = 			
 			{
-				.picID_default = 15,
-				.picID_selected = 20,
+				.value_default = 15,
+				.value_selected = 20,
 				.name = str_mds,
-				.type = NEXTION_COMPONENTTYPE_PIC
+				.highlighttype = NEXTION_HIGHLIGHTTYPE_IMAGE
 			},
 			.execute = UIBOARD_renderer_md_inj_t
 		},
@@ -109,10 +118,10 @@ UIBOARD_MDComponent UIBOARD_maindisplay_components[] = {
 		{
 			.component = 			
 			{
-				.picID_default = 16,
-				.picID_selected = 21,
+				.value_default = 16,
+				.value_selected = 21,
 				.name = str_mds,
-				.type = NEXTION_COMPONENTTYPE_PIC
+				.highlighttype = NEXTION_HIGHLIGHTTYPE_IMAGE
 			},
 			.execute = UIBOARD_renderer_md_range
 		},
@@ -251,6 +260,16 @@ void UIBOARD_update_watch()
 		memcpy(&buffer[9],&TIMER_formated[3],8);
 
 	NEXTION_send(buffer,USART_HOLD);
+}
+
+void UIBOARD_setup()
+{
+	INPUT_active_component = INPUT_findcomponent(INPUT_COMPONENT_MAINDISPLAY);
+}
+
+void UIBOARD_callback_config()
+{
+	NEXTION_switch_page(NEXTION_PAGEID_BOARDCONFIG);
 }
 
 void UIBOARD_update()

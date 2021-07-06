@@ -65,20 +65,50 @@ class testInit(unittest.TestCase):
 
         self.assertEqual(initial, temp)
 
+    def test_uiboardconfig_components_cohesion(self):
+        frontcolor = self.bc.NEXTION_HIGHLIGHTTYPE_FRONTCOLOR
+        backcolor = self.bc.NEXTION_HIGHLIGHTTYPE_BACKCOLOR
+        brightblue = 0x4DF
+        brightbrown = 0xBC8D
+        white = 0xffff
+        model = [
+            [white, brightblue, b"ipm", backcolor],
+            [white, brightblue, b"ccm", backcolor],
+            [white, brightblue, b"whh",backcolor],
+            [white, brightblue, b"wmm",backcolor],
+            [white, brightblue, b"wss", backcolor],
+            [brightbrown, brightblue, b"dbs",frontcolor]
+        ]#default,selected,name,highlighttype
+        zipped = zip(self.ffi.unpack(self.bc.UIBOARDCONFIG_executable_components, self.bc.UIBOARDCONFIG_COMPONENT_LAST), model)
+        i = 0
+        for t, m in zipped:
+            msg = "Failed @ "+str(i)
+            t = self.ffi.cast("NEXTION_Component *", self.ffi.addressof(t))
+            self.assertEqual(t.value_default, m[0],msg=msg)
+            self.assertEqual(t.value_selected, m[1], msg=msg)
+            name = self.ffi.unpack(t.name, self.bc.NEXTION_OBJNAME_LEN)
+            self.assertEqual(name, m[2],msg=msg)
+            self.assertEqual(t.highlighttype, m[3], msg=msg)
+            i=i+1
+            
     def test_uiboard_components_cohesion(self):
         image = self.bc.NEXTION_HIGHLIGHTTYPE_IMAGE
         croppedimage = self.bc.NEXTION_HIGHLIGHTTYPE_CROPPEDIMAGE
         model = [
             [1, 25, b"wtd", croppedimage],
-            [2, 17, b"wts", image]
-        ]
+            [2, 17, b"wts", image],
+            [3, 18, b"cfg", image]
+        ]#default,selected,name,highlighttype
         zipped = zip(self.ffi.unpack(self.bc.UIBOARD_components, 2), model)
+        i = 0
         for t, m in zipped:
-            self.assertEqual(t.value_default, m[0])
-            self.assertEqual(t.value_selected, m[1])
+            msg = "Failed @ "+str(i)
+            self.assertEqual(t.value_default, m[0], msg=msg)
+            self.assertEqual(t.value_selected, m[1], msg=msg)
             name = self.ffi.unpack(t.name, self.bc.NEXTION_OBJNAME_LEN)
-            self.assertEqual(name, m[2])
-            self.assertEqual(t.highlighttype, m[3])
+            self.assertEqual(name, m[2], msg=msg)
+            self.assertEqual(t.highlighttype, m[3], msg=msg)
+            i=i+1
 
     def test_uiboard_MDcomponents_cohesion(self):
         image = self.bc.NEXTION_HIGHLIGHTTYPE_IMAGE
@@ -89,16 +119,19 @@ class testInit(unittest.TestCase):
             [14, 19],
             [15, 20],
             [16, 21]
-        ]
+        ]#default,selected
         zipped = zip(self.ffi.unpack(self.bc.UIBOARD_maindisplay_components, 6), model)
+        i = 0
         for t, m in zipped:
+            msg = "Failed @ "+str(i)
             component = t.executable_component.component
-            self.assertEqual(component.value_default, m[0])
-            self.assertEqual(component.value_selected, m[1])
+            self.assertEqual(component.value_default, m[0], msg=msg)
+            self.assertEqual(component.value_selected, m[1], msg=msg)
             name = self.ffi.unpack(component.name, self.bc.NEXTION_OBJNAME_LEN)
-            self.assertEqual(name, b"mds")
-            self.assertEqual(component.highlighttype, image)
-
+            self.assertEqual(name, b"mds", msg=msg)
+            self.assertEqual(component.highlighttype, image, msg=msg)
+            i=i+1
+        
         self.assertEqual(self.bc.UIBOARD_maindisplay_activecomponent,
                          self.bc.UIBOARD_maindisplay_components[0])
 
@@ -107,25 +140,40 @@ class testInit(unittest.TestCase):
             [self.bc.INPUT_COMPONENT_MAINDISPLAY, b"mds"],
             [self.bc.INPUT_COMPONENT_WATCH, b"wtd"],
             [self.bc.INPUT_COMPONENT_WATCHSEL, b"wts"],
+            [self.bc.INPUT_COMPONENT_CONFIG, b"cfg"],
             [self.bc.INPUT_COMPONENT_CONFIGIPM, b"ipm"],
             [self.bc.INPUT_COMPONENT_CONFIGCCM, b"ccm"],
             [self.bc.INPUT_COMPONENT_CONFIGDBS, b"dbs"],
             [self.bc.INPUT_COMPONENT_CONFIGWHH, b"whh"],
             [self.bc.INPUT_COMPONENT_CONFIGWMM, b"wmm"],
             [self.bc.INPUT_COMPONENT_CONFIGWSS, b"wss"],
+            [self.bc.INPUT_COMPONENT_CONFIGBCK, b"bck"]
         ]
 
         nullptr = self.bc.INPUT_findcomponent(self.bc.INPUT_COMPONENT_NONE)
         self.assertFalse(nullptr)
+        i = 0
         for sample in model:
+            msg = "Failed @ "+str(i)
             component = self.bc.INPUT_findcomponent(sample[0])
-            self.assertTrue(component)
-            name = component.nextion_component.name
+            self.assertTrue(component, msg=msg)
+            nextion_component = component.nextion_component
+            self.assertTrue(nextion_component, msg=msg)
+            name = nextion_component.name
             name = self.ffi.unpack(name, self.bc.NEXTION_OBJNAME_LEN)
-            self.assertEqual(name, sample[1])
+            self.assertEqual(name, sample[1], msg=msg)
+            i = i+1
 
-        self.assertTrue(self.bc.INPUT_active_component)
+        self.assertFalse(self.bc.INPUT_active_component)
 
+    def test_input_common_bck_conformance(self):
+        image = self.bc.NEXTION_HIGHLIGHTTYPE_IMAGE
+        bckcomponent = self.bc.NEXTION_common_bckcomponent
+        self.assertEqual(bckcomponent.value_default, 28)
+        self.assertEqual(bckcomponent.value_selected, 29)
+        name = self.ffi.unpack(bckcomponent.name, self.bc.NEXTION_OBJNAME_LEN)
+        self.assertEqual(name, b'bck')
+        self.assertEqual(bckcomponent.highlighttype, image)
 
 if __name__ == "main":
     unittest.main()

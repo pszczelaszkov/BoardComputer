@@ -16,6 +16,6 @@
 - [ ] ADC rendering rework
 - [x] Rework UI
 - [x] Create system.h with SYSTEM features
-- [ ] Rework nextion componenttypes to background type
+- [x] Rework nextion componenttypes to background type
 - [ ] More flexible RX UART
-  
+- [x] Rework the pages api
