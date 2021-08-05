@@ -5,6 +5,7 @@
 #include "timer.h"
 #include "UI/board.h"
 #include "UI/boardconfig.h"
+#include "UI/numpad.h"
 #include "input.h"
 
 static NEXTION_Component* selected_component;
@@ -33,6 +34,11 @@ static struct Page
 	{
 		.callback_setup = UIBOARDCONFIG_setup,
 		.callback_update = UIBOARDCONFIG_update
+	},
+	[NEXTION_PAGEID_NUMPAD]=
+	{
+		.callback_update = UINUMPAD_update,
+		.callback_setup = UINUMPAD_setup
 	}
 
 };

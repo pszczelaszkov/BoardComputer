@@ -54,6 +54,17 @@ void uitoa(uint16_t n, char s[])
     reverse(s);
 }
 
+int16_t UTILS_atoi(char* stringvalue) {
+    int8_t sign = (stringvalue[0] == '-'? -1 : 1);
+    int16_t result = 0;
+    while (*stringvalue) {
+        if(*stringvalue >= '0' && *stringvalue <= '9')
+            result = result*10 + (*stringvalue) - '0';
+        stringvalue++;
+     }
+     return result * sign;
+}
+
 //Concatenate right aligned integer.
 void rightconcat_short(char* dest, int16_t value, uint8_t spacing)
 {

@@ -136,7 +136,8 @@ typedef enum NEXTION_PAGEID
 {
 	NEXTION_PAGEID_INIT = 0,
 	NEXTION_PAGEID_BOARD = 1,
-	NEXTION_PAGEID_BOARDCONFIG = 2
+	NEXTION_PAGEID_BOARDCONFIG = 2,
+	NEXTION_PAGEID_NUMPAD = 3
 }NEXTION_PageID_t;
 
 typedef struct NEXTION_Component
@@ -161,6 +162,7 @@ typedef struct UIBOARD_MDComponent
 void UIBOARD_switch_maindisplay();
 extern char NEXTION_eot[];
 extern NEXTION_Component UIBOARD_components[];
+
 void NEXTION_set_componentstatus(NEXTION_Component* component, NEXTION_Componentstatus_t status);
 void NEXTION_set_brightness(uint8_t brightness);
 extern uint8_t NEXTION_brightness;
@@ -264,7 +266,20 @@ typedef enum INPUT_COMPONENTID
 	INPUT_COMPONENT_CONFIGIPM,
 	INPUT_COMPONENT_CONFIGCCM,
 	INPUT_COMPONENT_CONFIGDBS,
-	INPUT_COMPONENT_CONFIGBCK
+	INPUT_COMPONENT_CONFIGBCK,
+	INPUT_COMPONENT_NUMPAD1,
+	INPUT_COMPONENT_NUMPAD2,
+	INPUT_COMPONENT_NUMPAD3,
+	INPUT_COMPONENT_NUMPAD4,
+	INPUT_COMPONENT_NUMPAD5,
+	INPUT_COMPONENT_NUMPAD6,
+	INPUT_COMPONENT_NUMPAD7,
+	INPUT_COMPONENT_NUMPAD8,
+	INPUT_COMPONENT_NUMPAD9,
+	INPUT_COMPONENT_NUMPAD0,
+	INPUT_COMPONENT_NUMPADMINUS,
+	INPUT_COMPONENT_NUMPADDEL,
+	INPUT_COMPONENT_NUMPADSEND
 }INPUT_ComponentID_t;
 
 typedef enum INPUT_KEYSTATUS
@@ -299,5 +314,45 @@ void INPUT_switch_maindisplay();
 void INPUT_userinput(INPUT_Keystatus_t keystatus, INPUT_Key_t key, INPUT_ComponentID_t componentID);
 INPUT_Component* INPUT_findcomponent(uint8_t componentID);
 void INPUT_update();
+
+#define DISPLAYLENGTH ...
+enum COMPONENT
+{
+    UINUMPAD_COMPONENT_B1,
+    UINUMPAD_COMPONENT_B2,
+    UINUMPAD_COMPONENT_B3,
+    UINUMPAD_COMPONENT_B4,
+    UINUMPAD_COMPONENT_B5,
+    UINUMPAD_COMPONENT_B6,
+    UINUMPAD_COMPONENT_B7,
+    UINUMPAD_COMPONENT_B8,
+    UINUMPAD_COMPONENT_B9,
+    UINUMPAD_COMPONENT_B0,
+    UINUMPAD_COMPONENT_MINUS,
+    UINUMPAD_COMPONENT_DEL,
+    UINUMPAD_COMPONENT_SEND,
+};
+
+void UINUMPAD_click_b1();
+void UINUMPAD_click_b2();
+void UINUMPAD_click_b3();
+void UINUMPAD_click_b4();
+void UINUMPAD_click_b5();
+void UINUMPAD_click_b6();
+void UINUMPAD_click_b7();
+void UINUMPAD_click_b8();
+void UINUMPAD_click_b9();
+void UINUMPAD_click_b0();
+void UINUMPAD_click_del();
+void UINUMPAD_click_mns();
+void UINUMPAD_click_snd();
+
+extern NEXTION_Component UINUMPAD_components[];
+void UINUMPAD_switch(int16_t* target);
+void UINUMPAD_setup();
+void UINUMPAD_update();
+char* UINUMPAD_getstringvalue();
+
+int16_t UTILS_atoi(char* stringvalue);
 
 extern const int16_t PROGRAMDATA_NTC_2200_INVERTED[];

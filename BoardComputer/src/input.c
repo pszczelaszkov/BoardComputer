@@ -1,6 +1,7 @@
 #include "input.h"
 #include "UI/board.h"
 #include "UI/boardconfig.h"
+#include "UI/numpad.h"
 #include "bitwise.h"
 
 //Map all possible input components
@@ -67,6 +68,84 @@ INPUT_Component INPUT_components[] = {
 		.nextion_component = &NEXTION_common_bckcomponent,
 		.on_click = NEXTION_set_previous_page,
 	},
+	{
+		.componentID = INPUT_COMPONENT_NUMPAD1,
+		.nextcomponentID = INPUT_COMPONENT_NUMPAD2,
+		.nextion_component = &UINUMPAD_components[UINUMPAD_COMPONENT_B1],
+		.on_click = UINUMPAD_click_b1
+	},
+	{
+		.componentID = INPUT_COMPONENT_NUMPAD2,
+		.nextcomponentID = INPUT_COMPONENT_NUMPAD3,
+		.nextion_component = &UINUMPAD_components[UINUMPAD_COMPONENT_B2],
+		.on_click = UINUMPAD_click_b2
+	},
+	{
+		.componentID = INPUT_COMPONENT_NUMPAD3,
+		.nextcomponentID = INPUT_COMPONENT_NUMPAD4,
+		.nextion_component = &UINUMPAD_components[UINUMPAD_COMPONENT_B3],
+		.on_click = UINUMPAD_click_b3
+	},
+	{
+		.componentID = INPUT_COMPONENT_NUMPAD4,
+		.nextcomponentID = INPUT_COMPONENT_NUMPAD5,
+		.nextion_component = &UINUMPAD_components[UINUMPAD_COMPONENT_B4],
+		.on_click = UINUMPAD_click_b4
+	},
+	{
+		.componentID = INPUT_COMPONENT_NUMPAD5,
+		.nextcomponentID = INPUT_COMPONENT_NUMPAD6,
+		.nextion_component = &UINUMPAD_components[UINUMPAD_COMPONENT_B5],
+		.on_click = UINUMPAD_click_b5
+	},
+	{
+		.componentID = INPUT_COMPONENT_NUMPAD6,
+		.nextcomponentID = INPUT_COMPONENT_NUMPAD7,
+		.nextion_component = &UINUMPAD_components[UINUMPAD_COMPONENT_B6],
+		.on_click = UINUMPAD_click_b6
+	},
+	{
+		.componentID = INPUT_COMPONENT_NUMPAD7,
+		.nextcomponentID = INPUT_COMPONENT_NUMPAD8,
+		.nextion_component = &UINUMPAD_components[UINUMPAD_COMPONENT_B7],
+		.on_click = UINUMPAD_click_b7
+	},
+	{
+		.componentID = INPUT_COMPONENT_NUMPAD8,
+		.nextcomponentID = INPUT_COMPONENT_NUMPAD9,
+		.nextion_component = &UINUMPAD_components[UINUMPAD_COMPONENT_B8],
+		.on_click = UINUMPAD_click_b8
+	},
+	{
+		.componentID = INPUT_COMPONENT_NUMPAD9,
+		.nextcomponentID = INPUT_COMPONENT_NUMPAD0,
+		.nextion_component = &UINUMPAD_components[UINUMPAD_COMPONENT_B9],
+		.on_click = UINUMPAD_click_b9
+	},
+	{
+		.componentID = INPUT_COMPONENT_NUMPAD0,
+		.nextcomponentID = INPUT_COMPONENT_NUMPAD1,
+		.nextion_component = &UINUMPAD_components[UINUMPAD_COMPONENT_B0],
+		.on_click = UINUMPAD_click_b0
+	},
+	{
+		.componentID = INPUT_COMPONENT_NUMPADMINUS,
+		.nextcomponentID = INPUT_COMPONENT_NUMPADDEL,
+		.nextion_component = &UINUMPAD_components[UINUMPAD_COMPONENT_MINUS],
+		.on_click = UINUMPAD_click_mns
+	},
+	{
+		.componentID = INPUT_COMPONENT_NUMPADDEL,
+		.nextcomponentID = INPUT_COMPONENT_NUMPADSEND,
+		.nextion_component = &UINUMPAD_components[UINUMPAD_COMPONENT_DEL],
+		.on_click = UINUMPAD_click_del
+	},
+	{
+		.componentID = INPUT_COMPONENT_NUMPADSEND,
+		.nextcomponentID = INPUT_COMPONENT_NUMPAD0,
+		.nextion_component = &UINUMPAD_components[UINUMPAD_COMPONENT_SEND],
+		.on_click = UINUMPAD_click_snd
+	}
 };
 
 static const uint8_t components_count = sizeof(INPUT_components)/sizeof(INPUT_Component);

@@ -13,6 +13,7 @@
 #include <util/delay.h>
 #define ENTRY_ROUTINE void main()
 #else
+#include "UI/numpad.h"
 #include "UI/board.h"
 #include "UI/boardconfig.h"
 #include "ProgramData.h"

@@ -27,7 +27,7 @@ class testRun(unittest.TestCase):
         #cls.bcThread.start()
 
     def setUp(self):
-        self.bc.NEXTION_switch_page(1)
+        self.bc.NEXTION_switch_page(self.bc.NEXTION_PAGEID_BOARD)
         exec_cycle(self.bc)
         parse_nextion(self.bc, read_usart(self.bc), nextion_data)
         return super().setUp()
@@ -258,10 +258,9 @@ class testRun(unittest.TestCase):
         component = self.ffi.cast("void*", component)
         self.bc.NEXTION_set_componentstatus(component, status_selected)
         self.bc.USART_flush()
- 
+
         parse_nextion(self.bc, read_usart(self.bc), nextion_data)
         self.assertEqual(int(nextion_data['pic']['tst']), selectionvalue)
-
 
     def test_nextion_selection_decay(self):
         defaultvalue = 50
@@ -283,6 +282,78 @@ class testRun(unittest.TestCase):
 
         parse_nextion(self.bc, read_usart(self.bc), nextion_data)
         self.assertEqual(int(nextion_data['pic']['tst']), defaultvalue)
+
+    def test_uinumpad_setup(self):
+        testvalue = 100
+        length = self.bc.DISPLAYLENGTH
+        target = self.ffi.new("int16_t*", testvalue)
+        self.bc.UINUMPAD_switch(target)
+        stringvalue = self.ffi.unpack(
+            self.bc.UINUMPAD_getstringvalue(), length).decode("ascii")
+        expectedvalue = "   100"
+        self.assertEqual(stringvalue, expectedvalue)
+
+    def test_uinumpad_setup_minus(self):
+        testvalue = -100
+        length = self.bc.DISPLAYLENGTH
+        target = self.ffi.new("int16_t*", testvalue)
+        self.bc.UINUMPAD_switch(target)
+        stringvalue = self.ffi.unpack(
+            self.bc.UINUMPAD_getstringvalue(), length).decode("ascii")
+        expectedvalue = "-  100"
+        self.assertEqual(stringvalue, expectedvalue)
+
+    def test_uinumpad_append(self):
+        length = self.bc.DISPLAYLENGTH
+        target = self.ffi.new("int16_t*", 0)
+        self.bc.UINUMPAD_switch(target)
+        self.bc.UINUMPAD_click_b1()
+        self.bc.UINUMPAD_click_b2()
+        self.bc.UINUMPAD_click_b3()
+        self.bc.UINUMPAD_click_b4()
+        stringvalue = self.ffi.unpack(
+            self.bc.UINUMPAD_getstringvalue(), length).decode("ascii")
+        expectedvalue = ''.join(
+            [' ' for i in range(length)])[0:-4] + str(1234)
+        self.assertEqual(stringvalue, expectedvalue)
+
+    def test_uinumpad_delete(self):
+        testvalue = 12345
+        length = self.bc.DISPLAYLENGTH
+        target = self.ffi.new("int16_t*", testvalue)
+        self.bc.UINUMPAD_switch(target)
+        self.bc.UINUMPAD_click_del()
+        self.bc.UINUMPAD_click_del()
+        stringvalue = self.ffi.unpack(
+            self.bc.UINUMPAD_getstringvalue(), length).decode("ascii")
+        expectedvalue = ''.join(
+            [' ' for i in range(length)])[0:-3] + str(123)
+        self.assertEqual(stringvalue, expectedvalue)
+
+    def test_uinumpad_minus(self):
+        length = self.bc.DISPLAYLENGTH
+        target = self.ffi.new("int16_t*", 0)
+        self.bc.UINUMPAD_switch(target)
+        self.bc.UINUMPAD_click_mns()
+        stringvalue = self.ffi.unpack(
+            self.bc.UINUMPAD_getstringvalue(), length).decode("ascii")
+        expectedvalue = "     0"
+        self.assertEqual(stringvalue, expectedvalue)
+        self.bc.UINUMPAD_click_b5()
+        self.bc.UINUMPAD_click_mns()
+        stringvalue = self.ffi.unpack(
+            self.bc.UINUMPAD_getstringvalue(), length).decode("ascii")
+        expectedvalue = "-    5"
+        self.assertEqual(stringvalue, expectedvalue)
+
+    def test_uinumpad_send(self):
+        target = self.ffi.new("int16_t*", 100)
+        self.bc.UINUMPAD_switch(target)
+        self.bc.UINUMPAD_click_b0()
+        self.bc.UINUMPAD_click_b0()
+        self.bc.UINUMPAD_click_snd()
+        target = int(self.ffi.cast("int16_t", target[0]))
+        self.assertEqual(target, 10000)
 
 
 if __name__ == "main":

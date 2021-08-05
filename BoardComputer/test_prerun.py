@@ -143,6 +143,7 @@ class testPreRun(unittest.TestCase):
         self.bc.INPUT_userinput(released, enter, nonecomponent)
         self.assertEqual(keystatus[enter], click)
 
+
 class placeholder:
     def test_scheduler(self):
         # Test if fregister is fully initialized

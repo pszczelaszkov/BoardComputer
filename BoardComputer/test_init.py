@@ -90,7 +90,36 @@ class testInit(unittest.TestCase):
             self.assertEqual(name, m[2],msg=msg)
             self.assertEqual(t.highlighttype, m[3], msg=msg)
             i=i+1
-            
+
+    def test_uinumpad_components_conformance(self):
+        image = self.bc.NEXTION_HIGHLIGHTTYPE_IMAGE
+        model = [
+            [0xFD88, 0x4DF, b"b01", image],
+            [0xFD88, 0x4DF, b"b02", image],
+            [0xFD88, 0x4DF, b"b03", image],
+            [0xFD88, 0x4DF, b"b04", image],
+            [0xFD88, 0x4DF, b"b05", image],
+            [0xFD88, 0x4DF, b"b06", image],
+            [0xFD88, 0x4DF, b"b07", image],
+            [0xFD88, 0x4DF, b"b08", image],
+            [0xFD88, 0x4DF, b"b09", image],
+            [0xFD88, 0x4DF, b"b00", image],
+            [0xFD88, 0x4DF, b"mns", image],
+            [0xFD88, 0x4DF, b"del", image],
+            [0xFD88, 0x4DF, b"snd", image]
+
+        ]#default,selected,name,highlighttype
+        zipped = zip(self.ffi.unpack(self.bc.UINUMPAD_components, len(model)), model)
+        i = 0
+        for t, m in zipped:
+            msg = "Failed @ "+str(i)
+            self.assertEqual(t.value_default, m[0], msg=msg)
+            self.assertEqual(t.value_selected, m[1], msg=msg)
+            name = self.ffi.unpack(t.name, self.bc.NEXTION_OBJNAME_LEN)
+            self.assertEqual(name, m[2], msg=msg)
+            self.assertEqual(t.highlighttype, m[3], msg=msg)
+            i=i+1
+
     def test_uiboard_components_cohesion(self):
         image = self.bc.NEXTION_HIGHLIGHTTYPE_IMAGE
         croppedimage = self.bc.NEXTION_HIGHLIGHTTYPE_CROPPEDIMAGE
@@ -131,7 +160,7 @@ class testInit(unittest.TestCase):
             self.assertEqual(name, b"mds", msg=msg)
             self.assertEqual(component.highlighttype, image, msg=msg)
             i=i+1
-        
+   
         self.assertEqual(self.bc.UIBOARD_maindisplay_activecomponent,
                          self.bc.UIBOARD_maindisplay_components[0])
 
@@ -147,7 +176,20 @@ class testInit(unittest.TestCase):
             [self.bc.INPUT_COMPONENT_CONFIGWHH, b"whh"],
             [self.bc.INPUT_COMPONENT_CONFIGWMM, b"wmm"],
             [self.bc.INPUT_COMPONENT_CONFIGWSS, b"wss"],
-            [self.bc.INPUT_COMPONENT_CONFIGBCK, b"bck"]
+            [self.bc.INPUT_COMPONENT_CONFIGBCK, b"bck"],
+            [self.bc.INPUT_COMPONENT_NUMPAD0, b"b00"],
+            [self.bc.INPUT_COMPONENT_NUMPAD1, b"b01"],
+            [self.bc.INPUT_COMPONENT_NUMPAD2, b"b02"],
+            [self.bc.INPUT_COMPONENT_NUMPAD3, b"b03"],
+            [self.bc.INPUT_COMPONENT_NUMPAD4, b"b04"],
+            [self.bc.INPUT_COMPONENT_NUMPAD5, b"b05"],
+            [self.bc.INPUT_COMPONENT_NUMPAD6, b"b06"],
+            [self.bc.INPUT_COMPONENT_NUMPAD7, b"b07"],
+            [self.bc.INPUT_COMPONENT_NUMPAD8, b"b08"],
+            [self.bc.INPUT_COMPONENT_NUMPAD9, b"b09"],
+            [self.bc.INPUT_COMPONENT_NUMPADMINUS, b"mns"],
+            [self.bc.INPUT_COMPONENT_NUMPADDEL, b"del"],
+            [self.bc.INPUT_COMPONENT_NUMPADSEND, b"snd"]
         ]
 
         nullptr = self.bc.INPUT_findcomponent(self.bc.INPUT_COMPONENT_NONE)
@@ -174,6 +216,17 @@ class testInit(unittest.TestCase):
         name = self.ffi.unpack(bckcomponent.name, self.bc.NEXTION_OBJNAME_LEN)
         self.assertEqual(name, b'bck')
         self.assertEqual(bckcomponent.highlighttype, image)
+
+    def test_utils_atoi(self):
+        sample = [b'2', b'0', b'0', b'0', b'0']
+        testvalue = self.ffi.new("char[]", sample)
+        self.assertEqual(self.bc.UTILS_atoi(testvalue), 20000)
+
+    def test_utils_atoi_minus(self):
+        sample = [b'-', b'2', b'0', b'0', b'0', b'0']
+        testvalue = self.ffi.new("char[]", sample)
+        self.assertEqual(self.bc.UTILS_atoi(testvalue), -20000)
+
 
 if __name__ == "main":
     unittest.main()

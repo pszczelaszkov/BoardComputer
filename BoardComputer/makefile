@@ -6,6 +6,7 @@ test:
 	gcc -fpic -c src/nextion.c -O1 -o bin/nextion_.o
 	gcc -fpic -c src/UI/board.c -O1 -o bin/uiboard_.o
 	gcc -fpic -c src/UI/boardconfig.c -O1 -o bin/uiboardconfig_.o
+	gcc -fpic -c src/UI/numpad.c -O1 -o bin/numpad_.o
 	gcc -fpic -c src/timer.c -O1 -o bin/timer_.o
 	gcc -fpic -c src/sensorsfeed.c -O1 -o bin/sensorsfeed_.o
 	gcc -fpic -c src/countersfeed.c -O1 -o bin/countersfeed_.o
@@ -25,6 +26,7 @@ boardcomputer:
 	avr-gcc -c src/nextion.c -O1 -mmcu=atmega324pb -fshort-enums -o bin/nextion.o
 	avr-gcc -c src/UI/board.c -O1 -mmcu=atmega324pb -fshort-enums -o bin/uiboard.o
 	avr-gcc -c src/UI/boardconfig.c -O1 -mmcu=atmega324pb -fshort-enums -o bin/uiboardconfig.o
+	avr-gcc -c src/UI/numpad.c -O1 -mmcu=atmega324pb -fshort-enums -o bin/numpad.o
 	avr-gcc -c src/timer.c -O1 -mmcu=atmega324pb -fshort-enums -o bin/timer.o
 	avr-gcc -c src/utils.c -O1 -mmcu=atmega324pb -fshort-enums -o bin/utils.o
 	avr-gcc -c src/average.c -O1 -mmcu=atmega324pb -fshort-enums -o bin/average.o
