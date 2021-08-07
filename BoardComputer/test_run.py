@@ -27,7 +27,7 @@ class testRun(unittest.TestCase):
         #cls.bcThread.start()
 
     def setUp(self):
-        self.bc.NEXTION_switch_page(self.bc.NEXTION_PAGEID_BOARD)
+        self.bc.NEXTION_switch_page(self.bc.NEXTION_PAGEID_BOARD, 0)
         exec_cycle(self.bc)
         parse_nextion(self.bc, read_usart(self.bc), nextion_data)
         return super().setUp()

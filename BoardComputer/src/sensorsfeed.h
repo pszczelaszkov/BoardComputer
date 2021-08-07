@@ -54,8 +54,8 @@ enum SENSORSFEED_FEEDID
 extern uint16_t SENSORSFEED_feed[];
 
 extern uint16_t SENSORSFEED_max6675_data;
-extern uint16_t SENSORSFEED_speed_ticks_100m;
-extern uint16_t SENSORSFEED_injector_ccm;
+extern int16_t SENSORSFEED_speed_ticks_100m;
+extern int16_t SENSORSFEED_injector_ccm;
 extern uint16_t SENSORSFEED_fuelmodifier;
 extern uint16_t SENSORSFEED_speedmodifier;
 extern uint16_t SENSORSFEED_speed_max;

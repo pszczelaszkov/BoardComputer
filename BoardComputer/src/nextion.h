@@ -63,7 +63,7 @@ extern Callback_32 NEXTION_requested_data_handler;
 extern NEXTION_Component NEXTION_common_bckcomponent;
 uint8_t NEXTION_send(char data[], uint8_t flush);
 int8_t NEXTION_update();
-int8_t NEXTION_switch_page(NEXTION_PageID_t pageID);
+int8_t NEXTION_switch_page(NEXTION_PageID_t pageID, uint8_t push_to_history);
 uint8_t NEXTION_add_brightness(uint8_t value, uint8_t autoreload);
 
 void NEXTION_request_brightness();

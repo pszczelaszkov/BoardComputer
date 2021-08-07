@@ -48,7 +48,8 @@ INPUT_Component INPUT_components[] = {
 	{
 		.componentID = INPUT_COMPONENT_CONFIGIPM,
 		.nextcomponentID = INPUT_COMPONENT_CONFIGCCM,
-		.nextion_component = (NEXTION_Component*)&UIBOARDCONFIG_executable_components[UIBOARDCONFIG_COMPONENT_IPM]
+		.nextion_component = (NEXTION_Component*)&UIBOARDCONFIG_executable_components[UIBOARDCONFIG_COMPONENT_IPM],
+		.on_click=UIBOARDCONFIG_modify_ipm
 	},
 	{
 		.componentID = INPUT_COMPONENT_CONFIGCCM,

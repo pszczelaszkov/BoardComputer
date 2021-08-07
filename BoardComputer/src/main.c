@@ -34,7 +34,7 @@ void prestart_routine()
 	SENSORSFEED_update();
 	_delay_ms(1000);
 	NEXTION_request_brightness();
-	NEXTION_switch_page(1);
+	NEXTION_switch_page(1,0);
 	USART_flush();
 }
 

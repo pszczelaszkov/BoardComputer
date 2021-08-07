@@ -11,7 +11,7 @@
 - [x] Exec component near MD?
 - [x] Correct Maindisplay switching/ Timer behaviour
 - [x] Stopwatch zeroing
-- [ ] Numpad
+- [x] Numpad
 - [x] Board Config page
 - [ ] ADC rendering rework
 - [x] Rework UI

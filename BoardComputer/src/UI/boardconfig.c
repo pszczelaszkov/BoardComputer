@@ -5,6 +5,7 @@
 #include "../sensorsfeed.h"
 #include "../timer.h"
 #include "../input.h"
+#include "numpad.h"
 
 static const char ipm_str[NEXTION_OBJNAME_LEN] = "ipm";
 static const char ccm_str[NEXTION_OBJNAME_LEN] = "ccm";
@@ -152,6 +153,16 @@ void UIBOARDCONFIG_modify_dbs()
         NEXTION_add_brightness(step,1);
         autoreload_counter = 8;//full cycle
     }
+}
+
+void UIBOARDCONFIG_modify_ccm()
+{
+    
+}
+
+void UIBOARDCONFIG_modify_ipm()
+{
+    UINUMPAD_switch(&SENSORSFEED_speed_ticks_100m);
 }
 
 void UIBOARDCONFIG_setup()

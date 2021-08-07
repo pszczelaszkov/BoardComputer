@@ -92,21 +92,21 @@ class testInit(unittest.TestCase):
             i=i+1
 
     def test_uinumpad_components_conformance(self):
-        image = self.bc.NEXTION_HIGHLIGHTTYPE_IMAGE
+        backcolor = self.bc.NEXTION_HIGHLIGHTTYPE_BACKCOLOR
         model = [
-            [0xFD88, 0x4DF, b"b01", image],
-            [0xFD88, 0x4DF, b"b02", image],
-            [0xFD88, 0x4DF, b"b03", image],
-            [0xFD88, 0x4DF, b"b04", image],
-            [0xFD88, 0x4DF, b"b05", image],
-            [0xFD88, 0x4DF, b"b06", image],
-            [0xFD88, 0x4DF, b"b07", image],
-            [0xFD88, 0x4DF, b"b08", image],
-            [0xFD88, 0x4DF, b"b09", image],
-            [0xFD88, 0x4DF, b"b00", image],
-            [0xFD88, 0x4DF, b"mns", image],
-            [0xFD88, 0x4DF, b"del", image],
-            [0xFD88, 0x4DF, b"snd", image]
+            [0xFD88, 0x4DF, b"b01", backcolor],
+            [0xFD88, 0x4DF, b"b02", backcolor],
+            [0xFD88, 0x4DF, b"b03", backcolor],
+            [0xFD88, 0x4DF, b"b04", backcolor],
+            [0xFD88, 0x4DF, b"b05", backcolor],
+            [0xFD88, 0x4DF, b"b06", backcolor],
+            [0xFD88, 0x4DF, b"b07", backcolor],
+            [0xFD88, 0x4DF, b"b08", backcolor],
+            [0xFD88, 0x4DF, b"b09", backcolor],
+            [0xFD88, 0x4DF, b"b00", backcolor],
+            [0xFD88, 0x4DF, b"mns", backcolor],
+            [0xFD88, 0x4DF, b"del", backcolor],
+            [0xFD88, 0x4DF, b"snd", backcolor]
 
         ]#default,selected,name,highlighttype
         zipped = zip(self.ffi.unpack(self.bc.UINUMPAD_components, len(model)), model)

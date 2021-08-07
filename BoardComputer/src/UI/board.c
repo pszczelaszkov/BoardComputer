@@ -269,7 +269,7 @@ void UIBOARD_setup()
 
 void UIBOARD_callback_config()
 {
-	NEXTION_switch_page(NEXTION_PAGEID_BOARDCONFIG);
+	NEXTION_switch_page(NEXTION_PAGEID_BOARDCONFIG, 1);
 }
 
 void UIBOARD_update()

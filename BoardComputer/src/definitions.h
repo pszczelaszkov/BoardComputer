@@ -66,8 +66,8 @@ enum SENSORSFEED_FEEDID
 };
 extern uint8_t ADMUX;
 extern uint8_t ADC;
-extern uint16_t SENSORSFEED_injector_ccm;
-extern uint16_t SENSORSFEED_speed_ticks_100m;
+extern int16_t SENSORSFEED_injector_ccm;
+extern int16_t SENSORSFEED_speed_ticks_100m;
 extern uint16_t SENSORSFEED_fuelmodifier;
 extern uint16_t SENSORSFEED_feed[];
 void SENSORSFEED_initialize();
@@ -209,7 +209,7 @@ extern enum SENSORSFEED_EGT_TRANSMISSION_STATUS
 void SENSORSFEED_update_EGT();
 void UIBOARD_update_EGT();
 void NEXTION_update_select_decay();
-int8_t NEXTION_switch_page(NEXTION_PageID_t pageID);
+int8_t NEXTION_switch_page(NEXTION_PageID_t pageID, uint8_t push_to_history);
 extern uint8_t NEXTION_selection_counter;
 extern uint8_t SPDR0;
 extern uint16_t SENSORSFEED_max6675_data;

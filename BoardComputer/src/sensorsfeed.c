@@ -10,8 +10,8 @@ enum SENSORSFEED_EGT_TRANSMISSION_STATUS SENSORSFEED_EGT_transmission_status;
 
 
 uint16_t SENSORSFEED_feed[SENSORSFEED_FEED_SIZE];//ADC 0...SENSORSFEED_ADC_CHANNELS
-uint16_t SENSORSFEED_speed_ticks_100m = 1;
-uint16_t SENSORSFEED_injector_ccm = 1;
+int16_t SENSORSFEED_speed_ticks_100m = 1;
+int16_t SENSORSFEED_injector_ccm = 1;
 uint16_t SENSORSFEED_max6675_data;
 uint16_t SENSORSFEED_fuelmodifier;
 uint16_t SENSORSFEED_speedmodifier;

@@ -8,8 +8,10 @@
 #include "UI/numpad.h"
 #include "input.h"
 
+#define PAGEHISTORY_MAXDEPTH 5
 static NEXTION_Component* selected_component;
-static NEXTION_PageID_t last_pageID;
+static NEXTION_PageID_t pagehistory[PAGEHISTORY_MAXDEPTH];
+static uint8_t pagehistory_depth;
 static NEXTION_PageID_t active_pageID;
 static Callback page_callback;
 static const char str_bck[NEXTION_OBJNAME_LEN] = "bck";
@@ -37,8 +39,8 @@ static struct Page
 	},
 	[NEXTION_PAGEID_NUMPAD]=
 	{
-		.callback_update = UINUMPAD_update,
-		.callback_setup = UINUMPAD_setup
+		.callback_setup = UINUMPAD_setup,
+		.callback_update = UINUMPAD_update
 	}
 
 };
@@ -53,6 +55,35 @@ NEXTION_Component NEXTION_common_bckcomponent = {
 void handler_brightness(uint32_t data)
 {
 	NEXTION_brightness = data;
+}
+
+/*
+Push pageID to history stack.
+@return False if no space.
+*/ 
+int8_t pagehistory_push(NEXTION_PageID_t pageID)
+{
+	if(pagehistory_depth < PAGEHISTORY_MAXDEPTH)
+	{
+		pagehistory[pagehistory_depth] = active_pageID;
+		pagehistory_depth++;
+		return 1;
+	}
+	return 0;
+}
+
+/*
+Moves back in history stack. 
+@return Previous pageID or NEXTION_PAGEID_BOARD as default
+*/
+NEXTION_PageID_t pagehistory_pop()
+{
+	if(pagehistory_depth > 0)
+	{
+		pagehistory_depth--;
+		return pagehistory[pagehistory_depth];
+	}
+	return NEXTION_PAGEID_BOARD;
 }
 
 uint8_t NEXTION_send(char data[], uint8_t flush)
@@ -121,7 +152,7 @@ void NEXTION_set_componentstatus(NEXTION_Component* component, NEXTION_Component
 	NEXTION_send(buffer,USART_HOLD);
 }
 
-int8_t NEXTION_switch_page(NEXTION_PageID_t pageID)
+int8_t NEXTION_switch_page(NEXTION_PageID_t pageID, uint8_t push_to_history)
 {
 	char buffer[] = "page   ";
 	if(pageID >= 0xff)
@@ -131,7 +162,9 @@ int8_t NEXTION_switch_page(NEXTION_PageID_t pageID)
 	NEXTION_update_select_decay();
 	INPUT_active_component = NULL;
 
-	last_pageID = active_pageID;
+	if(push_to_history)
+		pagehistory_push(active_pageID);
+
 	active_pageID = pageID;
 	struct Page newpage = pages[pageID];
 	Callback setup = newpage.callback_setup;
@@ -224,7 +257,7 @@ void NEXTION_set_brightness(uint8_t brightness)
 
 void NEXTION_set_previous_page()
 {
-	NEXTION_switch_page(last_pageID);
+	NEXTION_switch_page(pagehistory_pop(), 0);
 }
 
 int8_t NEXTION_update()

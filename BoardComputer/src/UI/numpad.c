@@ -1,5 +1,7 @@
 #include "numpad.h"
 #include "../nextion.h"
+#include "../USART.h"
+#include "../input.h"
 
 static const uint8_t max_length = DISPLAYLENGTH;
 static const uint8_t cursor = DISPLAYLENGTH - 1;
@@ -26,91 +28,91 @@ NEXTION_Component UINUMPAD_components[] =
 {
     [UINUMPAD_COMPONENT_B0] = 
     {
-        .highlighttype = NEXTION_HIGHLIGHTTYPE_IMAGE,
+        .highlighttype = NEXTION_HIGHLIGHTTYPE_BACKCOLOR,
 		.value_default = PASTELORANGE,
 		.value_selected = BRIGHTBLUE,
 		.name = str_b00
     },
     [UINUMPAD_COMPONENT_B1] = 
     {
-        .highlighttype = NEXTION_HIGHLIGHTTYPE_IMAGE,
+        .highlighttype = NEXTION_HIGHLIGHTTYPE_BACKCOLOR,
 		.value_default = PASTELORANGE,
 		.value_selected = BRIGHTBLUE,
 		.name = str_b01
     },
     [UINUMPAD_COMPONENT_B2] = 
     {
-        .highlighttype = NEXTION_HIGHLIGHTTYPE_IMAGE,
+        .highlighttype = NEXTION_HIGHLIGHTTYPE_BACKCOLOR,
 		.value_default = PASTELORANGE,
 		.value_selected = BRIGHTBLUE,
 		.name = str_b02
     },
     [UINUMPAD_COMPONENT_B3] = 
     {
-        .highlighttype = NEXTION_HIGHLIGHTTYPE_IMAGE,
+        .highlighttype = NEXTION_HIGHLIGHTTYPE_BACKCOLOR,
 		.value_default = PASTELORANGE,
 		.value_selected = BRIGHTBLUE,
 		.name = str_b03
     },
     [UINUMPAD_COMPONENT_B4] = 
     {
-        .highlighttype = NEXTION_HIGHLIGHTTYPE_IMAGE,
+        .highlighttype = NEXTION_HIGHLIGHTTYPE_BACKCOLOR,
 		.value_default = PASTELORANGE,
 		.value_selected = BRIGHTBLUE,
 		.name = str_b04
     },
     [UINUMPAD_COMPONENT_B5] = 
     {
-        .highlighttype = NEXTION_HIGHLIGHTTYPE_IMAGE,
+        .highlighttype = NEXTION_HIGHLIGHTTYPE_BACKCOLOR,
 		.value_default = PASTELORANGE,
 		.value_selected = BRIGHTBLUE,
 		.name = str_b05
     },
     [UINUMPAD_COMPONENT_B6] = 
     {
-        .highlighttype = NEXTION_HIGHLIGHTTYPE_IMAGE,
+        .highlighttype = NEXTION_HIGHLIGHTTYPE_BACKCOLOR,
 		.value_default = PASTELORANGE,
 		.value_selected = BRIGHTBLUE,
 		.name = str_b06
     },
     [UINUMPAD_COMPONENT_B7] = 
     {
-        .highlighttype = NEXTION_HIGHLIGHTTYPE_IMAGE,
+        .highlighttype = NEXTION_HIGHLIGHTTYPE_BACKCOLOR,
 		.value_default = PASTELORANGE,
 		.value_selected = BRIGHTBLUE,
 		.name = str_b07
     },
     [UINUMPAD_COMPONENT_B8] = 
     {
-        .highlighttype = NEXTION_HIGHLIGHTTYPE_IMAGE,
+        .highlighttype = NEXTION_HIGHLIGHTTYPE_BACKCOLOR,
 		.value_default = PASTELORANGE,
 		.value_selected = BRIGHTBLUE,
 		.name = str_b08
     },
     [UINUMPAD_COMPONENT_B9] = 
     {
-        .highlighttype = NEXTION_HIGHLIGHTTYPE_IMAGE,
+        .highlighttype = NEXTION_HIGHLIGHTTYPE_BACKCOLOR,
 		.value_default = PASTELORANGE,
 		.value_selected = BRIGHTBLUE,
 		.name = str_b09
     },
     [UINUMPAD_COMPONENT_MINUS] = 
     {
-        .highlighttype = NEXTION_HIGHLIGHTTYPE_IMAGE,
+        .highlighttype = NEXTION_HIGHLIGHTTYPE_BACKCOLOR,
 		.value_default = PASTELORANGE,
 		.value_selected = BRIGHTBLUE,
 		.name = str_mns
     },
     [UINUMPAD_COMPONENT_DEL] = 
     {
-        .highlighttype = NEXTION_HIGHLIGHTTYPE_IMAGE,
+        .highlighttype = NEXTION_HIGHLIGHTTYPE_BACKCOLOR,
 		.value_default = PASTELORANGE,
 		.value_selected = BRIGHTBLUE,
 		.name = str_del
     },
     [UINUMPAD_COMPONENT_SEND] = 
     {
-        .highlighttype = NEXTION_HIGHLIGHTTYPE_IMAGE,
+        .highlighttype = NEXTION_HIGHLIGHTTYPE_BACKCOLOR,
 		.value_default = PASTELORANGE,
 		.value_selected = BRIGHTBLUE,
 		.name = str_snd
@@ -203,6 +205,7 @@ void UINUMPAD_click_snd()
 {
     if(current_length > 0)
         *target_ptr = UTILS_atoi(stringvalue);
+    NEXTION_set_previous_page();
 }
 
 /*The only safe way to trigger numpad*/
@@ -210,7 +213,7 @@ void UINUMPAD_switch(int16_t* target)
 {
     target_ptr = target;
     if(target_ptr)
-        NEXTION_switch_page(NEXTION_PAGEID_NUMPAD);
+        NEXTION_switch_page(NEXTION_PAGEID_NUMPAD, 1);
 }
 
 void UINUMPAD_setup()
@@ -231,10 +234,16 @@ void UINUMPAD_setup()
     memcpy(&stringvalue[max_length-buffer_length],buffer,buffer_length);
     if(target_value < 0)
         toggle_sign();
+
+    INPUT_active_component = INPUT_findcomponent(INPUT_COMPONENT_NUMPADSEND);
 }
 
 void UINUMPAD_update()
-{}
+{
+    char buffer[11+DISPLAYLENGTH] = "dsp.txt=\"      \"";
+    memcpy(&buffer[9], stringvalue, DISPLAYLENGTH);
+    NEXTION_send(buffer, USART_HOLD);
+}
 
 #ifndef __AVR__
 char* UINUMPAD_getstringvalue() {return stringvalue;}

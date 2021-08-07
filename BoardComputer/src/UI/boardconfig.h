@@ -23,4 +23,6 @@ extern NEXTION_Executable_Component UIBOARDCONFIG_executable_components[];
 void UIBOARDCONFIG_setup();
 void UIBOARDCONFIG_update();
 void UIBOARDCONFIG_modify_dbs();
+void UIBOARDCONFIG_modify_ccm();
+void UIBOARDCONFIG_modify_ipm();
 #endif
