@@ -1,5 +1,5 @@
 //Definitions only for testing purposes
-extern volatile uint8_t SYSTEM_run, SYSTEM_exec, SYSTEM_event_timer, PINA, PINB, DDRB;
+extern volatile uint8_t SYSTEM_run, SYSTEM_exec, SYSTEM_event_timer, PINA, PINB, PORTD, DDRB;
 volatile extern uint16_t TCNT1,TCNT2;
 typedef void (*Callback)();
 void test();
@@ -355,4 +355,21 @@ char* UINUMPAD_getstringvalue();
 
 int16_t UTILS_atoi(char* stringvalue);
 
+typedef enum SYSTEM_STATUS
+{
+    SYSTEM_STATUS_IDLE,
+    SYSTEM_STATUS_GUIIDLE,
+    SYSTEM_STATUS_HEADLESS, 
+    SYSTEM_STATUS_OPERATIONAL
+}SYSTEM_STATUS_t;
+
+typedef enum SYSTEM_ALERT
+{
+    SYSTEM_ALERT_NOTIFICATION,
+    SYSTEM_ALERT_WARNING,
+    SYSTEM_ALERT_CRITICAL
+}SYSTEM_ALERT_t;
+
+void SYSTEM_raisealert(SYSTEM_ALERT_t alert);
+void SYSTEM_update();
 extern const int16_t PROGRAMDATA_NTC_2200_INVERTED[];

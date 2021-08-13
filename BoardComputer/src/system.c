@@ -8,6 +8,39 @@ volatile uint8_t SYSTEM_run = 1;
 volatile uint8_t SYSTEM_exec;
 volatile uint8_t SYSTEM_event_timer;//Represent fraction of second in values from 0 to 7.
 
+typedef struct Alert
+{
+    uint8_t priority:4;
+    uint8_t pattern_position:4;
+    uint16_t pattern;
+}Alert;
+
+static Alert alert_register[] =
+{
+    [SYSTEM_ALERT_NOTIFICATION] =
+    {
+        .priority = 0,
+        .pattern = 0xf
+    },
+    [SYSTEM_ALERT_CRITICAL] =
+    {
+        .priority = 0xf,
+        .pattern = 0xf0f
+    }
+};
+
+static Alert* active_alert;
+
+void SYSTEM_raisealert(SYSTEM_ALERT_t alert)
+{
+    Alert* new_alert = &alert_register[alert];
+    if(!active_alert || active_alert && active_alert->priority <= new_alert->priority)
+    {
+        new_alert->pattern_position = 0;
+        active_alert = new_alert;
+    }
+}
+
 void SYSTEM_initialize()
 {
     #ifdef __AVR__
@@ -18,6 +51,22 @@ void SYSTEM_initialize()
     TCCR2B = (3 << CS21);// 256 prescaler
     TIMSK2 = (1 << OCIE2A);// Enable IRQ
     #endif
+}
+
+void SYSTEM_update()
+{
+    
+    if(active_alert)
+    {
+        uint16_t mask = 1 << active_alert->pattern_position; 
+        if(active_alert->pattern & mask)
+            SET(PORTD,BIT7);
+        else
+            CLEAR(PORTD,BIT7);
+        active_alert->pattern_position++;
+        if(active_alert->pattern_position == sizeof(active_alert->pattern)*8-1)
+            active_alert = NULL;  
+    }
 }
 
 EVENT_TIMER_ISR

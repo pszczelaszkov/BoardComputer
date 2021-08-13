@@ -143,6 +143,17 @@ class testPreRun(unittest.TestCase):
         self.bc.INPUT_userinput(released, enter, nonecomponent)
         self.assertEqual(keystatus[enter], click)
 
+    def test_system_alert(self):
+        expected_pattern = 0xf0f  # using critical alert pattern
+        result_pattern = 0
+        pattern_len = 16
+        self.bc.SYSTEM_raisealert(self.bc.SYSTEM_ALERT_CRITICAL)
+        for i in range(pattern_len):
+            self.bc.SYSTEM_update()
+            pinvalue = (self.bc.PORTD & (1 << 7)) >> 7
+            result_pattern = (pinvalue << i) | result_pattern
+        self.assertEqual(result_pattern, expected_pattern)
+
 
 class placeholder:
     def test_scheduler(self):

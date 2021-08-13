@@ -40,6 +40,7 @@ void prestart_routine()
 
 void core()
 {	
+	SYSTEM_update();
 	TIMER_update();
 	SENSORSFEED_update();
 	INPUT_update();
@@ -54,12 +55,12 @@ ENTRY_ROUTINE
 	SET(DDRB,BIT0);
 	SET(DDRB,BIT4);
 	SET(DDRB,BIT7);
-	
+
+	SYSTEM_initialize();
 	SENSORSFEED_initialize();
 	TIMER_initialize();
 	INPUT_initialize();
 	USART_initialize();
-	SYSTEM_initialize();
 
 	#ifndef __AVR__
 		if(SYSTEM_run)

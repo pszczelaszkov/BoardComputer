@@ -19,3 +19,7 @@
 - [x] Rework nextion componenttypes to background type
 - [ ] More flexible RX UART
 - [x] Rework the pages api
+- [x] Sound Alarm
+- [ ] System Status
+- [ ] Visual warning
+- [ ] Display detection
