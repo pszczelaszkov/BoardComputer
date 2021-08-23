@@ -227,6 +227,8 @@ class testInit(unittest.TestCase):
         testvalue = self.ffi.new("char[]", sample)
         self.assertEqual(self.bc.UTILS_atoi(testvalue), -20000)
 
+    def test_system_defaultstate(self):
+        self.assertEqual(self.bc.SYSTEM_status, self.bc.SYSTEM_STATUS_IDLE)
 
 if __name__ == "main":
     unittest.main()

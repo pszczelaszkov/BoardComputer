@@ -4,6 +4,7 @@
 #ifdef __AVR__
 #include <avr/io.h>
 #endif
+volatile SYSTEM_STATUS_t SYSTEM_status;
 volatile uint8_t SYSTEM_run = 1;
 volatile uint8_t SYSTEM_exec;
 volatile uint8_t SYSTEM_event_timer;//Represent fraction of second in values from 0 to 7.
@@ -43,6 +44,7 @@ void SYSTEM_raisealert(SYSTEM_ALERT_t alert)
 
 void SYSTEM_initialize()
 {
+    SYSTEM_status = SYSTEM_STATUS_OPERATIONAL;//workaround!
     #ifdef __AVR__
     //Event Timer
     OCR2A = 15;// 1/8 seconds
@@ -56,7 +58,7 @@ void SYSTEM_initialize()
 void SYSTEM_update()
 {
     
-    if(active_alert)
+    if(active_alert && SYSTEM_status == SYSTEM_STATUS_OPERATIONAL)
     {
         uint16_t mask = 1 << active_alert->pattern_position; 
         if(active_alert->pattern & mask)

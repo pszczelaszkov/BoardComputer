@@ -40,12 +40,17 @@ void prestart_routine()
 
 void core()
 {	
-	SYSTEM_update();
-	TIMER_update();
-	SENSORSFEED_update();
-	INPUT_update();
-	NEXTION_update();
-	USART_flush();
+	switch(SYSTEM_status)
+	{			
+		case SYSTEM_STATUS_OPERATIONAL:
+			INPUT_update();
+			SENSORSFEED_update();	
+		case SYSTEM_STATUS_IDLE:
+			SYSTEM_update();
+			TIMER_update();
+			NEXTION_update();
+			USART_flush();
+	}			
 }
 
 ENTRY_ROUTINE

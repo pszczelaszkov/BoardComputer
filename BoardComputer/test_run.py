@@ -23,6 +23,7 @@ class testRun(unittest.TestCase):
         cls.bc.prestart_routine()
         #clear usart from initial stuff
         read_usart(cls.bc)
+        cls.bc.SYSTEM_status = cls.bc.SYSTEM_STATUS_OPERATIONAL
         #cls.bcThread = Thread(target=cls.bc.main, daemon=True)
         #cls.bcThread.start()
 

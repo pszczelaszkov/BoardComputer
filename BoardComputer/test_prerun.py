@@ -153,6 +153,18 @@ class testPreRun(unittest.TestCase):
             pinvalue = (self.bc.PORTD & (1 << 7)) >> 7
             result_pattern = (pinvalue << i) | result_pattern
         self.assertEqual(result_pattern, expected_pattern)
+   
+    def test_system_alert_idle(self):
+        self.bc.SYSTEM_status = self.bc.SYSTEM_STATUS_IDLE
+        expected_pattern = 0x0  # using critical alert pattern
+        result_pattern = 0
+        pattern_len = 16
+        self.bc.SYSTEM_raisealert(self.bc.SYSTEM_ALERT_CRITICAL)
+        for i in range(pattern_len):
+            self.bc.SYSTEM_update()
+            pinvalue = (self.bc.PORTD & (1 << 7)) >> 7
+            result_pattern = (pinvalue << i) | result_pattern
+        self.assertEqual(result_pattern, expected_pattern)
 
 
 class placeholder:

@@ -358,8 +358,6 @@ int16_t UTILS_atoi(char* stringvalue);
 typedef enum SYSTEM_STATUS
 {
     SYSTEM_STATUS_IDLE,
-    SYSTEM_STATUS_GUIIDLE,
-    SYSTEM_STATUS_HEADLESS, 
     SYSTEM_STATUS_OPERATIONAL
 }SYSTEM_STATUS_t;
 
@@ -369,6 +367,8 @@ typedef enum SYSTEM_ALERT
     SYSTEM_ALERT_WARNING,
     SYSTEM_ALERT_CRITICAL
 }SYSTEM_ALERT_t;
+
+extern volatile SYSTEM_STATUS_t SYSTEM_status;
 
 void SYSTEM_raisealert(SYSTEM_ALERT_t alert);
 void SYSTEM_update();
