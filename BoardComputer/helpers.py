@@ -19,8 +19,6 @@ def load(filename,definitions):
 def exec_cycle(module):
     module.SYSTEM_exec = True
     module.core()
-    #while module.exec is True:
-     #   pass
 
 
 def max6675_response(module, test_response):

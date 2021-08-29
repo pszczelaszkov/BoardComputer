@@ -5,12 +5,9 @@
  * Author : pszczelaszkov
  */ 
 
-#define F_CPU 8000000
-
 #ifdef __AVR__
 #include <avr/io.h>
 #include <avr/sleep.h>
-#include <util/delay.h>
 #define ENTRY_ROUTINE void main()
 #else
 #include "UI/numpad.h"
@@ -28,14 +25,34 @@
 #include "input.h"
 #include "system.h"
 
-void prestart_routine()
+
+void maintain_display_connection(uint8_t update_result)
 {
-	SENSORSFEED_EGT_CONVERSION;
-	SENSORSFEED_update();
-	_delay_ms(1000);
-	NEXTION_request_brightness();
-	NEXTION_switch_page(1,0);
-	USART_flush();
+	static int8_t display_reconnect_counter;
+	if(update_result)
+	{
+		if(display_reconnect_counter)
+		{
+			display_reconnect_counter = 0;
+			SYSTEM_raisealert(SYSTEM_ALERT_NOTIFICATION);
+		}
+	}
+	else
+	{
+		switch(display_reconnect_counter)
+		{
+			case 0:
+				//Raise only once, not possible to overload to 0
+				SYSTEM_raisealert(SYSTEM_ALERT_CRITICAL);
+			break;
+			case 8:
+				NEXTION_reset();
+			break;
+			case 32://4s reset cycle
+				display_reconnect_counter = 0;
+		}
+		display_reconnect_counter++;
+	}
 }
 
 void core()
@@ -48,7 +65,7 @@ void core()
 		case SYSTEM_STATUS_IDLE:
 			SYSTEM_update();
 			TIMER_update();
-			NEXTION_update();
+			maintain_display_connection(NEXTION_update());
 			USART_flush();
 	}			
 }
@@ -67,10 +84,10 @@ ENTRY_ROUTINE
 	INPUT_initialize();
 	USART_initialize();
 
+	NEXTION_handler_ready();//DEBUG purpose only
 	#ifndef __AVR__
 		if(SYSTEM_run)
 	#endif
-	prestart_routine();
 
     while(SYSTEM_run)
     {

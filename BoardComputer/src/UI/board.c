@@ -265,6 +265,7 @@ void UIBOARD_update_watch()
 void UIBOARD_setup()
 {
 	INPUT_active_component = INPUT_findcomponent(INPUT_COMPONENT_MAINDISPLAY);
+	SENSORSFEED_update();
 }
 
 void UIBOARD_callback_config()

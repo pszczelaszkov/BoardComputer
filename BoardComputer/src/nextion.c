@@ -1,3 +1,7 @@
+#define F_CPU 8000000
+#ifdef __AVR__
+	#include <util/delay.h>
+#endif
 #include "nextion.h"
 #include "USART.h"
 #include "sensorsfeed.h"
@@ -9,6 +13,10 @@
 #include "input.h"
 
 #define PAGEHISTORY_MAXDEPTH 5
+#define WATCHDOG_THRESHOLD 8
+
+static void init_setup();
+static void init_update();
 static NEXTION_Component* selected_component;
 static NEXTION_PageID_t pagehistory[PAGEHISTORY_MAXDEPTH];
 static uint8_t pagehistory_depth;
@@ -16,10 +24,18 @@ static NEXTION_PageID_t active_pageID;
 static Callback page_callback;
 static const char str_bck[NEXTION_OBJNAME_LEN] = "bck";
 
-Callback_32 NEXTION_requested_data_handler;
+Callback_32 NEXTION_handler_requested_data;
 uint8_t NEXTION_selection_counter;
 uint8_t NEXTION_brightness;
+volatile uint8_t watchdog_counter = WATCHDOG_THRESHOLD;
 char NEXTION_eot[] = {0xff,0xff,0xff,0x00};
+
+enum DISPLAYSTATUS
+{
+	DISPLAYSTATUS_DISCONNECTED,
+	DISPLAYSTATUS_CONNECTED,
+	DISPLAYSTATUS_OPERATIONAL
+}displaystatus;
 
 static struct Page
 {
@@ -27,6 +43,11 @@ static struct Page
 	Callback callback_setup; 
 }pages[] = 
 {
+	[NEXTION_PAGEID_INIT]= 
+	{
+		.callback_setup = init_setup,
+		.callback_update = init_update
+	},
 	[NEXTION_PAGEID_BOARD]=
 	{
 		.callback_setup = UIBOARD_setup,
@@ -57,6 +78,28 @@ void handler_brightness(uint32_t data)
 	NEXTION_brightness = data;
 }
 
+void init_setup()
+{	
+	SENSORSFEED_update();
+	NEXTION_request_brightness();
+}
+
+void init_update()
+{
+	_delay_ms(1000);
+	NEXTION_switch_page(NEXTION_PAGEID_BOARD,0);
+}
+
+/*
+Clears active component.
+*/ 
+void clear_active_component()
+{
+	NEXTION_selection_counter = 1;
+	NEXTION_update_select_decay();
+	INPUT_active_component = NULL;
+}
+
 /*
 Push pageID to history stack.
 @return False if no space.
@@ -84,6 +127,34 @@ NEXTION_PageID_t pagehistory_pop()
 		return pagehistory[pagehistory_depth];
 	}
 	return NEXTION_PAGEID_BOARD;
+}
+
+/*
+Ping device with request to actual pageid.
+Required for reseting watchdog
+*/
+inline void ping()
+{
+	NEXTION_send("sendme",USART_HOLD);
+}
+
+/*
+Send reset message
+*/
+inline void reset()
+{
+	NEXTION_send("rest",USART_HOLD);
+}
+
+void NEXTION_handler_ready()
+{
+	displaystatus = DISPLAYSTATUS_CONNECTED;
+}
+
+void NEXTION_handler_sendme(uint8_t pageid)
+{
+	if(pageid == active_pageID)
+		watchdog_counter = WATCHDOG_THRESHOLD;
 }
 
 uint8_t NEXTION_send(char data[], uint8_t flush)
@@ -158,10 +229,7 @@ int8_t NEXTION_switch_page(NEXTION_PageID_t pageID, uint8_t push_to_history)
 	if(pageID >= 0xff)
 		return 0;
 	
-	NEXTION_selection_counter = 1;
-	NEXTION_update_select_decay();
-	INPUT_active_component = NULL;
-
+	clear_active_component();
 	if(push_to_history)
 		pagehistory_push(active_pageID);
 
@@ -229,7 +297,7 @@ void NEXTION_update_select_decay()
 void NEXTION_request_brightness()
 {
 	if(NEXTION_send("get dim",USART_HOLD))
-		NEXTION_requested_data_handler = handler_brightness;
+		NEXTION_handler_requested_data = handler_brightness;
 }
 
 uint8_t NEXTION_add_brightness(uint8_t value, uint8_t autoreload)
@@ -262,8 +330,35 @@ void NEXTION_set_previous_page()
 
 int8_t NEXTION_update()
 {	
-	NEXTION_update_select_decay();
-	if(page_callback)
-		page_callback();
-	return 0;
+	switch(displaystatus)
+	{
+		case DISPLAYSTATUS_OPERATIONAL:
+			ping();
+			NEXTION_update_select_decay();
+			if(page_callback)
+				page_callback();
+		break;
+		case DISPLAYSTATUS_CONNECTED:
+			NEXTION_switch_page(NEXTION_PAGEID_INIT,0);
+			displaystatus = DISPLAYSTATUS_OPERATIONAL;
+			watchdog_counter = WATCHDOG_THRESHOLD;
+		break;
+		case DISPLAYSTATUS_DISCONNECTED:
+			return 0;
+	}
+
+#ifdef __AVR__
+	if(!watchdog_counter)
+		displaystatus = DISPLAYSTATUS_DISCONNECTED;
+	else
+		watchdog_counter--;
+#endif
+	return 1;
+}
+
+void NEXTION_reset()
+{
+	displaystatus = DISPLAYSTATUS_DISCONNECTED;
+	clear_active_component();
+	reset();
 }

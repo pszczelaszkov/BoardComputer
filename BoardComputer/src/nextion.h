@@ -59,8 +59,10 @@ typedef struct NEXTION_Executable_Component
 extern uint8_t NEXTION_brightness;
 extern uint8_t NEXTION_selection_counter;
 extern char NEXTION_eot[];
-extern Callback_32 NEXTION_requested_data_handler;
+extern Callback_32 NEXTION_handler_requested_data;
 extern NEXTION_Component NEXTION_common_bckcomponent;
+void NEXTION_handler_ready();
+void NEXTION_handler_sendme(uint8_t pageid);
 uint8_t NEXTION_send(char data[], uint8_t flush);
 int8_t NEXTION_update();
 int8_t NEXTION_switch_page(NEXTION_PageID_t pageID, uint8_t push_to_history);
@@ -70,6 +72,7 @@ void NEXTION_request_brightness();
 void NEXTION_set_brightness(uint8_t brightness);
 void NEXTION_set_previous_page();
 void NEXTION_set_componentstatus(NEXTION_Component* component, NEXTION_Componentstatus_t status);
+void NEXTION_reset();
 void NEXTION_update_select_decay();
 
 

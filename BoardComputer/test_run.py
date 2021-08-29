@@ -9,10 +9,11 @@ ADC = [10, 2, 3, 4, 5, 6, 7, 8]
 # This test class should be launched last to perform runtime tests
 # i.e tests can affect whole runtime.
 
+
 class testRun(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.bc,cls.ffi = load("main", "definitions.h")
+        cls.bc, cls.ffi = load("main", "definitions.h")
         cls.nullptr = cls.ffi.NULL
         cls.usart_eot = int.to_bytes(cls.bc.USART_EOT,
                                      1,
@@ -20,16 +21,12 @@ class testRun(unittest.TestCase):
         cls.usart_eot = cls.usart_eot * cls.bc.USART_EOT_COUNT
         cls.bc.SYSTEM_run = False
         cls.bc.test()
-        cls.bc.prestart_routine()
-        #clear usart from initial stuff
-        read_usart(cls.bc)
         cls.bc.SYSTEM_status = cls.bc.SYSTEM_STATUS_OPERATIONAL
-        #cls.bcThread = Thread(target=cls.bc.main, daemon=True)
-        #cls.bcThread.start()
+        write_usart(cls.bc, 0x88, b"", True)  # ping
 
     def setUp(self):
-        self.bc.NEXTION_switch_page(self.bc.NEXTION_PAGEID_BOARD, 0)
         exec_cycle(self.bc)
+        self.bc.NEXTION_switch_page(self.bc.NEXTION_PAGEID_BOARD, 0)
         parse_nextion(self.bc, read_usart(self.bc), nextion_data)
         return super().setUp()
 

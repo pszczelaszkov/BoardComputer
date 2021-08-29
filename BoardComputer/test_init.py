@@ -230,5 +230,6 @@ class testInit(unittest.TestCase):
     def test_system_defaultstate(self):
         self.assertEqual(self.bc.SYSTEM_status, self.bc.SYSTEM_STATUS_IDLE)
 
+
 if __name__ == "main":
     unittest.main()

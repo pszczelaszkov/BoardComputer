@@ -4,7 +4,6 @@ volatile extern uint16_t TCNT1,TCNT2;
 typedef void (*Callback)();
 void test();
 void core();
-void prestart_routine();
 void PCINT0_vect();
 void SPI0_STC_vect();
 void TIMER2_COMPA_vect();

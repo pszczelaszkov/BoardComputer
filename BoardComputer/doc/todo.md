@@ -20,6 +20,6 @@
 - [ ] More flexible RX UART
 - [x] Rework the pages api
 - [x] Sound Alarm
-- [ ] System Status
+- [x] System Status
 - [ ] Visual warning
-- [ ] Display detection
+- [x] Display detection

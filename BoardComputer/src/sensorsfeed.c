@@ -128,6 +128,8 @@ void SENSORSFEED_initialize()
 	//SPI input for EGT
 	SPCR0 = (1<<MSTR)|(1<<SPIE)|(1<<SPE)|(1<<SPR1)|(1<<CPHA);
 	#endif
+
+	SENSORSFEED_EGT_CONVERSION;
 }
 
 ISR(ADC_vect)
