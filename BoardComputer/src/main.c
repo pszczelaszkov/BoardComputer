@@ -60,6 +60,7 @@ void core()
 	switch(SYSTEM_status)
 	{			
 		case SYSTEM_STATUS_OPERATIONAL:
+			USART_update();
 			INPUT_update();
 			SENSORSFEED_update();	
 		case SYSTEM_STATUS_IDLE:
@@ -72,6 +73,7 @@ void core()
 
 ENTRY_ROUTINE
 {
+	DIDR0 = 0xff;
 	DDRD = 0x00;
 	PORTD = 0x00;
 	SET(DDRB,BIT0);
@@ -84,7 +86,7 @@ ENTRY_ROUTINE
 	INPUT_initialize();
 	USART_initialize();
 
-	NEXTION_handler_ready();//DEBUG purpose only
+	//NEXTION_handler_ready();//DEBUG purpose only
 	#ifndef __AVR__
 		if(SYSTEM_run)
 	#endif

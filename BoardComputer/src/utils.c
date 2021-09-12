@@ -3,7 +3,7 @@
 #ifndef __AVR__
     volatile uint8_t PINA,PINB;
     volatile uint16_t TCNT1,TCNT2;
-    uint8_t DDRD, DDRB;
+    uint8_t DDRD, DDRB, DIDR0;
     uint8_t PORTD, PORTB, PIND;
     uint8_t ADC;
     uint8_t ADMUX, ADSC, ADCSRA;

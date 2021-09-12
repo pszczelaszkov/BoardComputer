@@ -24,7 +24,6 @@ class testPreRun(unittest.TestCase):
         self.assertEqual(self.bc.ADCMULTIPLEXER, 0)
 
     def test_USART(self):
-        self.bc.USART_TX_clear()
         write_usart(self.bc, 0x01, b"PING")
         response = read_usart(self.bc)
         self.assertEqual(response[:4], b"PONG")
@@ -153,7 +152,7 @@ class testPreRun(unittest.TestCase):
             pinvalue = (self.bc.PORTD & (1 << 7)) >> 7
             result_pattern = (pinvalue << i) | result_pattern
         self.assertEqual(result_pattern, expected_pattern)
-   
+
     def test_system_alert_idle(self):
         self.bc.SYSTEM_status = self.bc.SYSTEM_STATUS_IDLE
         expected_pattern = 0x0  # using critical alert pattern

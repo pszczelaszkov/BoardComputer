@@ -22,7 +22,7 @@ class testRun(unittest.TestCase):
         cls.bc.SYSTEM_run = False
         cls.bc.test()
         cls.bc.SYSTEM_status = cls.bc.SYSTEM_STATUS_OPERATIONAL
-        write_usart(cls.bc, 0x88, b"", True)  # ping
+        write_usart(cls.bc, 0x88, b"")  # ping
 
     def setUp(self):
         exec_cycle(self.bc)
@@ -135,7 +135,6 @@ class testRun(unittest.TestCase):
                       nextion_data)
         self.assertEqual(nextion_data['txt']['mdv'], " 583")
 
-
     def test_uiboard_modify_dbs(self):
         step = 5
         self.bc.NEXTION_set_brightness(0)
@@ -152,10 +151,8 @@ class testRun(unittest.TestCase):
             read_usart(self.bc)
             self.assertEqual(self.bc.NEXTION_brightness, 100)
 
-
         self.bc.UIBOARDCONFIG_modify_dbs()
         self.assertEqual(self.bc.NEXTION_brightness, 0)
-
 
     def test_nextion_set_brightness(self):
         self.bc.NEXTION_set_brightness(100)
@@ -163,6 +160,22 @@ class testRun(unittest.TestCase):
         self.bc.NEXTION_set_brightness(0)
         self.assertEqual(self.bc.NEXTION_brightness, 0)
 
+    def test_USART_passthrough_mode(self):
+        write_usart(self.bc, None, b"DRAKJHSUYDGBNCJHGJKSHBDN")
+        # Manualy check two opposite registers
+        self.bc.UDRRX = 0xff
+        self.bc.USART2_RX_vect()
+        self.assertEqual(self.bc.UDR0, 0xff)
+        self.bc.UDRRX = 0xfe
+        self.bc.USART0_RX_vect()
+        self.assertEqual(self.bc.UDR2, 0xfe)
+        # Loop for watchdog
+        for i in range(9):
+            exec_cycle(self.bc)
+        # Check if USART is not copying RX
+        self.bc.UDRRX = 0xfe
+        self.bc.USART0_RX_vect()
+        self.assertNotEqual(self.bc.UDR2, 0xfe)
 
     def test_EGT(self):
         packets = [

@@ -1,5 +1,5 @@
 //Definitions only for testing purposes
-extern volatile uint8_t SYSTEM_run, SYSTEM_exec, SYSTEM_event_timer, PINA, PINB, PORTD, DDRB;
+extern volatile uint8_t SYSTEM_run, SYSTEM_exec, SYSTEM_event_timer, PINA, PINB, PORTD, DDRB, DIDR0;
 volatile extern uint16_t TCNT1,TCNT2;
 typedef void (*Callback)();
 void test();
@@ -43,10 +43,11 @@ extern int8_t USART_eot_counter;
 extern uint8_t USART_TX_message_length;
 extern uint8_t USART_RX_buffer_index;
 extern uint8_t USART_TX_buffer_index;
-extern uint8_t UDR2,UDRRX;
+extern uint8_t UDR2,UDR0,UDRRX;
+void USART0_RX_vect();
+void USART0_TX_vect();
 void USART2_RX_vect();
 void USART2_TX_vect();
-void USART_register();
 void USART_TX_clear();
 void USART_flush();
 

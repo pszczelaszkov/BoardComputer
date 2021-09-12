@@ -34,7 +34,9 @@ uint8_t USART_send(char data[],uint8_t flush);
 void USART_TX_clear();
 void USART_flush();
 void USART_initialize();
-void USART_register();
+void USART_update();
+ISR(USART0_RX_vect);
+ISR(USART0_TX_vect);
 ISR(USART2_RX_vect);
 ISR(USART2_TX_vect);
 #endif

@@ -43,20 +43,19 @@ def click(module, id):
     return read_usart(module)
 
 
-def write_usart(module, header, message, force_register=True):
+def write_usart(module, header, message):
     usart_eot = int.to_bytes(module.USART_EOT,
                              1,
                              byteorder="little")
     usart_eot = usart_eot * module.USART_EOT_COUNT
-    usart_header = header.to_bytes(1, byteorder="little")
-    # Test raw funcionality
-    message = usart_header + bytearray(message) + usart_eot
+    if(header is not None):
+        usart_header = header.to_bytes(1, byteorder="little")
+        message = usart_header + bytearray(message) + usart_eot
+    else:
+        message = bytearray(message) + usart_eot
     for byte in message:
         module.UDRRX = byte
         module.USART2_RX_vect()
-    # At this point usart_register should parse it
-    if force_register:
-        module.USART_register()
 
 
 def parse_nextion(module, stream, nextion_values):

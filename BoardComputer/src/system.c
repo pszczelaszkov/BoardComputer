@@ -52,6 +52,7 @@ void SYSTEM_initialize()
     TCCR2A = (1 << WGM21);// Clear on match
     TCCR2B = (3 << CS21);// 256 prescaler
     TIMSK2 = (1 << OCIE2A);// Enable IRQ
+    sei();
     #endif
 }
 
