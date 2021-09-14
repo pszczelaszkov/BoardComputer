@@ -55,7 +55,12 @@ void USART_flush()
 	if(operation_mode == OPERATION_MODE_NORMAL)
 	{
 		USART_TX_buffer_index = 1;//set index at 2nd byte for further IRQ callback
-		UDR2 = USART_TX_buffer[0];//First byte is send here, rest is handled on IRQ
+		//First byte is send here, rest is handled on IRQ
+		#ifdef __DEBUG__
+			UDR2 = USART_TX_buffer[0];
+		#else
+			UDR0 = USART_TX_buffer[0];
+		#endif
 	}
 }
 

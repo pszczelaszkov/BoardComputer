@@ -23,4 +23,4 @@
 - [x] System Status
 - [ ] Visual warning
 - [x] Display detection
-- [ ] Makefile --display simulation
+- [x] Makefile(EXTRAFLAGS/DEBUG)

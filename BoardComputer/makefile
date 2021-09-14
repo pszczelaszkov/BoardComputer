@@ -1,43 +1,50 @@
 PYTHON_VER = 3.9
-test:
+IDIR = src/
+
+TESTFLAGS = -O1 -fpic -D__DEBUG__ -I$(IDIR) $(EXTRA_FLAGS)
+AVRFLAGS = -O1 -mmcu=atmega324pb -fshort-enums -I$(IDIR) $(EXTRA_FLAGS)
+
+test: 
 	python3 mainwrapper.py
-	gcc -fpic -c src/USART.c -O1 -o bin/USART_.o
-	gcc -fpic -c src/input.c -O1 -o bin/input_.o
-	gcc -fpic -c src/nextion.c -O1 -o bin/nextion_.o
-	gcc -fpic -c src/UI/board.c -O1 -o bin/uiboard_.o
-	gcc -fpic -c src/UI/boardconfig.c -O1 -o bin/uiboardconfig_.o
-	gcc -fpic -c src/UI/numpad.c -O1 -o bin/numpad_.o
-	gcc -fpic -c src/timer.c -O1 -o bin/timer_.o
-	gcc -fpic -c src/sensorsfeed.c -O1 -o bin/sensorsfeed_.o
-	gcc -fpic -c src/countersfeed.c -O1 -o bin/countersfeed_.o
-	gcc -fpic -c src/utils.c -O1 -o bin/utils_.o
-	gcc -fpic -c src/programdata.c -O1 -o bin/programdata_.o
-	gcc -fpic -c src/average.c -O1 -o bin/average_.o
-	gcc -fpic -c src/system.c -O1 -o bin/system_.o
-	gcc -fpic -c src/main_.c -I/usr/include/python${PYTHON_VER} -O1 -o bin/main_.o
+	gcc $(TESTFLAGS) -c src/USART.c -o bin/USART_.o
+	gcc $(TESTFLAGS) -c src/input.c -o bin/input_.o
+	gcc $(TESTFLAGS) -c src/nextion.c -o bin/nextion_.o
+	gcc $(TESTFLAGS) -c src/UI/board.c -o bin/uiboard_.o
+	gcc $(TESTFLAGS) -c src/UI/boardconfig.c -o bin/uiboardconfig_.o
+	gcc $(TESTFLAGS) -c src/UI/numpad.c -o bin/numpad_.o
+	gcc $(TESTFLAGS) -c src/timer.c -o bin/timer_.o
+	gcc $(TESTFLAGS) -c src/sensorsfeed.c -o bin/sensorsfeed_.o
+	gcc $(TESTFLAGS) -c src/countersfeed.c -o bin/countersfeed_.o
+	gcc $(TESTFLAGS) -c src/utils.c -o bin/utils_.o
+	gcc $(TESTFLAGS) -c src/programdata.c -o bin/programdata_.o
+	gcc $(TESTFLAGS) -c src/average.c -o bin/average_.o
+	gcc $(TESTFLAGS) -c src/system.c -o bin/system_.o
+	gcc $(TESTFLAGS) -c src/main_.c -I/usr/include/python${PYTHON_VER} -o bin/main_.o
 	gcc -shared bin/*_.o -lpython${PYTHON_VER} -o bin/main_.so
 
 boardcomputer:
-	avr-gcc -c src/main.c -O1 -mmcu=atmega324pb -fshort-enums -o bin/main.o
-	avr-gcc -c src/input.c -O1 -mmcu=atmega324pb -fshort-enums -o bin/input.o
-	avr-gcc -c src/USART.c -O1 -mmcu=atmega324pb -fshort-enums -o bin/USART.o
-	avr-gcc -c src/sensorsfeed.c -O1 -mmcu=atmega324pb -fshort-enums -o bin/sensorsfeed.o
-	avr-gcc -c src/countersfeed.c -O1 -mmcu=atmega324pb -fshort-enums -o bin/countersfeed.o
-	avr-gcc -c src/nextion.c -O1 -mmcu=atmega324pb -fshort-enums -o bin/nextion.o
-	avr-gcc -c src/UI/board.c -O1 -mmcu=atmega324pb -fshort-enums -o bin/uiboard.o
-	avr-gcc -c src/UI/boardconfig.c -O1 -mmcu=atmega324pb -fshort-enums -o bin/uiboardconfig.o
-	avr-gcc -c src/UI/numpad.c -O1 -mmcu=atmega324pb -fshort-enums -o bin/numpad.o
-	avr-gcc -c src/timer.c -O1 -mmcu=atmega324pb -fshort-enums -o bin/timer.o
-	avr-gcc -c src/utils.c -O1 -mmcu=atmega324pb -fshort-enums -o bin/utils.o
-	avr-gcc -c src/average.c -O1 -mmcu=atmega324pb -fshort-enums -o bin/average.o
-	avr-gcc -c src/system.c -O1 -mmcu=atmega324pb -fshort-enums -o bin/system.o
-	avr-gcc -c src/programdata.c -O1 -mmcu=atmega324pb -fshort-enums -o bin/programdata.o
+	avr-gcc $(AVRFLAGS) -c src/main.c -o bin/main.o
+	avr-gcc $(AVRFLAGS) -c src/input.c -mmcu=atmega324pb -fshort-enums -o bin/input.o
+	avr-gcc $(AVRFLAGS) -c src/USART.c -mmcu=atmega324pb -fshort-enums -o bin/USART.o
+	avr-gcc $(AVRFLAGS) -c src/sensorsfeed.c -mmcu=atmega324pb -fshort-enums -o bin/sensorsfeed.o
+	avr-gcc $(AVRFLAGS) -c src/countersfeed.c -o bin/countersfeed.o
+	avr-gcc $(AVRFLAGS) -c src/nextion.c -o bin/nextion.o
+	avr-gcc $(AVRFLAGS) -c src/UI/board.c -o bin/uiboard.o
+	avr-gcc $(AVRFLAGS) -c src/UI/boardconfig.c -o bin/uiboardconfig.o
+	avr-gcc $(AVRFLAGS) -c src/UI/numpad.c -o bin/numpad.o
+	avr-gcc $(AVRFLAGS) -c src/timer.c -o bin/timer.o
+	avr-gcc $(AVRFLAGS) -c src/utils.c -o bin/utils.o
+	avr-gcc $(AVRFLAGS) -c src/average.c -o bin/average.o
+	avr-gcc $(AVRFLAGS) -c src/system.c -o bin/system.o
+	avr-gcc $(AVRFLAGS) -c src/programdata.c -o bin/programdata.o
 	avr-gcc -mmcu=atmega324pb bin/*.o -o bin/BoardComputer.elf
 	avr-objcopy -j .text -j .data -O ihex bin/BoardComputer.elf bin/BoardComputer.hex
 	avr-size --mcu=atmega324pa -C bin/BoardComputer.elf
 
 flash:
 	avrdude -p m324pb -c usbasp -C +"utils/324pb.conf" -B 0.5 -U flash:w:"bin/BoardComputer.hex":a
+
+.PHONY: clean
 
 clean:
 	rm bin/*

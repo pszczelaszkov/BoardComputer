@@ -85,8 +85,9 @@ ENTRY_ROUTINE
 	TIMER_initialize();
 	INPUT_initialize();
 	USART_initialize();
-
-	//NEXTION_handler_ready();//DEBUG purpose only
+	#ifdef __DEBUG__
+	NEXTION_handler_ready();
+	#endif
 	#ifndef __AVR__
 		if(SYSTEM_run)
 	#endif
