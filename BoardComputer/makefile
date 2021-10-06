@@ -24,9 +24,9 @@ test:
 
 boardcomputer:
 	avr-gcc $(AVRFLAGS) -c src/main.c -o bin/main.o
-	avr-gcc $(AVRFLAGS) -c src/input.c -mmcu=atmega324pb -fshort-enums -o bin/input.o
-	avr-gcc $(AVRFLAGS) -c src/USART.c -mmcu=atmega324pb -fshort-enums -o bin/USART.o
-	avr-gcc $(AVRFLAGS) -c src/sensorsfeed.c -mmcu=atmega324pb -fshort-enums -o bin/sensorsfeed.o
+	avr-gcc $(AVRFLAGS) -c src/input.c -o bin/input.o
+	avr-gcc $(AVRFLAGS) -c src/USART.c -o bin/USART.o
+	avr-gcc $(AVRFLAGS) -c src/sensorsfeed.c -o bin/sensorsfeed.o
 	avr-gcc $(AVRFLAGS) -c src/countersfeed.c -o bin/countersfeed.o
 	avr-gcc $(AVRFLAGS) -c src/nextion.c -o bin/nextion.o
 	avr-gcc $(AVRFLAGS) -c src/UI/board.c -o bin/uiboard.o
