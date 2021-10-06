@@ -373,3 +373,7 @@ extern volatile SYSTEM_STATUS_t SYSTEM_status;
 void SYSTEM_raisealert(SYSTEM_ALERT_t alert);
 void SYSTEM_update();
 extern const int16_t PROGRAMDATA_NTC_2200_INVERTED[];
+
+void rightconcat_short(char* dest, int16_t value, uint8_t spacing);
+void rightnconcat_short(char* dest, int16_t value, uint8_t spacing, uint8_t n);
+void fp16toa(int16_t fixedpoint, char* dest, uint8_t integrallength, uint8_t fractionlength);

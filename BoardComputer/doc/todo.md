@@ -13,7 +13,7 @@
 - [x] Stopwatch zeroing
 - [x] Numpad
 - [x] Board Config page
-- [ ] ADC rendering rework/sensors grouping
+- [x] ADC rendering rework/sensors grouping
 - [x] Rework UI
 - [x] Create system.h with SYSTEM features
 - [x] Rework nextion componenttypes to background type

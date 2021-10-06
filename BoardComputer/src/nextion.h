@@ -18,6 +18,18 @@
 #define PASTELORANGE 0xFD88
 #define WHITE 0XFFFF
 
+static const char str_val[NEXTION_OBJNAME_LEN] = "val";
+static const char str_txt[NEXTION_OBJNAME_LEN] = "txt";
+
+#define NEXTION_INSTRUCTION_BUFFER_BLOCK(PAYLOAD_LENGTH)\
+	const uint8_t instruction_length = NEXTION_OBJNAME_LEN + 5;\
+	const uint8_t payload_length = PAYLOAD_LENGTH;\
+	char buffer[instruction_length + payload_length + 1];\
+	char* instruction = buffer;\
+	char* payload = &buffer[instruction_length];\
+	buffer[instruction_length + payload_length] = 0x0;\
+	memset(payload,' ',payload_length);
+
 typedef enum NEXTION_PAGEID
 {
 	NEXTION_PAGEID_INIT = 0,
@@ -68,12 +80,19 @@ int8_t NEXTION_update();
 int8_t NEXTION_switch_page(NEXTION_PageID_t pageID, uint8_t push_to_history);
 uint8_t NEXTION_add_brightness(uint8_t value, uint8_t autoreload);
 
+//Place quotes at the beginning and the end of payload buffer for text variables.
+inline void NEXTION_quote_payloadbuffer(char* payload,uint8_t payload_length)
+{
+	payload[0] = '"';
+	payload[payload_length-1] = '"';
+}
+
 void NEXTION_request_brightness();
 void NEXTION_set_brightness(uint8_t brightness);
 void NEXTION_set_previous_page();
 void NEXTION_set_componentstatus(NEXTION_Component* component, NEXTION_Componentstatus_t status);
 void NEXTION_reset();
 void NEXTION_update_select_decay();
-
+void NEXTION_instruction_compose(const char* objname, const char* varname, char* instruction);
 
 #endif /* NEXTION_H_ */

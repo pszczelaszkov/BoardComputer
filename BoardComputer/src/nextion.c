@@ -146,6 +146,25 @@ inline void reset()
 	NEXTION_send("rest",USART_HOLD);
 }
 
+/*
+Compose instruction in form of objname.varname= 
+For best compatibility create buffers before with INSTRUCTION_BUFFER_BLOCK.
+@param objname Pointer to objname const string must have length of NEXTION_OBJNAME_LEN.
+@param varname Pointer to variable name i.e: var/txt.
+@param instruction Pointer to instruction buffer, MUSTHAVE CAPACITY of NEXTION_OBJNAME_LEN + 5.
+*/
+void NEXTION_instruction_compose(const char* objname, const char* varname, char* instruction)
+{
+	if(!instruction)
+		return;
+
+	const uint8_t size = NEXTION_OBJNAME_LEN + 5;
+	memcpy(instruction,objname,NEXTION_OBJNAME_LEN);
+	instruction[NEXTION_OBJNAME_LEN] = '.';
+	memcpy(&instruction[NEXTION_OBJNAME_LEN+1],varname,3);
+	instruction[size-1] = '=';
+}
+
 void NEXTION_handler_ready()
 {
 	displaystatus = DISPLAYSTATUS_CONNECTED;
@@ -242,31 +261,6 @@ int8_t NEXTION_switch_page(NEXTION_PageID_t pageID, uint8_t push_to_history)
 	
 	itoa(pageID, &buffer[5],10);
 	return NEXTION_send(buffer,USART_HOLD);
-}
-
-void NEXTION_update_EGT()
-{
-	char buffer[] = "egt.txt=\"    \"";
-	switch(SENSORSFEED_EGT_status)
-	{
-		case SENSORSFEED_EGT_STATUS_UNKN:
-			memcpy(&buffer[9],"----",4);
-		break;
-		case SENSORSFEED_EGT_STATUS_OPEN:
-			memcpy(&buffer[9],"open",4);
-		break;
-		case SENSORSFEED_EGT_STATUS_VALUE:
-			rightconcat_short(&buffer[9],SENSORSFEED_feed[SENSORSFEED_FEEDID_EGT],4);
-	}
-	NEXTION_send(buffer,USART_HOLD);
-}
-
-void NEXTION_update_ADC()
-{
-	char buffer[24];
-	strcpy(buffer,"a0.val=    ");
-	itoa(pgm_read_word(&PROGRAMDATA_NTC_2200_INVERTED[SENSORSFEED_feed[0]]),&buffer[7],10);
-	NEXTION_send(buffer,USART_HOLD);
 }
 
 void NEXTION_update_watch()

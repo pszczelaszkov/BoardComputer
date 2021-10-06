@@ -30,6 +30,7 @@
 #include "sensorsfeed.h"
 int16_t UTILS_atoi(char* stringvalue);
 void uitoa(uint16_t n, char s[]);
+void fp16toa(int16_t fixedpoint, char* dest, uint8_t integrallength, uint8_t fractionlength);
 extern const uint8_t FP8_weight;
 extern const uint16_t FP16_weight;
 typedef void (*Callback)();

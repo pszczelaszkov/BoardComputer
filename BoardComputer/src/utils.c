@@ -54,6 +54,42 @@ void uitoa(uint16_t n, char s[])
     reverse(s);
 }
 
+/*
+Converts 16bit(8+8) fixedpoint variable to ascii.
+@param fixedpoint Value for conversion.
+@param dest Destination buffer.
+@param integrallength Maximal length of converted integral part including sign.
+@param fractionlength Maximal length of converted fractionpart(Max 3).
+*/
+void fp16toa(int16_t fixedpoint, char* dest, uint8_t integrallength, uint8_t fractionlength)
+{
+    const uint8_t max_precision = 4;
+    const uint8_t fractionstart = integrallength + 1;
+
+    int8_t integral = fixedpoint >> 8;
+	uint16_t fraction = (fixedpoint & 0xff) * FP8_weight;
+
+    char fractionascii[max_precision];
+    memset(fractionascii, '0', max_precision);
+
+    //clamp fractionlength
+    if(!fractionlength)
+    {
+        fractionlength = 1;
+    }
+    else
+    {
+        if(fractionlength > max_precision)
+            fractionlength = max_precision;
+    }
+
+	rightnconcat_short(dest, integral, integrallength, integrallength);
+	dest[integrallength] = '.';
+    
+    rightconcat_short(fractionascii, fraction, max_precision);
+    memcpy(&dest[fractionstart],fractionascii,fractionlength);
+}
+
 int16_t UTILS_atoi(char* stringvalue) {
     int8_t sign = (stringvalue[0] == '-'? -1 : 1);
     int16_t result = 0;
@@ -65,21 +101,37 @@ int16_t UTILS_atoi(char* stringvalue) {
      return result * sign;
 }
 
-//Concatenate right aligned integer.
+/*
+Insert right aligned integer into string.
+@param dest Destination buffer(at least 7 bytes)
+@param value Value which will be processed to string
+@param spacing Postion of alignment
+*/
 void rightconcat_short(char* dest, int16_t value, uint8_t spacing)
 {
-	char temp[6];
+	char temp[7];
 	uint8_t length;
-	itoa(value, &temp[0],10);
+	itoa(value, temp,10);
 	length = strlen(temp);
 	memcpy(&dest[spacing-length],temp,length);
 }
-//Concatenate right aligned integer limited by n.
+
+/*
+Insert right aligned integer into string.
+@param dest Destination buffer(at least 7 bytes)
+@param value Value which will be processed to string
+@param spacing Postion of alignment
+@param n Number of characters to be inserted(starts from left side)
+*/
 void rightnconcat_short(char* dest, int16_t value, uint8_t spacing, uint8_t n)
 {
-	char temp[6];
-	if (n > 5)
-		n = 5;
-	itoa(value, &temp[0],10);
+	char temp[7];
+    uint8_t length;
+	if (n > 6)
+		n = 6;
+	itoa(value, temp,10);
+    length = strlen(temp);
+    if(n > length)
+        n = length;
 	memcpy(&dest[spacing-n],temp,n);
 }

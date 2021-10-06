@@ -23,6 +23,16 @@ class testPreRun(unittest.TestCase):
         # After init, status should be ready
         self.assertEqual(self.bc.ADCMULTIPLEXER, 0)
 
+    def test_analog(self):
+        # Magic numbers, totally random
+        ADCINPUT = [0xfe, 0xa5, 0x45, 0x67, 0x50, 0xff, 0x00, 0xaa]
+        for i in range(self.bc.SENSORSFEED_ADC_CHANNELS):
+            ADC_channel = self.bc.ADMUX & 0x0f
+            testvalue = ADCINPUT[ADC_channel]
+            self.bc.ADC = testvalue
+            self.bc.ADC_vect()
+            self.assertEqual(testvalue, self.bc.SENSORSFEED_feed[ADC_channel])
+
     def test_USART(self):
         write_usart(self.bc, 0x01, b"PING")
         response = read_usart(self.bc)
@@ -165,6 +175,63 @@ class testPreRun(unittest.TestCase):
             result_pattern = (pinvalue << i) | result_pattern
         self.assertEqual(result_pattern, expected_pattern)
 
+    def test_utils_rightconcat(self):
+        buffer = self.ffi.new('char[7]')
+
+        for i in range(7):
+            buffer[i] = b'\x00'
+        testvalue = 100
+        expectedstring = b'\x00\x00\x00100\x00'
+        self.bc.rightconcat_short(buffer, testvalue, 6)
+        self.assertEqual(self.ffi.unpack(buffer, 7), expectedstring)
+
+        for i in range(7):
+            buffer[i] = b'\x00'
+        expectedstring = b'100\x00\x00\x00\x00'
+        self.bc.rightconcat_short(buffer, testvalue, 3)
+        self.assertEqual(self.ffi.unpack(buffer, 7), expectedstring)
+
+    def test_utils_rightnconcat(self):
+        buffer = self.ffi.new('char[7]')
+        testvalue = 10
+        expectedstring = b'\x00\x00\x00\x0010\x00'
+        self.bc.rightnconcat_short(buffer, testvalue, 6, 3)
+        self.assertEqual(self.ffi.unpack(buffer, 7), expectedstring)
+
+    def test_utils_fp16toa_zero(self):
+        buffer = self.ffi.new('char[7]')
+        testvalue = 0
+        expectedstring = b'\x000.00\x00\x00'
+        self.bc.fp16toa(testvalue, buffer, 2, 2)
+        self.assertEqual(self.ffi.unpack(buffer, 7), expectedstring)
+
+    def test_utils_fp16toa_minus(self):
+        buffer = self.ffi.new('char[7]')
+        testvalue = -5 << 8
+        expectedstring = b'-5.00\x00\x00'
+        self.bc.fp16toa(testvalue, buffer, 2, 2)
+        self.assertEqual(self.ffi.unpack(buffer, 7), expectedstring)
+
+    def test_utils_fp16toa_half(self):
+        buffer = self.ffi.new('char[7]')
+        testvalue = 129  # Half + 1
+        expectedstring = b'\x000.50\x00\x00'
+        self.bc.fp16toa(testvalue, buffer, 2, 2)
+        self.assertEqual(self.ffi.unpack(buffer, 7), expectedstring)
+
+    def test_utils_fp16toa_threeofthousand(self):
+        buffer = self.ffi.new('char[7]')
+        testvalue = 1
+        expectedstring = b'\x000.003\x00'
+        self.bc.fp16toa(testvalue, buffer, 2, 3)
+        self.assertEqual(self.ffi.unpack(buffer, 7), expectedstring)
+
+    def test_utils_fp16toa_maxfractionlength(self):
+        buffer = self.ffi.new('char[7]')
+        testvalue = 1
+        expectedstring = b'\x000.0039'
+        self.bc.fp16toa(testvalue, buffer, 2, 10)
+        self.assertEqual(self.ffi.unpack(buffer, 7), expectedstring)
 
 class placeholder:
     def test_scheduler(self):

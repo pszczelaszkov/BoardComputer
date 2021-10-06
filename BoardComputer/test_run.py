@@ -4,7 +4,6 @@ from threading import Thread
 from helpers import write_usart, read_usart, max6675_response, parse_nextion, exec_cycle, click, load
 
 nextion_data = {"val": {}, "pic": {}, "txt": {}}
-ADC = [10, 2, 3, 4, 5, 6, 7, 8]
 
 # This test class should be launched last to perform runtime tests
 # i.e tests can affect whole runtime.
@@ -29,19 +28,6 @@ class testRun(unittest.TestCase):
         self.bc.NEXTION_switch_page(self.bc.NEXTION_PAGEID_BOARD, 0)
         parse_nextion(self.bc, read_usart(self.bc), nextion_data)
         return super().setUp()
-
-    def test_analog(self):
-        # ADC range -1, last is TANK input, its handled by maindisplay
-        for i in range(self.bc.SENSORSFEED_ADC_CHANNELS):
-            ADC_channel = self.bc.ADMUX & 0x0f
-            self.bc.ADC = ADC[ADC_channel]
-            self.bc.ADC_vect()
-        exec_cycle(self.bc)
-        parse_nextion(self.bc, read_usart(self.bc), nextion_data)
-        for i in range(self.bc.SENSORSFEED_ADC_CHANNELS):
-            if i != self.bc.SENSORSFEED_FEEDID_TANK:  # Tank is part of MD
-                self.assertEqual(int(nextion_data["val"]["a"+str(i)]),
-                                 self.bc.PROGRAMDATA_NTC_2200_INVERTED[ADC[i]])
 
     def test_uiboard_maindisplay(self):
         # Cuz of chain of events, test needs to dive into countersfeed

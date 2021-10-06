@@ -1,15 +1,24 @@
 #include "board.h"
 #include "../sensorsfeed.h"
 #include "../ProgramData.h"
-#include "../timer.h"
+#include "timer.h"
 #include "../USART.h"
 #include "../system.h"
 #include "../input.h"
 
+
+static const int16_t fuelmanifold_threshold = 2 << 8;
 static const char str_wtd[NEXTION_OBJNAME_LEN] = "wtd"; 
 static const char str_wts[NEXTION_OBJNAME_LEN] = "wts";
 static const char str_mds[NEXTION_OBJNAME_LEN] = "mds";
 static const char str_cfg[NEXTION_OBJNAME_LEN] = "cfg";
+static const char str_oil[NEXTION_OBJNAME_LEN] = "oil";
+static const char str_out[NEXTION_OBJNAME_LEN] = "out";
+static const char str_int[NEXTION_OBJNAME_LEN] = "int";
+static const char str_frp[NEXTION_OBJNAME_LEN] = "frp";
+static const char str_map[NEXTION_OBJNAME_LEN] = "map";
+static const char str_fmd[NEXTION_OBJNAME_LEN] = "fmd";
+
 
 NEXTION_Component UIBOARD_components[] = {
 	[UIBOARD_COMPONENT_WATCH]=
@@ -240,11 +249,62 @@ void UIBOARD_update_EGT()
 	NEXTION_send(buffer,USART_HOLD);
 }
 
-void UIBOARD_update_ADC()
+void update_sensorgroup_bottom()
 {
-	char buffer[24];
-	strcpy(buffer,"a0.val=    ");
-	itoa(pgm_read_word(&PROGRAMDATA_NTC_2200_INVERTED[SENSORSFEED_feed[0]]),&buffer[7],10);
+	NEXTION_INSTRUCTION_BUFFER_BLOCK(5)
+	NEXTION_quote_payloadbuffer(payload,payload_length);
+
+	int16_t out_temp = pgm_read_word(&PROGRAMDATA_NTC_2200_INVERTED[SENSORSFEED_feed[0]]);
+	int16_t int_temp = pgm_read_word(&PROGRAMDATA_NTC_2200_INVERTED[SENSORSFEED_feed[0]]);
+	int16_t oil_temp = pgm_read_word(&PROGRAMDATA_NTC_2200_INVERTED[SENSORSFEED_feed[0]]);
+	
+	NEXTION_instruction_compose(str_out,str_txt,instruction);
+	rightconcat_short(&payload[1],out_temp,3);
+	NEXTION_send(buffer,USART_HOLD);
+
+	NEXTION_instruction_compose(str_int,str_txt,instruction);
+	rightconcat_short(&payload[1],int_temp,3);
+	NEXTION_send(buffer,USART_HOLD);
+
+	NEXTION_instruction_compose(str_oil,str_txt,instruction);
+	rightconcat_short(&payload[1],oil_temp,3);
+	NEXTION_send(buffer,USART_HOLD);
+}
+
+void update_sensorgroup_pressure()
+{
+	NEXTION_INSTRUCTION_BUFFER_BLOCK(7)
+	NEXTION_quote_payloadbuffer(payload,payload_length);
+
+	const int16_t manifoldpressure = pgm_read_word(&PROGRAMDATA_NTC_2200_INVERTED[SENSORSFEED_feed[0]]);
+	const int16_t fuelrailpressure = pgm_read_word(&PROGRAMDATA_NTC_2200_INVERTED[SENSORSFEED_feed[0]]);
+
+	NEXTION_instruction_compose(str_map,str_txt,instruction);
+	fp16toa(manifoldpressure,&payload[1],2,2);
+	NEXTION_send(buffer,USART_HOLD);
+	
+	NEXTION_instruction_compose(str_frp,str_txt,instruction);
+	memset(&payload[1],' ',payload_length-2);
+	fp16toa(fuelrailpressure,&payload[1],2,2);
+	NEXTION_send(buffer,USART_HOLD);
+
+	NEXTION_instruction_compose(str_fmd,str_val,instruction);
+	memset(payload,' ',payload_length);
+	int16_t deltapressure = fuelrailpressure - manifoldpressure - fuelmanifold_threshold;
+	if(deltapressure < 0)
+	{
+		deltapressure = 0;
+	}
+	else
+	{
+		if(deltapressure > 1 << 8)
+			deltapressure = 0xff;
+	}
+	//Delta has resolution of 1Bar, only fraction part is used
+	//Multiply by 100 to shift 2 fraction positions into integer part
+	//Then unpack value with a 8 times shift
+	deltapressure = deltapressure * 100 >> 8;
+	itoa(deltapressure, payload, 10);
 	NEXTION_send(buffer,USART_HOLD);
 }
 
@@ -279,11 +339,13 @@ void UIBOARD_update()
 	switch(timer)
 	{
 		case 0:
-			UIBOARD_update_ADC();
+		case 4:
+			update_sensorgroup_bottom();
 			UIBOARD_update_EGT();
 		break;
 		case 2:
 		case 5:
+			update_sensorgroup_pressure();
 			((NEXTION_Executable_Component*)UIBOARD_maindisplay_activecomponent)->execute();
 		break;
 	}
