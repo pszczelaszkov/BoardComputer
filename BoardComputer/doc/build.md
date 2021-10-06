@@ -7,6 +7,7 @@ To start build type:</br>
 ```
 make boardcomputer
 ```
+By default board will transmit USART on J1 Connector, set __DEBUG__ for output on H5.
 ## Flashing
 Default method of flashing is using usbasp with avrdude and its done by typing:
 ```
@@ -32,4 +33,8 @@ python test_*.py
 When switching between testing and build remember to clean:</br>
 ```
 make clean
+```
+If extra parameters are needed, they can be set with EXTRA_FLAGS variable.
+```
+EXTRA_FLAGS=-D__DEBUG__
 ```
