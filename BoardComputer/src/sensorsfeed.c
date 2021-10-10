@@ -135,7 +135,10 @@ void SENSORSFEED_initialize()
 ISR(ADC_vect)
 {	
 	uint8_t channel = ADCMULTIPLEXER;
-	SENSORSFEED_feed[channel] = ADC;
+	int16_t value = ADC;
+	if(value == 0x3ff)//10bit max is treated as badvalue too
+		value = 0;
+	SENSORSFEED_feed[channel] = value;
 	if(channel == SENSORSFEED_ADC_CHANNELS-1)
 	{
 		CLEAR(ADMUX,0x0f);// clear multiplexer

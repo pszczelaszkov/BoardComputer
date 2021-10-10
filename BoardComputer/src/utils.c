@@ -5,7 +5,7 @@
     volatile uint16_t TCNT1,TCNT2;
     uint8_t DDRD, DDRB, DIDR0;
     uint8_t PORTD, PORTB, PIND;
-    uint8_t ADC;
+    uint16_t ADC;
     uint8_t ADMUX, ADSC, ADCSRA;
     void _delay_ms(int dummy){}
         /* itoa:  convert n to characters in s */

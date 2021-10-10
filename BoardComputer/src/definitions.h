@@ -65,7 +65,7 @@ enum SENSORSFEED_FEEDID
 	SENSORSFEED_FEEDID_LAST
 };
 extern uint8_t ADMUX;
-extern uint8_t ADC;
+extern uint16_t ADC;
 extern int16_t SENSORSFEED_injector_ccm;
 extern int16_t SENSORSFEED_speed_ticks_100m;
 extern uint16_t SENSORSFEED_fuelmodifier;

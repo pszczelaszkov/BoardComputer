@@ -18,7 +18,7 @@
     extern volatile uint16_t TCNT1,TCNT2;
     extern uint8_t DDRD, DDRB;
     extern uint8_t PORTD, PORTB, PIND, DIDR0;
-    extern uint8_t ADC;
+    extern uint16_t ADC;
     extern uint8_t ADMUX, ADSC, ADCSRA;
     /* reverse:  reverse string s in place */
     void reverse(char s[]);

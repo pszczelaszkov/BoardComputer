@@ -33,6 +33,13 @@ class testPreRun(unittest.TestCase):
             self.bc.ADC_vect()
             self.assertEqual(testvalue, self.bc.SENSORSFEED_feed[ADC_channel])
 
+    def test_analog_full(self):
+        ADC_channel = self.bc.ADMUX & 0x0f
+        testvalue = 0x3FF
+        self.bc.ADC = testvalue
+        self.bc.ADC_vect()
+        self.assertEqual(0, self.bc.SENSORSFEED_feed[ADC_channel])
+
     def test_USART(self):
         write_usart(self.bc, 0x01, b"PING")
         response = read_usart(self.bc)
