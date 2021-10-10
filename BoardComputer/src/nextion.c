@@ -263,20 +263,6 @@ int8_t NEXTION_switch_page(NEXTION_PageID_t pageID, uint8_t push_to_history)
 	return NEXTION_send(buffer,USART_HOLD);
 }
 
-void NEXTION_update_watch()
-{
-	const char WATCHTEMPLATE[]  = "wtd.txt=\"        \"";
-	char buffer[sizeof(WATCHTEMPLATE)];
-	strcpy(buffer,WATCHTEMPLATE);
-	
-	if(TIMER_active_watch == &TIMER_watches[TIMERTYPE_WATCH])
-		memcpy(&buffer[11],TIMER_formated,5);
-	else
-		memcpy(&buffer[9],&TIMER_formated[3],8);
-
-	NEXTION_send(buffer,USART_HOLD);
-}
-
 void NEXTION_update_select_decay()
 {
 	if(NEXTION_selection_counter)

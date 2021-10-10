@@ -20,8 +20,6 @@ class testPreRun(unittest.TestCase):
     def test_sensorsfeed(self):
         # Divide by 0 issue
         self.assertTrue(self.bc.SENSORSFEED_fuelmodifier)
-        # After init, status should be ready
-        self.assertEqual(self.bc.ADCMULTIPLEXER, 0)
 
     def test_analog(self):
         # Magic numbers, totally random
