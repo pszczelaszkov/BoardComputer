@@ -170,7 +170,7 @@ class testPreRun(unittest.TestCase):
 
     def test_system_alert_idle(self):
         self.bc.SYSTEM_status = self.bc.SYSTEM_STATUS_IDLE
-        expected_pattern = 0x0  # using critical alert pattern
+        expected_pattern = 0x0
         result_pattern = 0
         pattern_len = 16
         self.bc.SYSTEM_raisealert(self.bc.SYSTEM_ALERT_CRITICAL)
