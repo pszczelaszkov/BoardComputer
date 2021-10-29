@@ -59,7 +59,7 @@ Converts 16bit(8+8) fixedpoint variable to ascii.
 @param fixedpoint Value for conversion.
 @param dest Destination buffer.
 @param integrallength Maximal length of converted integral part including sign.
-@param fractionlength Maximal length of converted fractionpart(Max 3).
+@param fractionlength Maximal length of converted fractionpart(Max 4).
 */
 void fp16toa(int16_t fixedpoint, char* dest, uint8_t integrallength, uint8_t fractionlength)
 {
@@ -69,7 +69,7 @@ void fp16toa(int16_t fixedpoint, char* dest, uint8_t integrallength, uint8_t fra
     int8_t integral = fixedpoint >> 8;
 	uint16_t fraction = (fixedpoint & 0xff) * FP8_weight;
 
-    char fractionascii[max_precision];
+    char fractionascii[7];
     memset(fractionascii, '0', max_precision);
 
     //clamp fractionlength

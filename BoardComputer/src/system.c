@@ -19,13 +19,12 @@ static Alert alert_register[] =
 {
     [SYSTEM_ALERT_NOTIFICATION] =
     {
-        .priority = 0,
         .pattern = 0xf
     },
     [SYSTEM_ALERT_WARNING] = 
     {
         .priority = 1,
-        .pattern = 0x82
+        .pattern = 0xAA
     },
     [SYSTEM_ALERT_CRITICAL] =
     {
@@ -39,7 +38,7 @@ static Alert active_alert;
 void SYSTEM_raisealert(SYSTEM_ALERT_t alert)
 {
     Alert new_alert = alert_register[alert];
-    if(active_alert.priority <= new_alert.priority)
+    if(!active_alert.priority || active_alert.priority < new_alert.priority)
         active_alert = new_alert;
 }
 
@@ -67,6 +66,9 @@ void SYSTEM_update()
             CLEAR(PORTD,BIT7);
 
         active_alert.pattern >>= 1;
+        //clear
+        if(!active_alert.pattern)
+            active_alert.priority = 0;
     }
     else
         CLEAR(PORTD,BIT7);
