@@ -21,6 +21,6 @@
 - [x] Rework the pages api
 - [x] Sound Alarm
 - [x] System Status
-- [ ] Visual warning
+- [x] Visual warning
 - [x] Display detection
 - [x] Makefile(EXTRAFLAGS/DEBUG)

@@ -16,7 +16,11 @@
 #define BRIGHTBLUE 0x4DF
 #define BRIGHTBROWN 0xBC8D
 #define PASTELORANGE 0xFD88
+#define SAFETYYELLOW 0xEE80
+#define CRIMSONRED 0xD800
+
 #define WHITE 0XFFFF
+#define DEFAULTCOLOR WHITE
 
 static const char str_val[NEXTION_OBJNAME_LEN] = "val";
 static const char str_txt[NEXTION_OBJNAME_LEN] = "txt";

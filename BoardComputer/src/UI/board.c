@@ -6,8 +6,9 @@
 #include "../system.h"
 #include "../input.h"
 
-
-static const int16_t fuelmanifold_threshold = 2 << 8;
+static const int16_t fuelmanifold_threshold = 2 << 8;//2 Bar
+static const char str_mdv[NEXTION_OBJNAME_LEN] = "mdv";
+static const char str_egt[NEXTION_OBJNAME_LEN] = "egt";
 static const char str_wtd[NEXTION_OBJNAME_LEN] = "wtd"; 
 static const char str_wts[NEXTION_OBJNAME_LEN] = "wts";
 static const char str_mds[NEXTION_OBJNAME_LEN] = "mds";
@@ -18,7 +19,63 @@ static const char str_int[NEXTION_OBJNAME_LEN] = "int";
 static const char str_frp[NEXTION_OBJNAME_LEN] = "frp";
 static const char str_map[NEXTION_OBJNAME_LEN] = "map";
 static const char str_fmd[NEXTION_OBJNAME_LEN] = "fmd";
+static const char str_pco[NEXTION_OBJNAME_LEN] = "pco";
 
+static uint8_t critical_raised;
+static uint8_t raise_critical;
+
+typedef enum VISUALALERTSEVERITY
+{
+	VISUALALERT_SEVERITY_NOTIFICATION,
+	VISUALALERT_SEVERITY_WARNING,
+	VISUALALERT_SEVERITY_BADVALUE
+}Visualalertseverity_t;
+
+typedef enum VISUALALERTID
+{
+	VISUALALERTID_MAINDISPLAY,
+	VISUALALERTID_EGT,
+	VISUALALERTID_MAP,
+	VISUALALERTID_FRP,
+	VISUALALERTID_INTAKE,
+	VISUALALERTID_OUTSIDE,
+	VISUALALERTID_OIL,
+	VISUALALERTID_LAST
+}Visualalertid_t;
+
+typedef struct Visualalert
+{
+	const char* objname;
+	uint8_t temppattern;
+	uint8_t pattern;
+	uint16_t color;
+}Visualalert;
+
+//Object needs to have "pco" variable, as its used to visualize alert.
+Visualalert visualalerts[] = 
+{
+	[VISUALALERTID_MAINDISPLAY] = {
+		.objname = str_mdv
+	},
+	[VISUALALERTID_EGT] = {
+		.objname = str_egt
+	},
+	[VISUALALERTID_MAP] = {
+		.objname = str_map
+	},
+	[VISUALALERTID_FRP] = {
+		.objname = str_frp
+	},
+	[VISUALALERTID_OIL] = {
+		.objname = str_oil
+	},
+	[VISUALALERTID_INTAKE] = {
+		.objname = str_int 
+	},
+	[VISUALALERTID_OUTSIDE] = {
+		.objname = str_out
+	}
+};
 
 NEXTION_Component UIBOARD_components[] = {
 	[UIBOARD_COMPONENT_WATCH]=
@@ -138,6 +195,39 @@ UIBOARD_MDComponent UIBOARD_maindisplay_components[] = {
 	}
 };
 
+/*
+Raises visual alert for specified alertid.
+Alert lives 8 system cycles.Its safe to double rise.
+It may raise corresponding system alert.
+@param alertid Selects Visualalert instance.
+@param severity Severity sets predefined periodicity and color.
+*/
+void raisevisualalert(Visualalertid_t alertid, Visualalertseverity_t severity)
+{
+	Visualalert* alert = &visualalerts[alertid];
+	uint8_t pattern;
+	uint16_t color;
+	switch(severity)
+	{
+		case VISUALALERT_SEVERITY_BADVALUE:
+			pattern = 0xff;
+			color = CRIMSONRED;
+		break;
+		case VISUALALERT_SEVERITY_NOTIFICATION:
+			pattern = 0xcc;
+			color = BRIGHTBLUE;
+			SYSTEM_raisealert(SYSTEM_ALERT_NOTIFICATION);
+		break;
+		case VISUALALERT_SEVERITY_WARNING:
+			pattern = 0xaa;
+			color = SAFETYYELLOW;
+			SYSTEM_raisealert(SYSTEM_ALERT_WARNING);
+		break;
+	}
+	alert->color = color;
+	alert->pattern = pattern;
+}
+
 void UIBOARD_renderer_md_lph()
 {
 	char buffer[] = "mdv.txt=\"  .0\"";
@@ -254,20 +344,52 @@ void update_sensorgroup_bottom()
 	NEXTION_INSTRUCTION_BUFFER_BLOCK(5)
 	NEXTION_quote_payloadbuffer(payload,payload_length);
 
-	int16_t out_temp = pgm_read_word(&PROGRAMDATA_NTC_2200_INVERTED[SENSORSFEED_feed[0]]);
-	int16_t int_temp = pgm_read_word(&PROGRAMDATA_NTC_2200_INVERTED[SENSORSFEED_feed[0]]);
-	int16_t oil_temp = pgm_read_word(&PROGRAMDATA_NTC_2200_INVERTED[SENSORSFEED_feed[0]]);
-	
+	int16_t out_temp = SENSORSFEED_feed[0];
+	int16_t int_temp = SENSORSFEED_feed[0];
+	int16_t oil_temp = SENSORSFEED_feed[0];
+
 	NEXTION_instruction_compose(str_out,str_txt,instruction);
-	rightconcat_short(&payload[1],out_temp,3);
+	if(out_temp)
+	{	
+		out_temp = pgm_read_word(&PROGRAMDATA_NTC_2200_INVERTED[out_temp]);
+		rightconcat_short(&payload[1],out_temp,3);
+	}
+	else
+	{
+		raisevisualalert(VISUALALERTID_OUTSIDE,VISUALALERT_SEVERITY_BADVALUE);
+		memset(&payload[1], '-', 3);
+		raise_critical = 1;
+	}
 	NEXTION_send(buffer,USART_HOLD);
+	memset(&payload[1],' ',payload_length-2);
 
 	NEXTION_instruction_compose(str_int,str_txt,instruction);
-	rightconcat_short(&payload[1],int_temp,3);
+	if(int_temp)
+	{
+		int_temp = pgm_read_word(&PROGRAMDATA_NTC_2200_INVERTED[int_temp]);
+		rightconcat_short(&payload[1],int_temp,3);
+	}
+	else
+	{
+		raisevisualalert(VISUALALERTID_INTAKE,VISUALALERT_SEVERITY_BADVALUE);
+		memset(&payload[1], '-', 3);
+		raise_critical = 1;
+	}
 	NEXTION_send(buffer,USART_HOLD);
+	memset(&payload[1],' ',payload_length-2);
 
 	NEXTION_instruction_compose(str_oil,str_txt,instruction);
-	rightconcat_short(&payload[1],oil_temp,3);
+	if(oil_temp)
+	{
+		oil_temp = pgm_read_word(&PROGRAMDATA_NTC_2200_INVERTED[oil_temp]);
+		rightconcat_short(&payload[1],oil_temp,3);
+	}
+	else
+	{
+		raisevisualalert(VISUALALERTID_OIL,VISUALALERT_SEVERITY_BADVALUE);
+		memset(&payload[1], '-', 3);
+		raise_critical = 1;
+	}
 	NEXTION_send(buffer,USART_HOLD);
 }
 
@@ -276,20 +398,40 @@ void update_sensorgroup_pressure()
 	NEXTION_INSTRUCTION_BUFFER_BLOCK(7)
 	NEXTION_quote_payloadbuffer(payload,payload_length);
 
-	const int16_t manifoldpressure = pgm_read_word(&PROGRAMDATA_NTC_2200_INVERTED[SENSORSFEED_feed[0]]);
-	const int16_t fuelrailpressure = pgm_read_word(&PROGRAMDATA_NTC_2200_INVERTED[SENSORSFEED_feed[0]]);
+	int16_t manifoldpressure = SENSORSFEED_feed[0];
+	int16_t fuelrailpressure = SENSORSFEED_feed[0];
 
 	NEXTION_instruction_compose(str_map,str_txt,instruction);
-	fp16toa(manifoldpressure,&payload[1],2,2);
+	if(manifoldpressure)
+	{
+		manifoldpressure = pgm_read_word(&PROGRAMDATA_NTC_2200_INVERTED[manifoldpressure]);
+		fp16toa(manifoldpressure,&payload[1],2,2);
+	}
+	else
+	{
+		raisevisualalert(VISUALALERTID_MAP,VISUALALERT_SEVERITY_BADVALUE);
+		memset(&payload[1], '-', 5);
+		raise_critical = 1;
+	}
 	NEXTION_send(buffer,USART_HOLD);
-	
-	NEXTION_instruction_compose(str_frp,str_txt,instruction);
 	memset(&payload[1],' ',payload_length-2);
-	fp16toa(fuelrailpressure,&payload[1],2,2);
+	///
+	NEXTION_instruction_compose(str_frp,str_txt,instruction);
+	if(fuelrailpressure)
+	{
+		fuelrailpressure = pgm_read_word(&PROGRAMDATA_NTC_2200_INVERTED[fuelrailpressure]);
+		fp16toa(fuelrailpressure,&payload[1],2,2);
+	}
+	else
+	{
+		raisevisualalert(VISUALALERTID_FRP,VISUALALERT_SEVERITY_BADVALUE);
+		memset(&payload[1], '-', 5);
+		raise_critical = 1;
+	}
 	NEXTION_send(buffer,USART_HOLD);
-
-	NEXTION_instruction_compose(str_fmd,str_val,instruction);
 	memset(payload,' ',payload_length);
+	///
+	NEXTION_instruction_compose(str_fmd,str_val,instruction);
 	int16_t deltapressure = fuelrailpressure - manifoldpressure - fuelmanifold_threshold;
 	if(deltapressure < 0)
 	{
@@ -306,6 +448,34 @@ void update_sensorgroup_pressure()
 	deltapressure = deltapressure * 100 >> 8;
 	itoa(deltapressure, payload, 10);
 	NEXTION_send(buffer,USART_HOLD);
+}
+
+void update_visual_alert()
+{
+	NEXTION_INSTRUCTION_BUFFER_BLOCK(5)
+	for(uint8_t i = 0; i < VISUALALERTID_LAST;i++)
+	{
+		Visualalert* alert = &visualalerts[i];
+		if(!alert->temppattern)
+		{
+			alert->temppattern = alert->pattern;
+			alert->pattern = 0;
+		}
+		if(alert->temppattern)
+		{
+			uint16_t color = DEFAULTCOLOR;
+			uint8_t patternmatch = alert->temppattern & 0x01;
+			alert->temppattern >>= 1;
+			if(patternmatch)
+			{
+				if(alert->temppattern || alert->pattern)
+					color = alert->color;
+			}
+			NEXTION_instruction_compose(alert->objname,str_pco,instruction);
+			uitoa(color,payload);
+			NEXTION_send(buffer,USART_HOLD);
+		}
+	}
 }
 
 void UIBOARD_update_watch()
@@ -335,10 +505,11 @@ void UIBOARD_callback_config()
 
 void UIBOARD_update()
 {	
-	uint8_t timer = SYSTEM_event_timer;	
+	uint8_t timer = SYSTEM_event_timer;
 	switch(timer)
 	{
 		case 0:
+			raise_critical = 0;
 		case 4:
 			update_sensorgroup_bottom();
 			UIBOARD_update_EGT();
@@ -350,4 +521,15 @@ void UIBOARD_update()
 		break;
 	}
 	UIBOARD_update_watch();
+	update_visual_alert();
+	if(raise_critical)
+	{
+		if(!critical_raised)
+		{
+			SYSTEM_raisealert(SYSTEM_ALERT_CRITICAL);
+			critical_raised = 1;
+		}
+	}
+	else
+		critical_raised = 0;
 }

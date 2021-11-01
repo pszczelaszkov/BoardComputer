@@ -149,7 +149,7 @@ inline void reset()
 /*
 Compose instruction in form of objname.varname= 
 For best compatibility create buffers before with INSTRUCTION_BUFFER_BLOCK.
-@param objname Pointer to objname const string must have length of NEXTION_OBJNAME_LEN.
+@param objname Pointer to objname const string, must have length of NEXTION_OBJNAME_LEN.
 @param varname Pointer to variable name i.e: var/txt.
 @param instruction Pointer to instruction buffer, MUSTHAVE CAPACITY of NEXTION_OBJNAME_LEN + 5.
 */
