@@ -325,18 +325,26 @@ void UIBOARD_switch_maindisplay()
 void UIBOARD_update_EGT()
 {
 	char buffer[] = "egt.txt=\"    \"";
+	uint8_t alert = 0;
 	switch(SENSORSFEED_EGT_status)
 	{
 		case SENSORSFEED_EGT_STATUS_UNKN:
 			memcpy(&buffer[9],"----",4);
+			alert = 1;
 		break;
 		case SENSORSFEED_EGT_STATUS_OPEN:
 			memcpy(&buffer[9],"open",4);
+			alert = 1;
 		break;
 		case SENSORSFEED_EGT_STATUS_VALUE:
 			rightconcat_short(&buffer[9],SENSORSFEED_feed[SENSORSFEED_FEEDID_EGT],4);
 	}
 	NEXTION_send(buffer,USART_HOLD);
+	if(alert)
+	{
+		raise_critical = 1;
+		raisevisualalert(VISUALALERTID_EGT,VISUALALERT_SEVERITY_BADVALUE);
+	}
 }
 
 void update_sensorgroup_bottom()
