@@ -16,6 +16,37 @@ With short enums option(byte enum) it should represent address of input componen
 Page&Component(4+4) ID's, which gives capacity of 16 pages with 16 input components.
 Keep in sorted ascending condition, important for further search algorithm.
 */  
+/*
+Workaround clean definition for testuse
+TESTUSE typedef enum INPUT_COMPONENTID
+{
+	INPUT_COMPONENT_NONE,
+	INPUT_COMPONENT_MAINDISPLAY,
+	INPUT_COMPONENT_WATCH,
+	INPUT_COMPONENT_WATCHSEL,
+	INPUT_COMPONENT_CONFIG,
+	INPUT_COMPONENT_CONFIGWHH,
+	INPUT_COMPONENT_CONFIGWMM,
+	INPUT_COMPONENT_CONFIGWSS,
+	INPUT_COMPONENT_CONFIGIPM,
+	INPUT_COMPONENT_CONFIGCCM,
+	INPUT_COMPONENT_CONFIGDBS,
+	INPUT_COMPONENT_CONFIGBCK,
+	INPUT_COMPONENT_NUMPAD1,
+	INPUT_COMPONENT_NUMPAD2,
+	INPUT_COMPONENT_NUMPAD3,
+	INPUT_COMPONENT_NUMPAD4,
+	INPUT_COMPONENT_NUMPAD5,
+	INPUT_COMPONENT_NUMPAD6,
+	INPUT_COMPONENT_NUMPAD7,
+	INPUT_COMPONENT_NUMPAD8,
+	INPUT_COMPONENT_NUMPAD9,
+	INPUT_COMPONENT_NUMPAD0,
+	INPUT_COMPONENT_NUMPADMINUS,
+	INPUT_COMPONENT_NUMPADDEL,
+	INPUT_COMPONENT_NUMPADSEND
+}INPUT_ComponentID_t;
+*/
 typedef enum INPUT_COMPONENTID
 {
 	INPUT_COMPONENT_NONE = 0,
@@ -45,7 +76,7 @@ typedef enum INPUT_COMPONENTID
 	INPUT_COMPONENT_NUMPADSEND = 14 | (NEXTION_PAGEID_NUMPAD << 4)
 }INPUT_ComponentID_t;
 
-typedef enum INPUT_KEYSTATUS
+TESTUSE typedef enum INPUT_KEYSTATUS
 {
 	INPUT_KEYSTATUS_RELEASED = 0,
 	INPUT_KEYSTATUS_PRESSED,
@@ -54,14 +85,14 @@ typedef enum INPUT_KEYSTATUS
 	INPUT_KEYSTATUS_CLICK
 }INPUT_Keystatus_t;
 
-typedef enum INPUT_KEY
+TESTUSE typedef enum INPUT_KEY
 {
 	INPUT_KEY_ENTER,
 	INPUT_KEY_DOWN,
 	INPUT_KEY_LAST
 }INPUT_Key_t;
 
-typedef struct INPUT_Component
+TESTUSE typedef struct INPUT_Component
 {
 	INPUT_ComponentID_t componentID;
 	INPUT_ComponentID_t nextcomponentID;
@@ -73,14 +104,14 @@ typedef struct INPUT_Component
 static const uint8_t components_count;
 static uint8_t pending_componentID;
 extern uint8_t INPUT_active_page;
-extern INPUT_Keystatus_t INPUT_keystatus[];
+TESTUSE extern INPUT_Keystatus_t INPUT_keystatus[];
 extern INPUT_Component INPUT_components[];
-extern INPUT_Component* INPUT_active_component;
+TESTUSE extern INPUT_Component* INPUT_active_component;
 
 void INPUT_switch_maindisplay();
-void INPUT_userinput(INPUT_Keystatus_t keystatus, INPUT_Key_t key, INPUT_ComponentID_t componentID);
-INPUT_Component* INPUT_findcomponent(uint8_t componentID);
-void INPUT_update();
+TESTUSE void INPUT_userinput(INPUT_Keystatus_t keystatus, INPUT_Key_t key, INPUT_ComponentID_t componentID);
+TESTUSE INPUT_Component* INPUT_findcomponent(uint8_t componentID);
+TESTUSE void INPUT_update();
 void INPUT_initialize();
 INPUT_Component* getnextcomponent();
 ISR(INT0_vect);

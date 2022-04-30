@@ -8,18 +8,20 @@
 
 #ifndef __UTILS__
 #define __UTILS__
+#define TESTUSE
 #ifdef __AVR__
 #include<stdlib.h>
 #else
     #include <inttypes.h>
     #define ISR(...) void __VA_ARGS__()
     #define sleep_cpu()
-    extern volatile uint8_t PINA,PINB;
-    extern volatile uint16_t TCNT1,TCNT2;
-    extern uint8_t DDRD, DDRB;
-    extern uint8_t PORTD, PORTB, PIND, DIDR0;
-    extern uint16_t ADC;
-    extern uint8_t ADMUX, ADSC, ADCSRA;
+    TESTUSE extern volatile uint8_t PINA, PINB, PINC, PIND;
+    TESTUSE extern volatile uint16_t TCNT1, TCNT2;
+    TESTUSE extern uint8_t DDRA, DDRB, DDRC, DDRD;
+    TESTUSE extern uint8_t PORTA, PORTB, PORTC, PORTD, DIDR0;
+    TESTUSE extern uint16_t ADC;
+    TESTUSE extern uint8_t ADMUX, ADSC, ADCSRA;
+    TESTUSE void ADC_vect();
     /* reverse:  reverse string s in place */
     void reverse(char s[]);
     /* itoa:  convert n to characters in s */
@@ -28,13 +30,13 @@
 #endif
 #include <string.h>
 #include "sensorsfeed.h"
-int16_t UTILS_atoi(char* stringvalue);
+TESTUSE int16_t UTILS_atoi(char* stringvalue);
 void uitoa(uint16_t n, char s[]);
-void fp16toa(int16_t fixedpoint, char* dest, uint8_t integrallength, uint8_t fractionlength);
+TESTUSE void fp16toa(int16_t fixedpoint, char* dest, uint8_t integrallength, uint8_t fractionlength);
 extern const uint8_t FP8_weight;
 extern const uint16_t FP16_weight;
-typedef void (*Callback)();
-typedef void (*Callback_32)(uint32_t);
-void rightconcat_short(char* dest, int16_t value, uint8_t spacing);
-void rightnconcat_short(char* dest, int16_t value, uint8_t spacing, uint8_t n);
+TESTUSE typedef void (*Callback)();
+TESTUSE typedef void (*Callback_32)(uint32_t);
+TESTUSE void rightconcat_short(char* dest, int16_t value, uint8_t spacing);
+TESTUSE void rightnconcat_short(char* dest, int16_t value, uint8_t spacing, uint8_t n);
 #endif

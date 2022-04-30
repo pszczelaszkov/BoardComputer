@@ -2,17 +2,14 @@ import os
 import re
 import cffi
 import importlib
-import glob
 
 
-def load(filename,definitions):
+def load(filename):
     # import and return resulting module
-    module = importlib.import_module('bin.' + filename + '_')
-    glob.glob('bin/' + filename + '_*')
-    with open('src/'+ definitions) as definitions_file:
-        ffi = cffi.FFI()
+    ffi = cffi.FFI()
+    module = importlib.import_module('bin.' + filename)
+    with open('test/generatedDefinitions/definitions.h') as definitions_file:
         ffi.cdef(definitions_file.read())
-
     return module.lib, ffi
 
 

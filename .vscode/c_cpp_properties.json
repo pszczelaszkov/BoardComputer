@@ -7,7 +7,7 @@
             "cppStandard": "c++14",
             "compilerPath": "/usr/bin/avr-gcc",
             "includePath": [
-                "/mnt/8C4A46DD4A46C424/Projekty/AVR/BoardComputer/BoardComputer/src/**"
+                "${workspaceFolder}/BoardComputer/src/**"
             ],
             "compilerArgs": [
                 "-mmcu=atmega8",

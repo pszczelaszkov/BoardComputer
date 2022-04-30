@@ -26,25 +26,25 @@ enum COMPONENT
     UINUMPAD_COMPONENT_SEND,
 };
 
-void UINUMPAD_click_b1();
-void UINUMPAD_click_b2();
-void UINUMPAD_click_b3();
-void UINUMPAD_click_b4();
-void UINUMPAD_click_b5();
-void UINUMPAD_click_b6();
-void UINUMPAD_click_b7();
-void UINUMPAD_click_b8();
-void UINUMPAD_click_b9();
-void UINUMPAD_click_b0();
-void UINUMPAD_click_del();
-void UINUMPAD_click_mns();
-void UINUMPAD_click_snd();
+TESTUSE void UINUMPAD_click_b1();
+TESTUSE void UINUMPAD_click_b2();
+TESTUSE void UINUMPAD_click_b3();
+TESTUSE void UINUMPAD_click_b4();
+TESTUSE void UINUMPAD_click_b5();
+TESTUSE void UINUMPAD_click_b6();
+TESTUSE void UINUMPAD_click_b7();
+TESTUSE void UINUMPAD_click_b8();
+TESTUSE void UINUMPAD_click_b9();
+TESTUSE void UINUMPAD_click_b0();
+TESTUSE void UINUMPAD_click_del();
+TESTUSE void UINUMPAD_click_mns();
+TESTUSE void UINUMPAD_click_snd();
 
-extern NEXTION_Component UINUMPAD_components[];
-void UINUMPAD_switch(int16_t* target);
+TESTUSE extern NEXTION_Component UINUMPAD_components[];
+TESTUSE void UINUMPAD_switch(int16_t* target);
 void UINUMPAD_setup();
 void UINUMPAD_update();
 #ifndef __AVR__
-char* UINUMPAD_getstringvalue();
+TESTUSE char* UINUMPAD_getstringvalue();
 #endif
 #endif

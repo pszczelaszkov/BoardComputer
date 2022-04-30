@@ -17,6 +17,15 @@
         120
     ],
     "files.associations": {
-        "board.h": "c"
+        "board.h": "c",
+        "utils.h": "c",
+        "string.h": "c",
+        "system.h": "c",
+        "inttypes.h": "c",
+        "io.h": "c",
+        "iom2560.h": "c",
+        "features.h": "c",
+        "input.h": "c",
+        "numpad.h": "c"
     },
 }

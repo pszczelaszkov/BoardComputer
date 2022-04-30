@@ -9,7 +9,7 @@ from helpers import load
 class testInit(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.bc, cls.ffi = load("main", "definitions.h")
+        cls.bc, cls.ffi = load("testmodule")
         cls.nullptr = cls.ffi.NULL
 
     def test_USART(self):
@@ -230,6 +230,63 @@ class testInit(unittest.TestCase):
     def test_system_defaultstate(self):
         self.assertEqual(self.bc.SYSTEM_status, self.bc.SYSTEM_STATUS_IDLE)
 
+    def test_utils_rightconcat(self):
+        buffer = self.ffi.new('char[7]')
+
+        for i in range(7):
+            buffer[i] = b'\x00'
+        testvalue = 100
+        expectedstring = b'\x00\x00\x00100\x00'
+        self.bc.rightconcat_short(buffer, testvalue, 6)
+        self.assertEqual(self.ffi.unpack(buffer, 7), expectedstring)
+
+        for i in range(7):
+            buffer[i] = b'\x00'
+        expectedstring = b'100\x00\x00\x00\x00'
+        self.bc.rightconcat_short(buffer, testvalue, 3)
+        self.assertEqual(self.ffi.unpack(buffer, 7), expectedstring)
+
+    def test_utils_rightnconcat(self):
+        buffer = self.ffi.new('char[7]')
+        testvalue = 10
+        expectedstring = b'\x00\x00\x00\x0010\x00'
+        self.bc.rightnconcat_short(buffer, testvalue, 6, 3)
+        self.assertEqual(self.ffi.unpack(buffer, 7), expectedstring)
+
+    def test_utils_fp16toa_zero(self):
+        buffer = self.ffi.new('char[7]')
+        testvalue = 0
+        expectedstring = b'\x000.00\x00\x00'
+        self.bc.fp16toa(testvalue, buffer, 2, 2)
+        self.assertEqual(self.ffi.unpack(buffer, 7), expectedstring)
+
+    def test_utils_fp16toa_minus(self):
+        buffer = self.ffi.new('char[7]')
+        testvalue = -5 << 8
+        expectedstring = b'-5.00\x00\x00'
+        self.bc.fp16toa(testvalue, buffer, 2, 2)
+        self.assertEqual(self.ffi.unpack(buffer, 7), expectedstring)
+
+    def test_utils_fp16toa_half(self):
+        buffer = self.ffi.new('char[7]')
+        testvalue = 129  # Half + 1
+        expectedstring = b'\x000.50\x00\x00'
+        self.bc.fp16toa(testvalue, buffer, 2, 2)
+        self.assertEqual(self.ffi.unpack(buffer, 7), expectedstring)
+
+    def test_utils_fp16toa_threeofthousand(self):
+        buffer = self.ffi.new('char[7]')
+        testvalue = 1
+        expectedstring = b'\x000.003\x00'
+        self.bc.fp16toa(testvalue, buffer, 2, 3)
+        self.assertEqual(self.ffi.unpack(buffer, 7), expectedstring)
+
+    def test_utils_fp16toa_maxfractionlength(self):
+        buffer = self.ffi.new('char[7]')
+        testvalue = 1
+        expectedstring = b'\x000.0039'
+        self.bc.fp16toa(testvalue, buffer, 2, 10)
+        self.assertEqual(self.ffi.unpack(buffer, 7), expectedstring)
 
 if __name__ == "main":
     unittest.main()

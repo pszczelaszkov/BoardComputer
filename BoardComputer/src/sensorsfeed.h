@@ -11,9 +11,11 @@
 #include "bitwise.h"
 #include "countersfeed.h"
 #include "average.h"
+#include "utils.h"
 
 #ifndef __AVR__
-	extern uint8_t SPDR0;
+	TESTUSE extern uint8_t SPDR0;
+	TESTUSE void SPI0_STC_vect();
 #endif
 #define ADCSTART ADCSRA |= (1 << ADSC)
 #define ADCMULTIPLEXER (ADMUX & 0x0f)
@@ -24,20 +26,35 @@
 #define SENSORSFEED_HIGH_PRECISION_BASE 1000000000//Big int as an answer to float
 #define SENSORSFEED_LOW_PRECISION_BASE 100000//Big int as an answer to float
 #define SENSORSFEED_ADC_CHANNELS 2
-extern enum SENSORSFEED_EGT_STATUS
+TESTUSE extern enum SENSORSFEED_EGT_STATUS
 {
 	SENSORSFEED_EGT_STATUS_UNKN,
 	SENSORSFEED_EGT_STATUS_OPEN,
 	SENSORSFEED_EGT_STATUS_VALUE
 }SENSORSFEED_EGT_status;
 
-extern enum SENSORSFEED_EGT_TRANSMISSION_STATUS
+TESTUSE extern enum SENSORSFEED_EGT_TRANSMISSION_STATUS
 {
 	SENSORSFEED_EGT_TRANSMISSION_READY,
 	SENSORSFEED_EGT_TRANSMISSION_HALF,
 	SENSORSFEED_EGT_TRANSMISSION_FULL
 }SENSORSFEED_EGT_transmission_status;
-
+/* Workaround for testuse
+TESTUSE enum SENSORSFEED_FEEDID
+{
+	//Physical sensors
+	//ADC0...channels
+	SENSORSFEED_FEEDID_TANK,// TANK input always last
+	SENSORSFEED_FEEDID_EGT,
+	//Virtual sensors
+	SENSORSFEED_FEEDID_LPH,//fp 8bit
+	SENSORSFEED_FEEDID_LP100,//fp 8bit
+	SENSORSFEED_FEEDID_LP100_AVG,//fp 8bit
+	SENSORSFEED_FEEDID_SPEED,//fp 8bit
+	SENSORSFEED_FEEDID_SPEED_AVG,//fp 8bit
+	SENSORSFEED_FEEDID_LAST
+};
+*/
 enum SENSORSFEED_FEEDID
 {
 	//Physical sensors
@@ -54,22 +71,22 @@ enum SENSORSFEED_FEEDID
 };
 
 #define SENSORSFEED_FEED_SIZE SENSORSFEED_FEEDID_LAST
-extern uint16_t SENSORSFEED_feed[];
+TESTUSE extern uint16_t SENSORSFEED_feed[];
 
 extern uint16_t SENSORSFEED_max6675_data;
-extern int16_t SENSORSFEED_speed_ticks_100m;
-extern int16_t SENSORSFEED_injector_ccm;
-extern uint16_t SENSORSFEED_fuelmodifier;
+TESTUSE extern int16_t SENSORSFEED_speed_ticks_100m;
+TESTUSE extern int16_t SENSORSFEED_injector_ccm;
+TESTUSE extern uint16_t SENSORSFEED_fuelmodifier;
 extern uint16_t SENSORSFEED_speedmodifier;
 extern uint16_t SENSORSFEED_speed_max;
 extern uint8_t SENSORSFEED_injtmodifier;
 
-void SENSORSFEED_update_fuel();
-void SENSORSFEED_update_speed();
-void SENSORSFEED_update_ADC();
-void SENSORSFEED_update_EGT();
+TESTUSE void SENSORSFEED_update_fuel();
+TESTUSE void SENSORSFEED_update_speed();
+TESTUSE void SENSORSFEED_update_ADC();
+TESTUSE void SENSORSFEED_update_EGT();
 void SENSORSFEED_update();
-void SENSORSFEED_initialize();
+TESTUSE void SENSORSFEED_initialize();
 ISR(ADC_vect);
 EGT_ISR;
 #endif /* SENSORSFEED_H_ */

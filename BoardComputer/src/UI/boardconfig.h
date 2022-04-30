@@ -8,7 +8,7 @@
 #define UIBOARDCONFIG_H_
 #include "../nextion.h"
 
-enum UIBOARDCONFIG_COMPONENT
+TESTUSE enum UIBOARDCONFIG_COMPONENT
 {
 	UIBOARDCONFIG_COMPONENT_IPM,
 	UIBOARDCONFIG_COMPONENT_CCM,
@@ -19,10 +19,10 @@ enum UIBOARDCONFIG_COMPONENT
     UIBOARDCONFIG_COMPONENT_LAST
 };
 
-extern NEXTION_Executable_Component UIBOARDCONFIG_executable_components[];
+TESTUSE extern NEXTION_Executable_Component UIBOARDCONFIG_executable_components[];
 void UIBOARDCONFIG_setup();
 void UIBOARDCONFIG_update();
-void UIBOARDCONFIG_modify_dbs();
+TESTUSE void UIBOARDCONFIG_modify_dbs();
 void UIBOARDCONFIG_modify_ccm();
 void UIBOARDCONFIG_modify_ipm();
 #endif

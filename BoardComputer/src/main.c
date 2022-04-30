@@ -15,7 +15,7 @@
 #include "UI/boardconfig.h"
 #include "ProgramData.h"
 #include "utils.h"
-#define ENTRY_ROUTINE void test()
+#define ENTRY_ROUTINE TESTUSE void test()
 #endif
 
 #include "USART.h"
@@ -55,7 +55,7 @@ void maintain_display_connection(uint8_t update_result)
 	}
 }
 
-void core()
+TESTUSE void core()
 {	
 	switch(SYSTEM_status)
 	{			

@@ -12,7 +12,7 @@ nextion_data = {"val": {}, "pic": {}, "txt": {}}
 class testRun(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.bc, cls.ffi = load("main", "definitions.h")
+        cls.bc, cls.ffi = load("testmodule")
         cls.nullptr = cls.ffi.NULL
         cls.usart_eot = int.to_bytes(cls.bc.USART_EOT,
                                      1,

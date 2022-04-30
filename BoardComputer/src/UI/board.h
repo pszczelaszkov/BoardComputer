@@ -10,7 +10,7 @@
 #include <inttypes.h>
 #include "../nextion.h"
 
-enum UIBOARD_MD
+TESTUSE enum UIBOARD_MD
 {
 	UIBOARD_MD_LPH,
 	UIBOARD_MD_LP100,
@@ -30,15 +30,15 @@ enum UIBOARD_COMPONENT
 
 #define UIBOARD_MD_INITIAL_COMPONENT &UIBOARD_maindisplay_components[0]
 
-typedef struct UIBOARD_MDComponent
+TESTUSE typedef struct UIBOARD_MDComponent
 {
 	NEXTION_Executable_Component executable_component;
 	struct UIBOARD_MDComponent* nextComponent;
 }UIBOARD_MDComponent;
 
-extern NEXTION_Component UIBOARD_components[];
-extern UIBOARD_MDComponent UIBOARD_maindisplay_components[];
-extern UIBOARD_MDComponent* UIBOARD_maindisplay_activecomponent;
+TESTUSE extern NEXTION_Component UIBOARD_components[];
+TESTUSE extern UIBOARD_MDComponent UIBOARD_maindisplay_components[];
+TESTUSE extern UIBOARD_MDComponent* UIBOARD_maindisplay_activecomponent;
 
 void UIBOARD_renderer_md_lph();
 void UIBOARD_renderer_md_lp100();
@@ -47,8 +47,8 @@ void UIBOARD_renderer_md_speed_avg();
 void UIBOARD_renderer_md_inj_t();
 void UIBOARD_renderer_md_range();
 void UIBOARD_callback_config();
-void UIBOARD_switch_maindisplay();
-void UIBOARD_update_EGT();
+TESTUSE void UIBOARD_switch_maindisplay();
+TESTUSE void UIBOARD_update_EGT();
 void UIBOARD_update_ADC();
 void UIBOARD_update_watch();
 void UIBOARD_update();

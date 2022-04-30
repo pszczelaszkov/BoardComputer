@@ -11,7 +11,7 @@ def cast_void(ffi, variable):
 class testPreRun(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.bc, cls.ffi = load("main", "definitions.h")
+        cls.bc, cls.ffi = load("testmodule")
         cls.nullptr = cls.ffi.NULL
         cls.bc.SYSTEM_run = False
         cls.bc.test()
@@ -180,83 +180,6 @@ class testPreRun(unittest.TestCase):
             result_pattern = (pinvalue << i) | result_pattern
         self.assertEqual(result_pattern, expected_pattern)
 
-    def test_utils_rightconcat(self):
-        buffer = self.ffi.new('char[7]')
-
-        for i in range(7):
-            buffer[i] = b'\x00'
-        testvalue = 100
-        expectedstring = b'\x00\x00\x00100\x00'
-        self.bc.rightconcat_short(buffer, testvalue, 6)
-        self.assertEqual(self.ffi.unpack(buffer, 7), expectedstring)
-
-        for i in range(7):
-            buffer[i] = b'\x00'
-        expectedstring = b'100\x00\x00\x00\x00'
-        self.bc.rightconcat_short(buffer, testvalue, 3)
-        self.assertEqual(self.ffi.unpack(buffer, 7), expectedstring)
-
-    def test_utils_rightnconcat(self):
-        buffer = self.ffi.new('char[7]')
-        testvalue = 10
-        expectedstring = b'\x00\x00\x00\x0010\x00'
-        self.bc.rightnconcat_short(buffer, testvalue, 6, 3)
-        self.assertEqual(self.ffi.unpack(buffer, 7), expectedstring)
-
-    def test_utils_fp16toa_zero(self):
-        buffer = self.ffi.new('char[7]')
-        testvalue = 0
-        expectedstring = b'\x000.00\x00\x00'
-        self.bc.fp16toa(testvalue, buffer, 2, 2)
-        self.assertEqual(self.ffi.unpack(buffer, 7), expectedstring)
-
-    def test_utils_fp16toa_minus(self):
-        buffer = self.ffi.new('char[7]')
-        testvalue = -5 << 8
-        expectedstring = b'-5.00\x00\x00'
-        self.bc.fp16toa(testvalue, buffer, 2, 2)
-        self.assertEqual(self.ffi.unpack(buffer, 7), expectedstring)
-
-    def test_utils_fp16toa_half(self):
-        buffer = self.ffi.new('char[7]')
-        testvalue = 129  # Half + 1
-        expectedstring = b'\x000.50\x00\x00'
-        self.bc.fp16toa(testvalue, buffer, 2, 2)
-        self.assertEqual(self.ffi.unpack(buffer, 7), expectedstring)
-
-    def test_utils_fp16toa_threeofthousand(self):
-        buffer = self.ffi.new('char[7]')
-        testvalue = 1
-        expectedstring = b'\x000.003\x00'
-        self.bc.fp16toa(testvalue, buffer, 2, 3)
-        self.assertEqual(self.ffi.unpack(buffer, 7), expectedstring)
-
-    def test_utils_fp16toa_maxfractionlength(self):
-        buffer = self.ffi.new('char[7]')
-        testvalue = 1
-        expectedstring = b'\x000.0039'
-        self.bc.fp16toa(testvalue, buffer, 2, 10)
-        self.assertEqual(self.ffi.unpack(buffer, 7), expectedstring)
-
-class placeholder:
-    def test_scheduler(self):
-        # Test if fregister is fully initialized
-        fregister = self.ffi.unpack(self.bc.SCHEDULER_fregister,
-                                    self.bc.SCHEDULER_CALLBACK_LAST)
-        for fptr in fregister:
-            fptr = self.ffi.cast("void*", fptr)
-            self.assertNotEqual(fptr, self.nullptr)
-        # Test queue is circular
-        size = self.bc.SCHEDULER_LOW_PRIORITY_QUEUE_SIZE
-        tasks = self.ffi.unpack(self.bc.SCHEDULER_low_priority_tasks, size)
-        last = tasks[-1]
-        nextptr = self.ffi.cast("void*", last.nextTask)
-        for task in tasks:
-            # Are tasks fid's properly initialized?
-            self.assertEqual(task.fid, self.bc.SCHEDULER_CALLBACK_LAST)
-            fptr = self.ffi.cast("void*", cffi.FFI().addressof(task))
-            self.assertEqual(nextptr, fptr)
-            nextptr = self.ffi.cast("void*", task.nextTask)
 
 if __name__ == "main":
     unittest.main()

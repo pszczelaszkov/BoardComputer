@@ -1,26 +1,28 @@
-PYTHON_VER = 3.9
+PYTHON_VER = 3.8
 IDIR = src/
+TDIR = test/src/
 
-TESTFLAGS = -O1 -fpic -D__DEBUG__ -I$(IDIR) $(EXTRA_FLAGS)
-AVRFLAGS = -O1 -mmcu=atmega324pb -fshort-enums -I$(IDIR) $(EXTRA_FLAGS)
+TESTFLAGS = -O1 -fpic -D__DEBUG__ -I$(IDIR)
+AVRFLAGS = -O1 -mmcu=atmega324pb -fshort-enums -I$(IDIR)
 
-test: 
-	python3 mainwrapper.py
-	gcc $(TESTFLAGS) -c src/USART.c -o bin/USART_.o
-	gcc $(TESTFLAGS) -c src/input.c -o bin/input_.o
-	gcc $(TESTFLAGS) -c src/nextion.c -o bin/nextion_.o
-	gcc $(TESTFLAGS) -c src/UI/board.c -o bin/uiboard_.o
-	gcc $(TESTFLAGS) -c src/UI/boardconfig.c -o bin/uiboardconfig_.o
-	gcc $(TESTFLAGS) -c src/UI/numpad.c -o bin/numpad_.o
-	gcc $(TESTFLAGS) -c src/timer.c -o bin/timer_.o
-	gcc $(TESTFLAGS) -c src/sensorsfeed.c -o bin/sensorsfeed_.o
-	gcc $(TESTFLAGS) -c src/countersfeed.c -o bin/countersfeed_.o
-	gcc $(TESTFLAGS) -c src/utils.c -o bin/utils_.o
-	gcc $(TESTFLAGS) -c src/programdata.c -o bin/programdata_.o
-	gcc $(TESTFLAGS) -c src/average.c -o bin/average_.o
-	gcc $(TESTFLAGS) -c src/system.c -o bin/system_.o
-	gcc $(TESTFLAGS) -c src/main_.c -I/usr/include/python${PYTHON_VER} -o bin/main_.o
-	gcc -shared bin/*_.o -lpython${PYTHON_VER} -o bin/main_.so
+test: clean
+	cp -R $(IDIR) $(TDIR)
+	python3 testsuite/fileswrapper.py $(TDIR) test/generatedDefinitions
+	gcc $(TESTFLAGS) -c $(TDIR)USART.c -o bin/USART_.o
+	gcc $(TESTFLAGS) -c $(TDIR)input.c -o bin/input_.o
+	gcc $(TESTFLAGS) -c $(TDIR)nextion.c -o bin/nextion_.o
+	gcc $(TESTFLAGS) -c $(TDIR)UI/board.c -o bin/uiboard_.o
+	gcc $(TESTFLAGS) -c $(TDIR)UI/boardconfig.c -o bin/uiboardconfig_.o
+	gcc $(TESTFLAGS) -c $(TDIR)UI/numpad.c -o bin/numpad_.o
+	gcc $(TESTFLAGS) -c $(TDIR)timer.c -o bin/timer_.o
+	gcc $(TESTFLAGS) -c $(TDIR)sensorsfeed.c -o bin/sensorsfeed_.o
+	gcc $(TESTFLAGS) -c $(TDIR)countersfeed.c -o bin/countersfeed_.o
+	gcc $(TESTFLAGS) -c $(TDIR)utils.c -o bin/utils_.o
+	gcc $(TESTFLAGS) -c $(TDIR)programdata.c -o bin/programdata_.o
+	gcc $(TESTFLAGS) -c $(TDIR)average.c -o bin/average_.o
+	gcc $(TESTFLAGS) -c $(TDIR)system.c -o bin/system_.o
+	gcc $(TESTFLAGS) -c $(TDIR)main.c -I/usr/include/python${PYTHON_VER} -o bin/main_.o
+	gcc -shared bin/*_.o -lpython${PYTHON_VER} -o bin/testmodule.so
 
 boardcomputer:
 	avr-gcc $(AVRFLAGS) -c src/main.c -o bin/main.o
@@ -44,9 +46,10 @@ boardcomputer:
 flash:
 	avrdude -p m324pb -c usbasp -C +"utils/324pb.conf" -B 0.5 -U flash:w:"bin/BoardComputer.hex":a
 
-.PHONY: clean
+.PHONY: clean test flash boardcomputer
 
 clean:
-	rm bin/*
+	rm -f bin/*
+	rm -rf $(TDIR)
 
 all: boardcomputer flash

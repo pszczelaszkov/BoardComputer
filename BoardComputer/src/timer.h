@@ -12,7 +12,7 @@
 
 
 #define TIMER_REGISTER TCNT2
-typedef struct TIMER_watch
+TESTUSE typedef struct TIMER_watch
 {    
     struct
     {
@@ -33,14 +33,14 @@ enum TIMER_FORMATFLAG
     FORMATFLAG_MILISECONDS = 16
 };
 
-enum TIMER_STOPWATCHSTATUS
+TESTUSE enum TIMER_STOPWATCHSTATUS
 {
     TIMER_WATCHSTATUS_ZERO,
     TIMER_WATCHSTATUS_COUNTING,
     TIMER_WATCHSTATUS_STOP,
 };
 
-enum TIMER_TIMERTYPE
+TESTUSE enum TIMER_TIMERTYPE
 {
     TIMERTYPE_WATCH,
     TIMERTYPE_STOPWATCH,
@@ -55,19 +55,19 @@ enum TIMER_FORMATED
     TIMER_FORMATEDMS = 9
 };
 
-extern const uint8_t TIMER_REGISTER_WEIGHT;
-extern const uint8_t TIMER_MILISECOND_WEIGHT;
-extern TIMER_watch* TIMER_active_watch;
-extern TIMER_watch TIMER_watches[];  
-extern char TIMER_formated[];
+TESTUSE extern const uint8_t TIMER_REGISTER_WEIGHT;
+TESTUSE extern const uint8_t TIMER_MILISECOND_WEIGHT;
+TESTUSE extern TIMER_watch* TIMER_active_watch;
+TESTUSE extern TIMER_watch TIMER_watches[];  
+TESTUSE extern char TIMER_formated[];
 
-uint8_t TIMER_counter_to_miliseconds();
+TESTUSE uint8_t TIMER_counter_to_miliseconds();
 uint8_t TIMER_increment(TIMER_watch* watch);
 void TIMER_format(TIMER_watch* timer, uint8_t format_flag);
-void TIMER_watch_toggle();
-void TIMER_watch_zero();
-void TIMER_next_watch();
-void TIMER_update();
+TESTUSE void TIMER_watch_toggle();
+TESTUSE void TIMER_watch_zero();
+TESTUSE void TIMER_next_watch();
+TESTUSE void TIMER_update();
 void TIMER_initialize();
 
 #endif
