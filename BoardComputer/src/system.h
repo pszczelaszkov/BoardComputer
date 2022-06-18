@@ -27,7 +27,7 @@ TESTUSE typedef enum SYSTEM_ALERT
 
 TESTUSE void SYSTEM_raisealert(SYSTEM_ALERT_t alert);
 TESTUSE extern volatile SYSTEM_STATUS_t SYSTEM_status;
-extern volatile uint8_t SYSTEM_run;
+TESTUSE extern volatile uint8_t SYSTEM_run;
 TESTUSE extern volatile uint8_t SYSTEM_exec;
 TESTUSE extern volatile uint8_t SYSTEM_event_timer;//Represent fraction of second in values from 0 to 7.
 void SYSTEM_initialize();

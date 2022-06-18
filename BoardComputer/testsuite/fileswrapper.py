@@ -2,36 +2,128 @@
 WARNING!
 This Script alters files so it needs to run on copy of source files!!
 
-It makes 3 operations:
-    1. Searches files for TESTUSE keyword(i.e TESTUSE int variable_name).
-    2. Creates definitions headers for test usage.
-    3. Wraps source files with correct definitions.
+Keywords:
+TESTUSE <code>
+TESTSTATICVAR(static type varname)
+TESTADDPREFIX(anything)
 
-If object have static qualifier it will be removed and name altered.
+It makes 4 operations:
+    1. Elevate names:
+        -Replace TESTADDPREFIX(name) with "DIRFILENAME_" prefix,
+        -Moves TESTUSE marked definitions from source file to header.
+        -Creates setters/getters for variables in source file.
+    2. Searches files for TESTUSE keyword(i.e TESTUSE int variable_name).
+    3. Creates definitions headers for test usage.
+    4. Wraps main file with cffi for ease of importing.
+
+If object have static qualifier it will be elevated to extern.
+TESTPREFIX typname will evaluate into PATHWITHOUTSLASHES_typename,
+also it will replace further occurences in file.
+
+For structs/unions keyword should be used in definitions as size is needed.
+For the rest it should work in declarations.
 '''
 import sys
 import os
 import re
+from collections import Counter
 from itertools import chain
 from dataclasses import dataclass
-from textwrap import wrap
 from cffi import FFI
 from cffi import recompiler
 
 
-@dataclass
+class WrongFileExtension(Exception):
+    pass
+
+
 class ParsedData:
-    fileEntries = []
-    macrodefinitions = set()
-    variables = []
-    functions = []
-    enumerations = []
-    structs = []
-    unions = []
-    functiontypedefs = []
+
+    def __init__(self):
+        self.macrodefinitions = set()
+        self.variables = []
+        self.functions = []
+        self.enumerations = []
+        self.structs = []
+        self.unions = []
+        self.functiontypedefs = []
+
+    def extend(self, data):
+        self.macrodefinitions.update(data.macrodefinitions)
+        self.variables.extend(data.variables)
+        self.functions.extend(data.functions)
+        self.enumerations.extend(data.enumerations)
+        self.structs.extend(data.structs)
+        self.unions.extend(data.unions)
+        self.functiontypedefs.extend(data.functiontypedefs)
 
 
-def scanFile(path):
+def split_path(path: str) -> str:
+    return re.split(r"[\/\\.]", path)
+
+
+def addprefixes(path: str, testdirectorypath: str) -> list:
+    relativepath = path.replace(testdirectorypath, '').upper()
+    prefix = ''.join(split_path(relativepath)[0:-1])
+    names = []
+    # For now there is no sense to scan .h
+    if path.endswith('system.c'):
+        brackets = Counter()
+        with open(path, mode='r') as file:
+            updatedlines = []
+            for line in file.readlines():
+                brackets.update([
+                    character for character in line
+                    if character == '{' or character == '}'
+                    ])
+                if brackets['{'] == brackets['}']:
+                    if (match := re.search(r"TESTADDPREFIX\(\w*\)", line)):
+                        matchedstring = match.group(0)
+                        name = matchedstring.split(sep='(')[1][0:-1]
+                        names.append(name)
+                        line = line.replace(matchedstring, name)
+                for name in names:
+                    line = re.sub(
+                        fr"{name}[^\W]*", f"{prefix}_{name}", line
+                        )
+                updatedlines.append(line)
+
+            with open(path, mode='w') as file:
+                file.writelines(updatedlines)
+    return [f"{prefix}_{name}" for name in names]
+
+
+def elevate_definitions(path: str):
+    '''
+    Scan .c source files for TESTUSE macro.
+    If found, moves definitions into .h counterpart of this file.
+    '''
+
+    if not path.endswith(".c"):
+        raise WrongFileExtension
+
+    updatedsource = ''
+    with open(path, mode='r') as source:
+        with open(path.replace('.c', '.h'), mode='a') as header:
+            header.write("\n"*2)
+            updatedsource = source.read()
+            data = scan_for_definitions(path)
+            for datatype, definitions in data.__dict__.items():
+                if datatype != "macrodefinitions":
+                    for definition in definitions:
+                        updatedsource = updatedsource.replace(
+                            f"TESTUSE {definition}", '')
+                        header.write(f"TESTUSE {definition}")
+
+    with open(path, mode='w') as source:
+        source.write(updatedsource)
+
+
+def scan_for_definitions(path: str) -> ParsedData:
+    '''
+    Scans file under given path for TESTUSE macro.
+    Returns copied definitions with stripped TESTUSE.
+    '''
     macrodefinition = re.compile(r"#define \w* [\w* .\/]*\n")
     function = re.compile(r"(TESTUSE \w* ?\w+\** \w*\([\w,* &]*\))[\n;{]")
     variable = re.compile(r"(TESTUSE ?\w* ?\w* \w+\** [^()\n=;]+)([ =\w]*);")
@@ -39,14 +131,7 @@ def scanFile(path):
     struct = re.compile(r"TESTUSE \w* ?struct \w+")
     union = re.compile(r"TESTUSE \w* ?union \w+")
     functiontypedef = re.compile(r"TESTUSE typedef \w* \([*\w]*\)\([*\w]*\)")
-    variables = []
-    functions = []
-    definitions = []
-    enumerations = []
-    structs = []
-    unions = []
-    functiontypedefs = []
-    isheader = path.endswith(".h")
+    data = ParsedData()
 
     def get_the_objectbody(iterator, head):
         class ObjectBodyNotFound(Exception):
@@ -75,47 +160,81 @@ def scanFile(path):
         content = file.readlines()
         iterator = iter(content)
         for line in iterator:
-            if ((definitionmatch := macrodefinition.search(line)) is not None
-                    and isheader):
+            if ((definitionmatch := macrodefinition.search(line)) is not None):
                 macro = definitionmatch.group(0).split()[1]
-                definitions.append(macro)
+                data.macrodefinitions.update([macro])
             elif (variablematch := variable.search(line)) is not None:
-                variables.append(variablematch.groups()[0].replace(
+                data.variables.append(variablematch.groups()[0].replace(
                     "TESTUSE ", '') + ";")
             elif (functionmatch := function.search(line)) is not None:
-                functions.append(functionmatch.groups()[0].replace(
+                data.functions.append(functionmatch.groups()[0].replace(
                     "TESTUSE ", '') + ";")
             elif enumeration.search(line) is not None:
                 definition = []
                 definition.extend(get_the_objectbody(
                     iterator, line.replace("TESTUSE ", '')))
-                enumerations.append(''.join(definition))
+                data.enumerations.append(''.join(definition))
             elif struct.search(line) is not None:
                 definition = []
                 definition.extend(get_the_objectbody(
                     iterator, line.replace("TESTUSE ", '')))
-                structs.append(''.join(definition))
+                data.structs.append(''.join(definition))
             elif union.search(line) is not None:
                 definition = []
                 definition.extend(get_the_objectbody(
                     iterator, line.replace("TESTUSE ", '')))
-                unions.append(''.join(definition))
+                data.unions.append(''.join(definition))
             elif (fnctypedefmatch := functiontypedef.search(line)) is not None:
-                functiontypedefs.append(fnctypedefmatch.group(0).replace(
+                data.functiontypedefs.append(fnctypedefmatch.group(0).replace(
                     "TESTUSE ", '') + ";")
 
-    if variables or functions or definitions or enumerations:
-        return {
-            "variables": variables,
-            "functions": functions,
-            "definitions": definitions,
-            "enumerations": enumerations,
-            "structs": structs,
-            "unions": unions,
-            "functiontypedefs": functiontypedefs,
-        }
-    else:
-        return None
+        return data
+
+
+def elevate_staticvars(path: str, testdirectorypath: str):
+    '''
+    Scan .c source files for TESTSTATICVAR(static type varname) macro.
+    If found, creates setter/getter in form of "DIRFILENAME_get/set_varname()".
+    Which is elevated to .h counterpart of this file.
+    '''
+    if not path.endswith(".c"):
+        raise WrongFileExtension
+
+    relativepath = path.replace(testdirectorypath, '').upper()
+    prefix = ''.join(split_path(relativepath)[0:-1])
+
+    pattern = re.compile(r"TESTSTATICVAR\(static [\w*]* .*\)")
+    staticvars = []
+    with open(path) as source:
+        with open(path.replace('.c', '.h'), mode='a') as header:
+            header.write("\n"*2)
+            header.write(f"#ifndef {prefix}_TESTGUARD\n")
+            header.write(f"#define {prefix}_TESTGUARD\n")
+            content = source.readlines()
+            for line in content:
+                if (match := pattern.search(line)):
+                    staticvar = match.group(0)[14:-1].split()[1:]
+                    declarations = [
+                        f"TESTUSE {staticvar[0]} {prefix}_get{staticvar[1]}();\n",
+                        (f"TESTUSE void {prefix}_set{staticvar[1]}" +
+                            f"({staticvar[0]} value);\n")
+                    ]
+                    header.writelines(declarations)
+                    staticvars.append(staticvar)
+            header.write(f"#endif\n")
+
+    with open(path, mode='a') as source:
+        source.write("\n"*2)
+        for staticvar in staticvars:
+            setter = [
+                f"void {prefix}_set{staticvar[1]}({staticvar[0]} value)",
+                f"{{{staticvar[1]} = value;}}\n"
+            ]
+            getter = [
+                f"{staticvar[0]} {prefix}_get{staticvar[1]}()"
+                f"{{return {staticvar[1]};}}\n"
+            ]
+            source.writelines(setter + getter)
 
 
 def get_files(dirpath):
@@ -127,7 +246,23 @@ def get_files(dirpath):
             yield from get_files(entry.path)
 
 
-def createDefinitions(path: str, parsed: ParsedData):
+def elevate(testdirectorypath: str):
+    for filepath in get_files(testdirectorypath):
+        if filepath.endswith('.c'):
+            addprefixes(filepath, testdirectorypath)
+            elevate_definitions(filepath)
+            elevate_staticvars(filepath, testdirectorypath)
+
+
+def scan_files(testdirectorypath):
+    parsed = ParsedData()
+    for filepath in get_files(testdirectorypath):
+        if(filepath.endswith('.h')):
+            parsed.extend(scan_for_definitions(filepath))
+    return parsed
+
+
+def create_definitions(path: str, parsed: ParsedData):
     # Creates Definitions.h
     definitionspath = path + "/definitions.h"
     if os.path.exists(definitionspath):
@@ -192,33 +327,10 @@ def wrapmain(testdirectory, generateddirectory):
 def main():
     testdirectorypath = sys.argv[1]
     generatedfilesdirectory = sys.argv[2]
-    parsed = ParsedData()
 
-    for filepath in get_files(testdirectorypath):
-        fileEntry = {
-            "path": filepath.replace(testdirectorypath, '').split(os.sep),
-            "entries": scanFile(filepath)
-        }
-        if fileEntry["entries"]:
-            parsed.fileEntries.append(fileEntry)
-            entries = fileEntry["entries"]
-            if entries["variables"]:
-                parsed.variables.extend(entries["variables"])
-            if entries["functions"]:
-                parsed.functions.extend(entries["functions"])
-            if entries["definitions"]:
-                for macrodefinition in entries["definitions"]:
-                    parsed.macrodefinitions.add(macrodefinition)
-            if entries["enumerations"]:
-                parsed.enumerations.extend(entries["enumerations"])
-            if entries["structs"]:
-                parsed.structs.extend(entries["structs"])
-            if entries["unions"]:
-                parsed.unions.extend(entries["unions"])
-            if entries["functiontypedefs"]:
-                parsed.functiontypedefs.extend(entries["functiontypedefs"])
-
-    createDefinitions(generatedfilesdirectory, parsed)
+    elevate(testdirectorypath)
+    parsed = scan_files(testdirectorypath)
+    create_definitions(generatedfilesdirectory, parsed)
     wrapmain(testdirectorypath, generatedfilesdirectory)
 
 

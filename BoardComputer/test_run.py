@@ -177,10 +177,10 @@ class testRun(unittest.TestCase):
             self.bc.SYSTEM_event_timer = 5
             next(response)
             self.assertEqual(self.bc.SENSORSFEED_EGT_transmission_status,
-                            self.bc.SENSORSFEED_EGT_TRANSMISSION_HALF)
+                             self.bc.SENSORSFEED_EGT_TRANSMISSION_HALF)
             next(response)
             self.assertEqual(self.bc.SENSORSFEED_EGT_transmission_status,
-                            self.bc.SENSORSFEED_EGT_TRANSMISSION_READY)
+                             self.bc.SENSORSFEED_EGT_TRANSMISSION_READY)
             self.bc.SENSORSFEED_update_EGT()
             self.assertEqual(self.bc.SENSORSFEED_EGT_status,
                              test_packet["result"])

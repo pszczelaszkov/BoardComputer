@@ -4,18 +4,15 @@
  * Created: 2019-10-06 22:07:57
  * Author : pszczelaszkov
  */ 
-
+#include "main.h"
 #ifdef __AVR__
 #include <avr/io.h>
 #include <avr/sleep.h>
-#define ENTRY_ROUTINE void main()
 #else
 #include "UI/numpad.h"
 #include "UI/board.h"
 #include "UI/boardconfig.h"
 #include "ProgramData.h"
-#include "utils.h"
-#define ENTRY_ROUTINE TESTUSE void test()
 #endif
 
 #include "USART.h"
@@ -55,7 +52,7 @@ void maintain_display_connection(uint8_t update_result)
 	}
 }
 
-TESTUSE void core()
+void core()
 {	
 	switch(SYSTEM_status)
 	{			
