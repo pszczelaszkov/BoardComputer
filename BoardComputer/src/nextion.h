@@ -73,16 +73,17 @@ TESTUSE typedef struct NEXTION_Executable_Component
 }NEXTION_Executable_Component;
 
 TESTUSE extern uint8_t NEXTION_brightness;
-extern uint8_t NEXTION_selection_counter;
-TESTUSE extern char NEXTION_eot[];
-extern Callback_32 NEXTION_handler_requested_data;
 TESTUSE extern NEXTION_Component NEXTION_common_bckcomponent;
+TESTUSE extern char NEXTION_eot[];
+extern uint8_t NEXTION_selection_counter;
+extern Callback_32 NEXTION_handler_requested_data;
+
 void NEXTION_handler_ready();
 void NEXTION_handler_sendme(uint8_t pageid);
 uint8_t NEXTION_send(char data[], uint8_t flush);
 int8_t NEXTION_update();
-TESTUSE int8_t NEXTION_switch_page(NEXTION_PageID_t pageID, uint8_t push_to_history);
 uint8_t NEXTION_add_brightness(uint8_t value, uint8_t autoreload);
+TESTUSE int8_t NEXTION_switch_page(NEXTION_PageID_t pageID, uint8_t push_to_history);
 
 //Place quotes at the beginning and the end of payload buffer for text variables.
 inline void NEXTION_quote_payloadbuffer(char* payload,uint8_t payload_length)
@@ -91,12 +92,11 @@ inline void NEXTION_quote_payloadbuffer(char* payload,uint8_t payload_length)
 	payload[payload_length-1] = '"';
 }
 
-void NEXTION_request_brightness();
 TESTUSE void NEXTION_set_brightness(uint8_t brightness);
-void NEXTION_set_previous_page();
 TESTUSE void NEXTION_set_componentstatus(NEXTION_Component* component, NEXTION_Componentstatus_t status);
+void NEXTION_request_brightness();
+void NEXTION_set_previous_page();
 void NEXTION_reset();
-TESTUSE void NEXTION_update_select_decay();
 void NEXTION_instruction_compose(const char* objname, const char* varname, char* instruction);
 
 #endif /* NEXTION_H_ */

@@ -4,7 +4,6 @@
  * Created: 2020-10-29 20:28:00
  * Author : pszczelaszkov
  */
-
 #ifndef __TIMER__
 #define __TIMER__
 #include <string.h>
@@ -12,18 +11,6 @@
 
 
 #define TIMER_REGISTER TCNT2
-TESTUSE typedef struct TIMER_watch
-{    
-    struct
-    {
-        uint8_t hours;
-        uint8_t minutes;
-        uint8_t seconds;
-        uint8_t miliseconds;//2digit
-        uint8_t watchstatus;
-    }timer; 
-    struct TIMER_watch* next_watch;
-}TIMER_watch;
 
 enum TIMER_FORMATFLAG
 {
@@ -33,18 +20,11 @@ enum TIMER_FORMATFLAG
     FORMATFLAG_MILISECONDS = 16
 };
 
-TESTUSE enum TIMER_STOPWATCHSTATUS
-{
-    TIMER_WATCHSTATUS_ZERO,
-    TIMER_WATCHSTATUS_COUNTING,
-    TIMER_WATCHSTATUS_STOP,
-};
-
 TESTUSE enum TIMER_TIMERTYPE
 {
-    TIMERTYPE_WATCH,
-    TIMERTYPE_STOPWATCH,
-    TIMERTYPE_LAST
+    TIMER_TIMERTYPE_WATCH,
+    TIMER_TIMERTYPE_STOPWATCH,
+    TIMER_TIMERTYPE_LAST
 };
 
 enum TIMER_FORMATED
@@ -55,19 +35,33 @@ enum TIMER_FORMATED
     TIMER_FORMATEDMS = 9
 };
 
-TESTUSE extern const uint8_t TIMER_REGISTER_WEIGHT;
-TESTUSE extern const uint8_t TIMER_MILISECOND_WEIGHT;
-TESTUSE extern TIMER_watch* TIMER_active_watch;
-TESTUSE extern TIMER_watch TIMER_watches[];  
+TESTUSE enum TIMER_TIMERSTATUS
+{
+    TIMER_TIMERSTATUS_ZERO,
+    TIMER_TIMERSTATUS_COUNTING,
+    TIMER_TIMERSTATUS_STOP,
+};
+
+TESTUSE typedef struct TIMER_watch
+{    
+    struct
+    {
+        uint8_t hours;
+        uint8_t minutes;
+        uint8_t seconds;
+        uint8_t miliseconds;//2digit
+        uint8_t watchstatus;
+    }timer; 
+}TIMER_watch;
+
+TESTUSE extern enum TIMER_TIMERTYPE TIMER_active_timertype;
 TESTUSE extern char TIMER_formated[];
 
-TESTUSE uint8_t TIMER_counter_to_miliseconds();
-uint8_t TIMER_increment(TIMER_watch* watch);
-void TIMER_format(TIMER_watch* timer, uint8_t format_flag);
 TESTUSE void TIMER_watch_toggle();
 TESTUSE void TIMER_watch_zero();
 TESTUSE void TIMER_next_watch();
 TESTUSE void TIMER_update();
+TESTUSE TIMER_watch* TIMER_get_watch(enum TIMER_TIMERTYPE type);
 void TIMER_initialize();
 
 #endif

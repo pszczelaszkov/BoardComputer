@@ -1,51 +1,24 @@
 #include "timer.h"
+#include <stdio.h>
+TESTSTATICVAR(static const uint8_t REGISTER_WEIGHT) = 200;//0.78125(7.8125ms) 8 FP
+TESTSTATICVAR(static const uint8_t MILISECOND_WEIGHT) = 12<<1|1;//12.5(125ms) 7+1 FP
+TESTSTATICVAR(static TIMER_watch* active_watch);
+static TIMER_watch watches[TIMER_TIMERTYPE_LAST];
 
-
-const uint8_t TIMER_REGISTER_WEIGHT = 200;//0.78125(7.8125ms) 8 FP
-const uint8_t TIMER_MILISECOND_WEIGHT = 12<<1|1;//12.5(125ms) 7+1 FP
-TIMER_watch* TIMER_active_watch;
-TIMER_watch TIMER_watches[2];  
 char TIMER_formated[12] = " 0:00:00:00";//h:mm:ss:ms
+enum TIMER_TIMERTYPE TIMER_active_timertype;
 
-uint8_t TIMER_counter_to_miliseconds()
+TESTUSE static uint8_t TESTADDPREFIX(counter_to_miliseconds)()
 {
     uint16_t counter = TIMER_REGISTER;
-    return (uint8_t)((counter * TIMER_REGISTER_WEIGHT) >> 8); 
+    return (uint8_t)((counter * REGISTER_WEIGHT) >> 8); 
 }
 
-void TIMER_format(TIMER_watch* timer, uint8_t format_flag)
-{
-    const char ASCIIDOUBLEZERO[] = "00";
-    const char ASCIIDOUBLESPACE[] = "  ";
-    
-    switch(format_flag)
-    {
-        case FORMATFLAG_HOURS:
-            memcpy(TIMER_formated,ASCIIDOUBLESPACE,2);
-            rightconcat_short(TIMER_formated,timer->timer.hours,2);
-        case FORMATFLAG_MINUTES:
-            memcpy(&TIMER_formated[TIMER_FORMATEDMM],ASCIIDOUBLEZERO,2);
-            rightconcat_short(&TIMER_formated[TIMER_FORMATEDMM],timer->timer.minutes,2);
-        case FORMATFLAG_SECONDS:
-            memcpy(&TIMER_formated[TIMER_FORMATEDSS],ASCIIDOUBLEZERO,2);
-            rightconcat_short(&TIMER_formated[TIMER_FORMATEDSS],timer->timer.seconds,2);
-        case FORMATFLAG_MILISECONDS:
-            if(TIMER_active_watch != &TIMER_watches[TIMERTYPE_WATCH])
-            {
-                uint8_t miliseconds = timer->timer.miliseconds>>1;
-                memcpy(&TIMER_formated[TIMER_FORMATEDMS],ASCIIDOUBLEZERO,2);
-                rightconcat_short(&TIMER_formated[TIMER_FORMATEDMS],miliseconds,2);
-            }
-        break;
-    }
-}
-
-
-uint8_t TIMER_increment(TIMER_watch* watch)
+TESTUSE static uint8_t TESTADDPREFIX(increment)(TIMER_watch* watch)
 {
     uint8_t format_flag = 0;
     
-    watch->timer.miliseconds += TIMER_MILISECOND_WEIGHT;
+    watch->timer.miliseconds += MILISECOND_WEIGHT;
     format_flag = FORMATFLAG_MILISECONDS;
     if(watch->timer.miliseconds >= 200)//FP 7+1
     {
@@ -70,54 +43,97 @@ uint8_t TIMER_increment(TIMER_watch* watch)
     return format_flag; 
 }
 
+TESTUSE static void TESTADDPREFIX(format)(TIMER_watch* timer, uint8_t format_flag)
+{
+    const char ASCIIDOUBLEZERO[] = "00";
+    const char ASCIIDOUBLESPACE[] = "  ";
+    
+    switch(format_flag)
+    {
+        case FORMATFLAG_HOURS:
+            memcpy(TIMER_formated,ASCIIDOUBLESPACE,2);
+            rightconcat_short(TIMER_formated,timer->timer.hours,2);
+        case FORMATFLAG_MINUTES:
+            memcpy(&TIMER_formated[TIMER_FORMATEDMM],ASCIIDOUBLEZERO,2);
+            rightconcat_short(&TIMER_formated[TIMER_FORMATEDMM],timer->timer.minutes,2);
+        case FORMATFLAG_SECONDS:
+            memcpy(&TIMER_formated[TIMER_FORMATEDSS],ASCIIDOUBLEZERO,2);
+            rightconcat_short(&TIMER_formated[TIMER_FORMATEDSS],timer->timer.seconds,2);
+        case FORMATFLAG_MILISECONDS:
+            if(active_watch != &watches[TIMER_TIMERTYPE_WATCH])
+            {
+                uint8_t miliseconds = timer->timer.miliseconds>>1;
+                memcpy(&TIMER_formated[TIMER_FORMATEDMS],ASCIIDOUBLEZERO,2);
+                rightconcat_short(&TIMER_formated[TIMER_FORMATEDMS],miliseconds,2);
+            }
+        break;
+    }
+}
+
+static void switch_watchtype(enum TIMER_TIMERTYPE type)
+{
+    active_watch = &watches[type];
+    TIMER_active_timertype = type;
+}
+
 void TIMER_watch_toggle()
 {
-    if(TIMER_active_watch->timer.watchstatus == TIMER_WATCHSTATUS_COUNTING)
+    if(active_watch->timer.watchstatus == TIMER_TIMERSTATUS_COUNTING)
     {
-        TIMER_active_watch->timer.watchstatus = TIMER_WATCHSTATUS_STOP;
+        active_watch->timer.watchstatus = TIMER_TIMERSTATUS_STOP;
         //in fact thats the only moment when counter could be ahead of event timer.
-        TIMER_active_watch->timer.miliseconds += TIMER_counter_to_miliseconds() << 1;
+        active_watch->timer.miliseconds += counter_to_miliseconds() << 1;
     }
     else
-        TIMER_active_watch->timer.watchstatus = TIMER_WATCHSTATUS_COUNTING;
+        active_watch->timer.watchstatus = TIMER_TIMERSTATUS_COUNTING;
 }
 
 void TIMER_watch_zero()
 {
-    TIMER_active_watch->timer.watchstatus = TIMER_WATCHSTATUS_ZERO;
-    memset(&TIMER_active_watch->timer,0x0,sizeof(TIMER_active_watch->timer));
-    TIMER_format(TIMER_active_watch, FORMATFLAG_HOURS);
+    active_watch->timer.watchstatus = TIMER_TIMERSTATUS_ZERO;
+    memset(&active_watch->timer,0x0,sizeof(active_watch->timer));
+    format(active_watch, FORMATFLAG_HOURS);
 }
 
 void TIMER_next_watch()
-{
-    TIMER_active_watch = TIMER_active_watch->next_watch;
-    TIMER_format(TIMER_active_watch, FORMATFLAG_HOURS);
+{   
+    TIMER_active_timertype++;
+    if(TIMER_active_timertype == TIMER_TIMERTYPE_LAST)
+        TIMER_active_timertype = 0;
+    active_watch = &watches[TIMER_active_timertype];
+    format(active_watch, FORMATFLAG_HOURS);
+}
+
+TIMER_watch* TIMER_get_watch(enum TIMER_TIMERTYPE type)
+{ 
+    TIMER_watch* watchptr = 0x0;
+    if(type < TIMER_TIMERTYPE_LAST)
+    {
+        watchptr = &watches[type];
+    }
+    return watchptr;
 }
 
 void TIMER_update()
 {
     TIMER_watch* watch;
     uint8_t format_flag = 0;
-    for(uint8_t i = 0;i < TIMERTYPE_LAST;i++)
+    for(uint8_t i = 0;i < TIMER_TIMERTYPE_LAST;i++)
     {
-        watch = &TIMER_watches[i];
-        if(watch->timer.watchstatus == TIMER_WATCHSTATUS_COUNTING)
+        watch = &watches[i];
+        if(watch->timer.watchstatus == TIMER_TIMERSTATUS_COUNTING)
         {
-            if(TIMER_active_watch == watch)
-                format_flag = TIMER_increment(watch);
+            if(active_watch == watch)
+                format_flag = increment(watch);
             else
-                TIMER_increment(watch);
-            
+                increment(watch);
         }
     }
-    TIMER_format(TIMER_active_watch, format_flag);
+    format(active_watch, format_flag);
 }
 
 void TIMER_initialize()
 {
-    TIMER_watches[TIMERTYPE_WATCH].next_watch = &TIMER_watches[TIMERTYPE_STOPWATCH];
-    TIMER_watches[TIMERTYPE_STOPWATCH].next_watch = &TIMER_watches[TIMERTYPE_WATCH];
-    TIMER_active_watch = &TIMER_watches[TIMERTYPE_WATCH];
-    TIMER_active_watch->timer.watchstatus = TIMER_WATCHSTATUS_COUNTING;
+    switch_watchtype(TIMER_TIMERTYPE_WATCH);
+    watches[TIMER_TIMERTYPE_WATCH].timer.watchstatus = TIMER_TIMERSTATUS_COUNTING;
 }

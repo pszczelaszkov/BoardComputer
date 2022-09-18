@@ -12,7 +12,7 @@
 #include "UI/numpad.h"
 #include "UI/board.h"
 #include "UI/boardconfig.h"
-#include "ProgramData.h"
+#include "programdata.h"
 #endif
 
 #include "USART.h"

@@ -1,4 +1,4 @@
-#include "ProgramData.h"
+#include "programdata.h"
 
 #ifndef __AVR__
 #define PROGMEM

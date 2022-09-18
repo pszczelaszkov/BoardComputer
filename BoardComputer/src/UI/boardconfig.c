@@ -109,21 +109,21 @@ void display_whh()
 {
     char buffer[] = "whh.val=  ";
 
-	itoa((&TIMER_watches[TIMERTYPE_WATCH])->timer.hours,&buffer[8],10);
+	itoa((TIMER_get_watch(TIMER_TIMERTYPE_WATCH))->timer.hours,&buffer[8],10);
 	NEXTION_send(buffer, USART_HOLD);
 }
 
 void display_wmm()
 {
     char buffer[] = "wmm.val=  ";
-	itoa((&TIMER_watches[TIMERTYPE_WATCH])->timer.minutes,&buffer[8],10);
+	itoa((TIMER_get_watch(TIMER_TIMERTYPE_WATCH))->timer.minutes,&buffer[8],10);
 	NEXTION_send(buffer, USART_HOLD);
 }
 
 void display_wss()
 {
     char buffer[] = "wss.val=  ";
-	itoa((&TIMER_watches[TIMERTYPE_WATCH])->timer.seconds,&buffer[8],10);
+	itoa((TIMER_get_watch(TIMER_TIMERTYPE_WATCH))->timer.seconds,&buffer[8],10);
 	NEXTION_send(buffer, USART_HOLD);
 }
 

@@ -5,33 +5,34 @@
 	uint8_t SPDR0;
 #endif
 
+TESTUSE static enum SENSORSFEED_EGT_TRANSMISSION_STATUS TESTADDPREFIX(EGT_transmission_status);
+static uint16_t max6675_data;
+static uint16_t speed_max;
+
 enum SENSORSFEED_EGT_STATUS SENSORSFEED_EGT_status;
-enum SENSORSFEED_EGT_TRANSMISSION_STATUS SENSORSFEED_EGT_transmission_status;
-
-
 uint16_t SENSORSFEED_feed[SENSORSFEED_FEED_SIZE];//ADC 0...SENSORSFEED_ADC_CHANNELS
 int16_t SENSORSFEED_speed_ticks_100m = 1;
 int16_t SENSORSFEED_injector_ccm = 1;
-uint16_t SENSORSFEED_max6675_data;
+
 uint16_t SENSORSFEED_fuelmodifier;
 uint16_t SENSORSFEED_speedmodifier;
-uint16_t SENSORSFEED_speed_max;
+
 uint8_t SENSORSFEED_injtmodifier;
 
-void SENSORSFEED_update_fuel()
+TESTUSE void TESTADDPREFIX(update_fuel)()
 {
 	uint16_t fuel_time = COUNTERSFEED_feed[COUNTERSFEED_FEEDID_FUELPS][FRONTBUFFER];
 	fuel_time = (uint32_t)(fuel_time * SENSORSFEED_fuelmodifier) >> 8;
 	SENSORSFEED_feed[SENSORSFEED_FEEDID_LPH] = fuel_time;
 }
 
-void SENSORSFEED_update_speed()
+TESTUSE static void TESTADDPREFIX(update_speed)()
 {
 	uint16_t lp100 = 0;
 	uint16_t liters = SENSORSFEED_feed[SENSORSFEED_FEEDID_LPH];
 	uint16_t speed = COUNTERSFEED_feed[COUNTERSFEED_FEEDID_SPEED][FRONTBUFFER];
-	if(speed > SENSORSFEED_speed_max)
-		speed = SENSORSFEED_speed_max;
+	if(speed > speed_max)
+		speed = speed_max;
 
 	speed = speed * SENSORSFEED_speedmodifier;
 	if(speed)
@@ -43,7 +44,7 @@ void SENSORSFEED_update_speed()
 	SENSORSFEED_feed[SENSORSFEED_FEEDID_LP100_AVG] = AVERAGE_addvalue(AVERAGE_BUFFER_LP100, lp100);
 }
 
-void SENSORSFEED_update_ADC()
+TESTUSE static void TESTADDPREFIX(update_ADC)()
 {	
 	if(ADCMULTIPLEXER != 0)// Relaunch only at 0
 		return;
@@ -51,16 +52,16 @@ void SENSORSFEED_update_ADC()
 	ADCSTART;
 }
 
-void SENSORSFEED_update_EGT()
+TESTUSE static void TESTADDPREFIX(update_EGT)()
 {
-	if(SENSORSFEED_EGT_transmission_status == SENSORSFEED_EGT_TRANSMISSION_READY)
+	if(EGT_transmission_status == SENSORSFEED_EGT_TRANSMISSION_READY)
 	{
 		SENSORSFEED_EGT_TRANSMISSION;
-		switch((uint8_t)SENSORSFEED_max6675_data & 0x06)//Open and devid bits
+		switch((uint8_t)max6675_data & 0x06)//Open and devid bits
 		{
 			case 0:
 				SENSORSFEED_EGT_status = SENSORSFEED_EGT_STATUS_VALUE;
-				SENSORSFEED_feed[SENSORSFEED_FEEDID_EGT] = SENSORSFEED_max6675_data >> 5;
+				SENSORSFEED_feed[SENSORSFEED_FEEDID_EGT] = max6675_data >> 5;
 			break;
 			case 4:
 				SENSORSFEED_EGT_status = SENSORSFEED_EGT_STATUS_OPEN;
@@ -80,14 +81,14 @@ void SENSORSFEED_update()
 	{
 		case 0:
 		case 3:
-			SENSORSFEED_update_ADC();
-			SENSORSFEED_update_EGT();
+			update_ADC();
+			update_EGT();
 		break;
 		case 5:
-			SENSORSFEED_update_fuel();
+			update_fuel();
 		break;
 		case 6:
-			SENSORSFEED_update_speed();
+			update_speed();
 		break;
 	}
 }
@@ -117,7 +118,7 @@ void SENSORSFEED_initialize()
 	//As an addition speed_max is limiter to protect from overflow during further processing.
 	uint32_t base_fp16 = 360 << 8;//reduced from 3600sec
 	SENSORSFEED_speedmodifier = base_fp16/SENSORSFEED_speed_ticks_100m;
-	SENSORSFEED_speed_max = 0xffff/SENSORSFEED_speedmodifier;
+	speed_max = 0xffff/SENSORSFEED_speedmodifier;
 
 	//ADC init
 	#ifdef __AVR__
@@ -151,13 +152,13 @@ ISR(ADC_vect)
 
 EGT_ISR
 {
-	SENSORSFEED_EGT_transmission_status++;
-	SENSORSFEED_max6675_data <<= 8;
-	SENSORSFEED_max6675_data |= SPDR0;
-	if(SENSORSFEED_EGT_transmission_status == SENSORSFEED_EGT_TRANSMISSION_FULL)
+	EGT_transmission_status++;
+	max6675_data <<= 8;
+	max6675_data |= SPDR0;
+	if(EGT_transmission_status == SENSORSFEED_EGT_TRANSMISSION_FULL)
 	{
 		SENSORSFEED_EGT_CONVERSION;
-		SENSORSFEED_EGT_transmission_status = SENSORSFEED_EGT_TRANSMISSION_READY;
+		EGT_transmission_status = SENSORSFEED_EGT_TRANSMISSION_READY;
 	}
 	else
 		SPDR0 = 0x0;

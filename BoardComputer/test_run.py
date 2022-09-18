@@ -197,6 +197,7 @@ class testRun(unittest.TestCase):
         self.bc.SYSTEM_event_timer = 0
 
     def test_timer(self):
+        
         def formated_time(self):
             time = self.ffi.unpack(self.bc.TIMER_formated, 11)
             return time
@@ -218,6 +219,7 @@ class testRun(unittest.TestCase):
             self.bc.TIMER_update()
         # its not in counting state yet
         self.assertEqual(formated_time(self), b" 0:00:00:00")
+
         self.bc.TIMER_watch_toggle()
         # now is
         for i in range(5):
@@ -239,7 +241,6 @@ class testRun(unittest.TestCase):
         self.bc.TIMER_next_watch()
         #  miliseconds are not used in watch(wont be updated)
         self.assertEqual(formated_time(self)[:-3], b" 0:00:01")
-
 
     def test_nextion_selection(self):
         selectionvalue = 100
@@ -353,5 +354,5 @@ class testRun(unittest.TestCase):
         self.assertEqual(target, 10000)
 
 
-if __name__ == "main":
+if __name__ == "__main__":
     unittest.main()

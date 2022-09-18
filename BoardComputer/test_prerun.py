@@ -102,26 +102,24 @@ class testPreRun(unittest.TestCase):
         self.assertTrue(self.bc.DDRB & self.bc.BIT7)  # SCK
 
     def test_timer(self):
-        watch = self.bc.TIMER_watches[self.bc.TIMERTYPE_WATCH]
-        watch = cffi.FFI().addressof(watch)
+        watch = self.bc.TIMER_get_watch(self.bc.TIMER_TIMERTYPE_WATCH)
+        stopwatch = self.bc.TIMER_get_watch(
+            self.bc.TIMER_TIMERTYPE_STOPWATCH)
         self.assertEqual(watch.timer.watchstatus,
-                         self.bc.TIMER_WATCHSTATUS_COUNTING)
+                         self.bc.TIMER_TIMERSTATUS_COUNTING)
         self.bc.TIMER_watch_toggle()
         self.assertEqual(watch.timer.watchstatus,
-                         self.bc.TIMER_WATCHSTATUS_STOP)
-        stopwatch = self.bc.TIMER_watches[self.bc.TIMERTYPE_STOPWATCH]
-        stopwatch = cffi.FFI().addressof(stopwatch)
+                         self.bc.TIMER_TIMERSTATUS_STOP)
+        stopwatch = self.bc.TIMER_get_watch(self.bc.TIMER_TIMERTYPE_STOPWATCH)
         stopwatch.timer.miliseconds = 50
         stopwatch.timer.seconds = 2
         stopwatch.timer.minutes = 1
         stopwatch.timer.hours = 40
-        self.bc.TIMER_next_watch()
+        self.bc.TIMER_setactive_watch(stopwatch)
         self.bc.TIMER_watch_zero()
         self.assertEqual(stopwatch.timer.hours, 0)
         self.assertEqual(stopwatch.timer.miliseconds, 0)
-        self.assertTrue(stopwatch.next_watch)
-        self.assertTrue(self.bc.TIMER_active_watch)
-        self.bc.TIMER_active_watch = watch
+        self.bc.TIMER_setactive_watch(watch)
 
     def test_input_keystatus(self):
         keystatus = self.bc.INPUT_keystatus
@@ -132,7 +130,6 @@ class testPreRun(unittest.TestCase):
         hold = self.bc.INPUT_KEYSTATUS_HOLD
         click = self.bc.INPUT_KEYSTATUS_CLICK
         nonecomponent = self.bc.INPUT_COMPONENT_NONE
-
 
         self.bc.INPUT_userinput(released, enter, nonecomponent)
         self.assertEqual(keystatus[enter], released)
@@ -156,6 +153,23 @@ class testPreRun(unittest.TestCase):
         self.bc.INPUT_userinput(pressed, enter, nonecomponent)
         self.bc.INPUT_userinput(released, enter, nonecomponent)
         self.assertEqual(keystatus[enter], click)
+
+    def test_timer_watch_order(self):
+        order = [
+            self.bc.TIMER_TIMERTYPE_WATCH,
+            self.bc.TIMER_TIMERTYPE_STOPWATCH,
+            self.bc.TIMER_TIMERTYPE_WATCH,
+        ]
+
+        for watchtype in order:
+            active = self.bc.TIMER_getactive_watch()
+            expected = self.bc.TIMER_get_watch(watchtype)
+            self.assertEqual(active, expected)
+            self.bc.TIMER_next_watch()
+
+        self.bc.TIMER_active_timertype = 0
+        self.bc.TIMER_setactive_watch(
+            self.bc.TIMER_get_watch(self.bc.TIMER_TIMERTYPE_WATCH))
 
     def test_system_alert(self):
         expected_pattern = 0xf0f  # using critical alert pattern
@@ -181,5 +195,5 @@ class testPreRun(unittest.TestCase):
         self.assertEqual(result_pattern, expected_pattern)
 
 
-if __name__ == "main":
+if __name__ == "__main__":
     unittest.main()

@@ -5,7 +5,6 @@
  *  Author: pszczelaszkov
  */ 
 
-
 #ifndef SENSORSFEED_H_
 #define SENSORSFEED_H_
 #include "bitwise.h"
@@ -26,6 +25,7 @@
 #define SENSORSFEED_HIGH_PRECISION_BASE 1000000000//Big int as an answer to float
 #define SENSORSFEED_LOW_PRECISION_BASE 100000//Big int as an answer to float
 #define SENSORSFEED_ADC_CHANNELS 2
+
 TESTUSE extern enum SENSORSFEED_EGT_STATUS
 {
 	SENSORSFEED_EGT_STATUS_UNKN,
@@ -33,13 +33,14 @@ TESTUSE extern enum SENSORSFEED_EGT_STATUS
 	SENSORSFEED_EGT_STATUS_VALUE
 }SENSORSFEED_EGT_status;
 
-TESTUSE extern enum SENSORSFEED_EGT_TRANSMISSION_STATUS
+TESTUSE enum SENSORSFEED_EGT_TRANSMISSION_STATUS
 {
 	SENSORSFEED_EGT_TRANSMISSION_READY,
 	SENSORSFEED_EGT_TRANSMISSION_HALF,
 	SENSORSFEED_EGT_TRANSMISSION_FULL
-}SENSORSFEED_EGT_transmission_status;
-/* Workaround for testuse
+};
+
+/* Workaround for testsuite
 TESTUSE enum SENSORSFEED_FEEDID
 {
 	//Physical sensors
@@ -73,18 +74,13 @@ enum SENSORSFEED_FEEDID
 #define SENSORSFEED_FEED_SIZE SENSORSFEED_FEEDID_LAST
 TESTUSE extern uint16_t SENSORSFEED_feed[];
 
-extern uint16_t SENSORSFEED_max6675_data;
+
 TESTUSE extern int16_t SENSORSFEED_speed_ticks_100m;
 TESTUSE extern int16_t SENSORSFEED_injector_ccm;
 TESTUSE extern uint16_t SENSORSFEED_fuelmodifier;
 extern uint16_t SENSORSFEED_speedmodifier;
-extern uint16_t SENSORSFEED_speed_max;
 extern uint8_t SENSORSFEED_injtmodifier;
 
-TESTUSE void SENSORSFEED_update_fuel();
-TESTUSE void SENSORSFEED_update_speed();
-TESTUSE void SENSORSFEED_update_ADC();
-TESTUSE void SENSORSFEED_update_EGT();
 void SENSORSFEED_update();
 TESTUSE void SENSORSFEED_initialize();
 ISR(ADC_vect);

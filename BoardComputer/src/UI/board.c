@@ -1,6 +1,6 @@
 #include "board.h"
 #include "../sensorsfeed.h"
-#include "../ProgramData.h"
+#include "../programdata.h"
 #include "timer.h"
 #include "../USART.h"
 #include "../system.h"
@@ -492,7 +492,7 @@ void UIBOARD_update_watch()
 	char buffer[sizeof(WATCHTEMPLATE)];
 	strcpy(buffer,WATCHTEMPLATE);
 	
-	if(TIMER_active_watch == &TIMER_watches[TIMERTYPE_WATCH])
+	if(TIMER_active_timertype == TIMER_TIMERTYPE_WATCH)
 		memcpy(&buffer[11],TIMER_formated,5);
 	else
 		memcpy(&buffer[9],&TIMER_formated[3],8);

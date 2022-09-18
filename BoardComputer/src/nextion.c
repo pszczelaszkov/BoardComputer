@@ -5,7 +5,7 @@
 #include "nextion.h"
 #include "USART.h"
 #include "sensorsfeed.h"
-#include "ProgramData.h"
+#include "programdata.h"
 #include "timer.h"
 #include "UI/board.h"
 #include "UI/boardconfig.h"
@@ -73,18 +73,29 @@ NEXTION_Component NEXTION_common_bckcomponent = {
 		.name = str_bck
 };
 
-void handler_brightness(uint32_t data)
+TESTUSE static void TESTADDPREFIX(update_select_decay)()
+{
+	if(NEXTION_selection_counter)
+	{
+		if(NEXTION_selection_counter == 1)
+			NEXTION_set_componentstatus(selected_component, NEXTION_COMPONENTSTATUS_DEFAULT);
+		
+		NEXTION_selection_counter--;
+	}
+}
+
+static void handler_brightness(uint32_t data)
 {
 	NEXTION_brightness = data;
 }
 
-void init_setup()
+static void init_setup()
 {	
 	SENSORSFEED_update();
 	NEXTION_request_brightness();
 }
 
-void init_update()
+static void init_update()
 {
 	_delay_ms(1000);
 	NEXTION_switch_page(NEXTION_PAGEID_BOARD,0);
@@ -93,10 +104,10 @@ void init_update()
 /*
 Clears active component.
 */ 
-void clear_active_component()
+static void clear_active_component()
 {
 	NEXTION_selection_counter = 1;
-	NEXTION_update_select_decay();
+	update_select_decay();
 	INPUT_active_component = NULL;
 }
 
@@ -104,7 +115,7 @@ void clear_active_component()
 Push pageID to history stack.
 @return False if no space.
 */ 
-int8_t pagehistory_push(NEXTION_PageID_t pageID)
+static int8_t pagehistory_push(NEXTION_PageID_t pageID)
 {
 	if(pagehistory_depth < PAGEHISTORY_MAXDEPTH)
 	{
@@ -119,7 +130,7 @@ int8_t pagehistory_push(NEXTION_PageID_t pageID)
 Moves back in history stack. 
 @return Previous pageID or NEXTION_PAGEID_BOARD as default
 */
-NEXTION_PageID_t pagehistory_pop()
+static NEXTION_PageID_t pagehistory_pop()
 {
 	if(pagehistory_depth > 0)
 	{
@@ -133,7 +144,7 @@ NEXTION_PageID_t pagehistory_pop()
 Ping device with request to actual pageid.
 Required for reseting watchdog
 */
-inline void ping()
+static inline void ping()
 {
 	NEXTION_send("sendme",USART_HOLD);
 }
@@ -141,7 +152,7 @@ inline void ping()
 /*
 Send reset message
 */
-inline void reset()
+static inline void reset()
 {
 	NEXTION_send("rest",USART_HOLD);
 }
@@ -263,17 +274,6 @@ int8_t NEXTION_switch_page(NEXTION_PageID_t pageID, uint8_t push_to_history)
 	return NEXTION_send(buffer,USART_HOLD);
 }
 
-void NEXTION_update_select_decay()
-{
-	if(NEXTION_selection_counter)
-	{
-		if(NEXTION_selection_counter == 1)
-			NEXTION_set_componentstatus(selected_component, NEXTION_COMPONENTSTATUS_DEFAULT);
-		
-		NEXTION_selection_counter--;
-	}
-}
-
 void NEXTION_request_brightness()
 {
 	if(NEXTION_send("get dim",USART_HOLD))
@@ -314,7 +314,7 @@ int8_t NEXTION_update()
 	{
 		case DISPLAYSTATUS_OPERATIONAL:
 			ping();
-			NEXTION_update_select_decay();
+			update_select_decay();
 			if(page_callback)
 				page_callback();
 		break;

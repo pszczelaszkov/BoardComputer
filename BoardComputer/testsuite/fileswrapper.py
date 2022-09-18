@@ -62,12 +62,16 @@ def split_path(path: str) -> str:
     return re.split(r"[\/\\.]", path)
 
 
+def create_prefix(path, directorypath):
+    relativepath = path.replace(directorypath, '').upper()
+    return ''.join(split_path(relativepath)[0:-1])
+
+
 def addprefixes(path: str, testdirectorypath: str) -> list:
-    relativepath = path.replace(testdirectorypath, '').upper()
-    prefix = ''.join(split_path(relativepath)[0:-1])
+    prefix = create_prefix(path, testdirectorypath)
     names = []
     # For now there is no sense to scan .h
-    if path.endswith('system.c'):
+    if path.endswith('.c'):
         brackets = Counter()
         with open(path, mode='r') as file:
             updatedlines = []
@@ -83,9 +87,10 @@ def addprefixes(path: str, testdirectorypath: str) -> list:
                         names.append(name)
                         line = line.replace(matchedstring, name)
                 for name in names:
-                    line = re.sub(
-                        fr"{name}[^\W]*", f"{prefix}_{name}", line
-                        )
+                    if(match := re.search(fr"{name}[^\w]+", line)):
+                        matchedstring = match.group(0)
+                        line = line.replace(
+                            matchedstring, f"{prefix}_{matchedstring}")
                 updatedlines.append(line)
 
             with open(path, mode='w') as file:
@@ -105,15 +110,21 @@ def elevate_definitions(path: str):
     updatedsource = ''
     with open(path, mode='r') as source:
         with open(path.replace('.c', '.h'), mode='a') as header:
-            header.write("\n"*2)
             updatedsource = source.read()
             data = scan_for_definitions(path)
             for datatype, definitions in data.__dict__.items():
                 if datatype != "macrodefinitions":
                     for definition in definitions:
+                        #updatedsource = updatedsource.replace(
+                        #    f"TESTUSE {definition}", '')
+                        new_definition = definition.replace("static ", "")
                         updatedsource = updatedsource.replace(
-                            f"TESTUSE {definition}", '')
-                        header.write(f"TESTUSE {definition}")
+                            definition.replace(';', ''),
+                            new_definition.replace(';', ''))
+                        storage_specifier = "extern"
+                        header.write(
+                            f"TESTUSE {storage_specifier} {new_definition}\n"
+                            )
 
     with open(path, mode='w') as source:
         source.write(updatedsource)
@@ -200,40 +211,40 @@ def elevate_staticvars(path: str, testdirectorypath: str):
     if not path.endswith(".c"):
         raise WrongFileExtension
 
-    relativepath = path.replace(testdirectorypath, '').upper()
-    prefix = ''.join(split_path(relativepath)[0:-1])
+    prefix = create_prefix(path, testdirectorypath)
 
-    pattern = re.compile(r"TESTSTATICVAR\(static [\w*]* .*\)")
+    pattern = re.compile(r"TESTSTATICVAR\(static ?(const)? [\w*]* \w*\)")
     staticvars = []
     with open(path) as source:
         with open(path.replace('.c', '.h'), mode='a') as header:
-            header.write("\n"*2)
-            header.write(f"#ifndef {prefix}_TESTGUARD\n")
-            header.write(f"#define {prefix}_TESTGUARD\n")
             content = source.readlines()
             for line in content:
                 if (match := pattern.search(line)):
                     staticvar = match.group(0)[14:-1].split()[1:]
                     declarations = [
-                        f"TESTUSE {staticvar[0]} {prefix}_get{staticvar[1]}();\n",
-                        (f"TESTUSE void {prefix}_set{staticvar[1]}" +
-                            f"({staticvar[0]} value);\n")
+                        f"TESTUSE {staticvar[-2]} {prefix}_get{staticvar[-1]}();\n"
                     ]
+                    if "const" not in staticvar:
+                        declarations.append(
+                            f"TESTUSE void {prefix}_set{staticvar[-1]}" +
+                            f"({staticvar[-2]} value);\n")
                     header.writelines(declarations)
                     staticvars.append(staticvar)
-            header.write(f"#endif\n")
 
     with open(path, mode='a') as source:
         source.write("\n"*2)
         for staticvar in staticvars:
-            setter = [
-                f"void {prefix}_set{staticvar[1]}({staticvar[0]} value)",
-                f"{{{staticvar[1]} = value;}}\n"
-            ]
             getter = [
-                f"{staticvar[0]} {prefix}_get{staticvar[1]}()"
-                f"{{return {staticvar[1]};}}\n"
+                f"{staticvar[-2]} {prefix}_get{staticvar[-1]}()"
+                f"{{return {staticvar[-1]};}}\n"
             ]
+            if "const" not in staticvar:
+                setter = [
+                    f"void {prefix}_set{staticvar[-1]}({staticvar[-2]} value)",
+                    f"{{{staticvar[-1]} = value;}}\n"
+                ]
+            else:
+                setter = []
             source.writelines(setter + getter)
 
 
@@ -249,9 +260,17 @@ def get_files(dirpath):
 def elevate(testdirectorypath: str):
     for filepath in get_files(testdirectorypath):
         if filepath.endswith('.c'):
+            headerpath = filepath.replace('.c', '.h')
+            prefix = create_prefix(filepath, testdirectorypath)
+            with open(headerpath, mode='a') as header:
+                header.write("\n"*2)
+                header.write(f"#ifndef {prefix}_TESTGUARD\n")
+                header.write(f"#define {prefix}_TESTGUARD\n")
             addprefixes(filepath, testdirectorypath)
             elevate_definitions(filepath)
             elevate_staticvars(filepath, testdirectorypath)
+            with open(headerpath, mode='a') as header:
+                header.write(f"#endif\n")
 
 
 def scan_files(testdirectorypath):

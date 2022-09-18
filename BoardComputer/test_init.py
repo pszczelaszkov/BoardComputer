@@ -29,8 +29,8 @@ class testInit(unittest.TestCase):
         self.assertTrue(self.bc.AVERAGE_BUFFERS_SIZE)
 
     def test_timer(self):
-        self.assertTrue(self.bc.TIMER_MILISECOND_WEIGHT)
-        self.assertTrue(self.bc.TIMER_REGISTER_WEIGHT)
+        self.assertTrue(self.bc.TIMER_getMILISECOND_WEIGHT())
+        self.assertTrue(self.bc.TIMER_getREGISTER_WEIGHT())
         self.bc.TCNT2 = 14
         miliseconds = self.bc.TIMER_counter_to_miliseconds()
         self.assertEqual(10, miliseconds)
@@ -78,7 +78,7 @@ class testInit(unittest.TestCase):
             [white, brightblue, b"wmm",backcolor],
             [white, brightblue, b"wss", backcolor],
             [brightbrown, brightblue, b"dbs",frontcolor]
-        ]#default,selected,name,highlighttype
+        ]  # default,selected,name,highlighttype
         zipped = zip(self.ffi.unpack(self.bc.UIBOARDCONFIG_executable_components, self.bc.UIBOARDCONFIG_COMPONENT_LAST), model)
         i = 0
         for t, m in zipped:
@@ -89,7 +89,7 @@ class testInit(unittest.TestCase):
             name = self.ffi.unpack(t.name, self.bc.NEXTION_OBJNAME_LEN)
             self.assertEqual(name, m[2],msg=msg)
             self.assertEqual(t.highlighttype, m[3], msg=msg)
-            i=i+1
+            i = i+1
 
     def test_uinumpad_components_conformance(self):
         backcolor = self.bc.NEXTION_HIGHLIGHTTYPE_BACKCOLOR
@@ -108,7 +108,7 @@ class testInit(unittest.TestCase):
             [0xFD88, 0x4DF, b"del", backcolor],
             [0xFD88, 0x4DF, b"snd", backcolor]
 
-        ]#default,selected,name,highlighttype
+        ]  # default,selected,name,highlighttype
         zipped = zip(self.ffi.unpack(self.bc.UINUMPAD_components, len(model)), model)
         i = 0
         for t, m in zipped:
@@ -118,7 +118,7 @@ class testInit(unittest.TestCase):
             name = self.ffi.unpack(t.name, self.bc.NEXTION_OBJNAME_LEN)
             self.assertEqual(name, m[2], msg=msg)
             self.assertEqual(t.highlighttype, m[3], msg=msg)
-            i=i+1
+            i = i+1
 
     def test_uiboard_components_cohesion(self):
         image = self.bc.NEXTION_HIGHLIGHTTYPE_IMAGE
@@ -127,7 +127,7 @@ class testInit(unittest.TestCase):
             [1, 25, b"wtd", croppedimage],
             [2, 17, b"wts", image],
             [3, 18, b"cfg", image]
-        ]#default,selected,name,highlighttype
+        ]  # default,selected,name,highlighttype
         zipped = zip(self.ffi.unpack(self.bc.UIBOARD_components, 2), model)
         i = 0
         for t, m in zipped:
@@ -137,7 +137,7 @@ class testInit(unittest.TestCase):
             name = self.ffi.unpack(t.name, self.bc.NEXTION_OBJNAME_LEN)
             self.assertEqual(name, m[2], msg=msg)
             self.assertEqual(t.highlighttype, m[3], msg=msg)
-            i=i+1
+            i = i+1
 
     def test_uiboard_MDcomponents_cohesion(self):
         image = self.bc.NEXTION_HIGHLIGHTTYPE_IMAGE
@@ -148,7 +148,7 @@ class testInit(unittest.TestCase):
             [14, 19],
             [15, 20],
             [16, 21]
-        ]#default,selected
+        ]  # default,selected
         zipped = zip(self.ffi.unpack(self.bc.UIBOARD_maindisplay_components, 6), model)
         i = 0
         for t, m in zipped:
@@ -160,7 +160,7 @@ class testInit(unittest.TestCase):
             self.assertEqual(name, b"mds", msg=msg)
             self.assertEqual(component.highlighttype, image, msg=msg)
             i=i+1
-   
+
         self.assertEqual(self.bc.UIBOARD_maindisplay_activecomponent,
                          self.bc.UIBOARD_maindisplay_components[0])
 
@@ -288,5 +288,5 @@ class testInit(unittest.TestCase):
         self.bc.fp16toa(testvalue, buffer, 2, 10)
         self.assertEqual(self.ffi.unpack(buffer, 7), expectedstring)
 
-if __name__ == "main":
+if __name__ == "__main__":
     unittest.main()
