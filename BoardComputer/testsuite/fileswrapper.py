@@ -213,13 +213,16 @@ def elevate_staticvars(path: str, testdirectorypath: str):
 
     prefix = create_prefix(path, testdirectorypath)
 
-    pattern = re.compile(r"TESTSTATICVAR\(static ?(const)? [\w*]* \w*\)")
+    varpattern = re.compile(r"TESTSTATICVAR\(static ?(const)? [\w*]* \w*\)")
+    arraypattern = re.compile(
+        r"TESTSTATICVAR\(static ?(const)? [\w*]* \w*\[\d*\]\)")
     staticvars = []
+    staticarrays = []
     with open(path) as source:
         with open(path.replace('.c', '.h'), mode='a') as header:
             content = source.readlines()
             for line in content:
-                if (match := pattern.search(line)):
+                if (match := varpattern.search(line)):
                     staticvar = match.group(0)[14:-1].split()[1:]
                     declarations = [
                         f"TESTUSE {staticvar[-2]} {prefix}_get{staticvar[-1]}();\n"
@@ -230,6 +233,17 @@ def elevate_staticvars(path: str, testdirectorypath: str):
                             f"({staticvar[-2]} value);\n")
                     header.writelines(declarations)
                     staticvars.append(staticvar)
+                elif (match := arraypattern.search(line)):
+                    staticvar = match.group(0)[14:-1].split()[1:]
+                    declarations = [
+                        f"TESTUSE {staticvar[-2]} {prefix}_get{staticvar[-1]}();\n"
+                    ]
+                    if "const" not in staticvar:
+                        declarations.append(
+                            f"TESTUSE void {prefix}_set{staticvar[-1]}" +
+                            f"({staticvar[-2]} value);\n")
+                    header.writelines(declarations)
+                    staticarrays.append(staticvar)
 
     with open(path, mode='a') as source:
         source.write("\n"*2)

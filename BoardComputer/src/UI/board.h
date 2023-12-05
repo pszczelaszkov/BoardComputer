@@ -40,17 +40,8 @@ TESTUSE extern NEXTION_Component UIBOARD_components[];
 TESTUSE extern UIBOARD_MDComponent UIBOARD_maindisplay_components[];
 TESTUSE extern UIBOARD_MDComponent* UIBOARD_maindisplay_activecomponent;
 
-void UIBOARD_renderer_md_lph();
-void UIBOARD_renderer_md_lp100();
-void UIBOARD_renderer_md_lp100_avg();
-void UIBOARD_renderer_md_speed_avg();
-void UIBOARD_renderer_md_inj_t();
-void UIBOARD_renderer_md_range();
-void UIBOARD_callback_config();
 TESTUSE void UIBOARD_switch_maindisplay();
-TESTUSE void UIBOARD_update_EGT();
-void UIBOARD_update_ADC();
-void UIBOARD_update_watch();
+void UIBOARD_callback_config();
 void UIBOARD_update();
 void UIBOARD_setup();
 

@@ -1,5 +1,5 @@
 #include "timer.h"
-#include <stdio.h>
+
 TESTSTATICVAR(static const uint8_t REGISTER_WEIGHT) = 200;//0.78125(7.8125ms) 8 FP
 TESTSTATICVAR(static const uint8_t MILISECOND_WEIGHT) = 12<<1|1;//12.5(125ms) 7+1 FP
 TESTSTATICVAR(static TIMER_watch* active_watch);
@@ -76,7 +76,7 @@ static void switch_watchtype(enum TIMER_TIMERTYPE type)
     TIMER_active_timertype = type;
 }
 
-void TIMER_watch_toggle()
+void TIMER_active_watch_toggle()
 {
     if(active_watch->timer.watchstatus == TIMER_TIMERSTATUS_COUNTING)
     {
@@ -88,7 +88,7 @@ void TIMER_watch_toggle()
         active_watch->timer.watchstatus = TIMER_TIMERSTATUS_COUNTING;
 }
 
-void TIMER_watch_zero()
+void TIMER_clear_active_watch()
 {
     active_watch->timer.watchstatus = TIMER_TIMERSTATUS_ZERO;
     memset(&active_watch->timer,0x0,sizeof(active_watch->timer));
@@ -97,11 +97,21 @@ void TIMER_watch_zero()
 
 void TIMER_next_watch()
 {   
-    TIMER_active_timertype++;
-    if(TIMER_active_timertype == TIMER_TIMERTYPE_LAST)
-        TIMER_active_timertype = 0;
-    active_watch = &watches[TIMER_active_timertype];
-    format(active_watch, FORMATFLAG_HOURS);
+    uint8_t timertype = TIMER_active_timertype + 1;
+    if(timertype == TIMER_TIMERTYPE_LAST)
+        timertype = 0;
+    TIMER_set_watch(timertype);
+}
+
+uint8_t TIMER_set_watch(enum TIMER_TIMERTYPE type)
+{
+    if(type < TIMER_TIMERTYPE_LAST)
+    {
+        switch_watchtype(type);
+        format(active_watch, FORMATFLAG_HOURS);
+        return 1;
+    }
+    return 0;
 }
 
 TIMER_watch* TIMER_get_watch(enum TIMER_TIMERTYPE type)

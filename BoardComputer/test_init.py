@@ -3,9 +3,6 @@ from helpers import load
 # This test class should be launched first to check global definitions
 
 
-
-
-
 class testInit(unittest.TestCase):
     @classmethod
     def setUpClass(cls):

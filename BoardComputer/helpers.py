@@ -1,7 +1,43 @@
-import os
 import re
 import cffi
 import importlib
+
+
+class ModuleWrapper():
+    def __init__(self, module):
+        self.module = module
+        self.snapshot = {}
+
+    def __enter__(self):
+        self.create_snapshot()
+        return self.module
+
+    def __exit__(self, exc_type, exc_value, exc_traceback):
+        self.load_snapshot()
+
+    def create_snapshot(self):
+        for key in self.module.__dict__.keys():
+            value = eval(f"self.module.{key}")
+            if isinstance(value, cffi.FFI().CData):
+                try:
+                    size = eval(f"self.module.{key.upper()}_SIZE")
+                    #cast cdata to byte array
+                    self.snapshot[key] = [value[i] for i in range(size)]
+                except AttributeError:
+                    print(f"Missing {key.upper()}_SIZE for {key}")
+            else:
+                self.snapshot[key] = value
+
+    def load_snapshot(self):
+        for key, value in self.snapshot.items():
+            if isinstance(value, int):
+                try:
+                    exec(f"self.module.{key}=value")
+                except AttributeError:  # Probably const
+                    pass
+            elif isinstance(value, list):
+                for i, data in enumerate(value):
+                    exec(f"self.module.{key}[{i}]=data")
 
 
 def load(filename):
@@ -73,3 +109,13 @@ def parse_nextion(module, stream, nextion_values):
             variable = message.split('.')[0]
             value = message.split("=")[1]
             nextion_values["pic"][variable] = value
+
+'''
+    Generate signal
+    @return pairs of rising and falling edges
+'''
+def generate_signal(first_interval, second_interval, iterations):
+    interval = first_interval + second_interval
+    primary_edges = range(0,interval*iterations,interval)
+    secondary_edges = range(first_interval,interval*iterations,interval)
+    return zip(primary_edges, secondary_edges)

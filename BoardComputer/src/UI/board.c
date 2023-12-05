@@ -22,7 +22,15 @@ static const char str_fmd[NEXTION_OBJNAME_LEN] = "fmd";
 static const char str_pco[NEXTION_OBJNAME_LEN] = "pco";
 
 static uint8_t critical_raised;
-static uint8_t raise_critical;
+TESTSTATICVAR(static uint8_t raise_critical);
+
+static void renderer_md_lph();
+static void renderer_md_lp100();
+static void renderer_md_lp100_avg();
+static void renderer_md_speed_avg();
+static void renderer_md_inj_t();
+static void renderer_md_range();
+TESTUSE static void TESTADDPREFIX(update_EGT)();
 
 typedef enum VISUALALERTSEVERITY
 {
@@ -52,7 +60,7 @@ typedef struct Visualalert
 }Visualalert;
 
 //Object needs to have "pco" variable, as its used to visualize alert.
-Visualalert visualalerts[] = 
+static Visualalert visualalerts[] = 
 {
 	[VISUALALERTID_MAINDISPLAY] = {
 		.objname = str_mdv
@@ -114,7 +122,7 @@ UIBOARD_MDComponent UIBOARD_maindisplay_components[] = {
 				.name = str_mds,
 				.highlighttype = NEXTION_HIGHLIGHTTYPE_IMAGE
 			},
-			.execute = UIBOARD_renderer_md_lph,
+			.execute = renderer_md_lph,
 		},
 		.nextComponent = &UIBOARD_maindisplay_components[UIBOARD_MD_LP100_AVG]
 	},
@@ -129,7 +137,7 @@ UIBOARD_MDComponent UIBOARD_maindisplay_components[] = {
 				.name = str_mds,
 				.highlighttype = NEXTION_HIGHLIGHTTYPE_IMAGE
 			},
-			.execute = UIBOARD_renderer_md_lp100
+			.execute = renderer_md_lp100
 		},
 		.nextComponent = &UIBOARD_maindisplay_components[UIBOARD_MD_LP100_AVG]
 	},
@@ -144,7 +152,7 @@ UIBOARD_MDComponent UIBOARD_maindisplay_components[] = {
 				.name = str_mds,
 				.highlighttype = NEXTION_HIGHLIGHTTYPE_IMAGE
 			},
-			.execute = UIBOARD_renderer_md_lp100_avg
+			.execute = renderer_md_lp100_avg
 		},
 		.nextComponent = &UIBOARD_maindisplay_components[UIBOARD_MD_SPEED_AVG]
 	},
@@ -159,7 +167,7 @@ UIBOARD_MDComponent UIBOARD_maindisplay_components[] = {
 				.name = str_mds,
 				.highlighttype = NEXTION_HIGHLIGHTTYPE_IMAGE
 			},
-			.execute = UIBOARD_renderer_md_speed_avg
+			.execute = renderer_md_speed_avg
 		},
 		.nextComponent = &UIBOARD_maindisplay_components[UIBOARD_MD_INJ_T]
 	},
@@ -174,7 +182,7 @@ UIBOARD_MDComponent UIBOARD_maindisplay_components[] = {
 				.name = str_mds,
 				.highlighttype = NEXTION_HIGHLIGHTTYPE_IMAGE
 			},
-			.execute = UIBOARD_renderer_md_inj_t
+			.execute = renderer_md_inj_t
 		},
 		.nextComponent = &UIBOARD_maindisplay_components[UIBOARD_MD_RANGE]
 	},
@@ -189,7 +197,7 @@ UIBOARD_MDComponent UIBOARD_maindisplay_components[] = {
 				.name = str_mds,
 				.highlighttype = NEXTION_HIGHLIGHTTYPE_IMAGE
 			},
-			.execute = UIBOARD_renderer_md_range
+			.execute = renderer_md_range
 		},
 		.nextComponent = &UIBOARD_maindisplay_components[UIBOARD_MD_LPH]
 	}
@@ -202,7 +210,7 @@ It may raise corresponding system alert.
 @param alertid Selects Visualalert instance.
 @param severity Severity sets predefined periodicity and color.
 */
-void raisevisualalert(Visualalertid_t alertid, Visualalertseverity_t severity)
+static void raisevisualalert(Visualalertid_t alertid, Visualalertseverity_t severity)
 {
 	Visualalert* alert = &visualalerts[alertid];
 	uint8_t pattern;
@@ -227,8 +235,8 @@ void raisevisualalert(Visualalertid_t alertid, Visualalertseverity_t severity)
 	alert->color = color;
 	alert->pattern = pattern;
 }
-
-void UIBOARD_renderer_md_lph()
+/*Display liters per hour*/
+static void renderer_md_lph()
 {
 	char buffer[] = "mdv.txt=\"  .0\"";
 	if(SENSORSFEED_feed[SENSORSFEED_FEEDID_SPEED])
@@ -246,8 +254,8 @@ void UIBOARD_renderer_md_lph()
 		rightnconcat_short(&buffer[9], fraction, 4, 1);
 	NEXTION_send(buffer, USART_HOLD);
 }
-
-void UIBOARD_renderer_md_lp100()
+/*Display realtime liters per 100km, if not in motion fallback to liters per hour*/
+static void renderer_md_lp100()
 {	
 	char buffer[] = "mdv.txt=\"  .0\"";
 	uint16_t fraction, lp100;
@@ -266,8 +274,8 @@ void UIBOARD_renderer_md_lp100()
 		rightnconcat_short(&buffer[9], fraction, 4, 1);
 	NEXTION_send(buffer, USART_HOLD);
 }
-
-void UIBOARD_renderer_md_lp100_avg()
+/*Display average liters per 100km*/
+static void renderer_md_lp100_avg()
 {
 	char buffer[] = "mdv.txt=\"  .0\"";
 	uint16_t lp100 = SENSORSFEED_feed[SENSORSFEED_FEEDID_LP100_AVG];
@@ -278,22 +286,22 @@ void UIBOARD_renderer_md_lp100_avg()
 		rightnconcat_short(&buffer[9], fraction, 4, 1);
 	NEXTION_send(buffer, USART_HOLD);
 }
-
-void UIBOARD_renderer_md_speed_avg()
+/*Display average speed*/
+static void renderer_md_speed_avg()
 {
-	char buffer[] = "mdv.txt=\"  0\"";
+	char buffer[] = "mdv.txt=\"   0\"";
 	uint16_t speed = SENSORSFEED_feed[SENSORSFEED_FEEDID_SPEED_AVG] >> 8;
-	rightconcat_short(&buffer[9], speed, 3);
+	rightconcat_short(&buffer[9], speed, 4);
 	NEXTION_send(buffer, USART_HOLD);
 }
-
-void UIBOARD_renderer_md_inj_t()
+/*Display current injector open time */
+static void renderer_md_inj_t()
 {
 	char buffer[] = "mdv.txt=\"  .0\"";
 	uint8_t integral;
 	uint16_t fraction;
 	uint16_t fuel_time = COUNTERSFEED_feed[COUNTERSFEED_FEEDID_INJT][FRONTBUFFER];
-	fuel_time = fuel_time*SENSORSFEED_injtmodifier;
+	fuel_time = fuel_time*SENSORSFEED_injtmodifier;//that needs another abstraction with sensorsfeed
 	integral = fuel_time >> 8;
 	fraction = (fuel_time & 0xff) * FP8_weight;
 
@@ -303,7 +311,7 @@ void UIBOARD_renderer_md_inj_t()
 	NEXTION_send(buffer, USART_HOLD);
 }
 
-void UIBOARD_renderer_md_range()
+static void renderer_md_range()
 {
 	char buffer[] = "mdv.txt=\"   0\"";
 	uint8_t tank = SENSORSFEED_feed[SENSORSFEED_FEEDID_TANK];
@@ -317,27 +325,25 @@ void UIBOARD_renderer_md_range()
 	NEXTION_send(buffer, USART_HOLD);
 }
 
-void UIBOARD_switch_maindisplay()
+static void update_EGT()
 {
-	UIBOARD_maindisplay_activecomponent = UIBOARD_maindisplay_activecomponent->nextComponent;
-}
+	NEXTION_INSTRUCTION_BUFFER_BLOCK(6)
+	NEXTION_quote_payloadbuffer(payload,payload_length);
+	NEXTION_instruction_compose(str_egt,str_txt,instruction);
 
-void UIBOARD_update_EGT()
-{
-	char buffer[] = "egt.txt=\"    \"";
 	uint8_t alert = 0;
 	switch(SENSORSFEED_EGT_status)
 	{
 		case SENSORSFEED_EGT_STATUS_UNKN:
-			memcpy(&buffer[9],"----",4);
+			memcpy(&payload[1],"----", 4);
 			alert = 1;
 		break;
 		case SENSORSFEED_EGT_STATUS_OPEN:
-			memcpy(&buffer[9],"open",4);
+			memcpy(&payload[1],"open", 4);
 			alert = 1;
 		break;
 		case SENSORSFEED_EGT_STATUS_VALUE:
-			rightconcat_short(&buffer[9],SENSORSFEED_feed[SENSORSFEED_FEEDID_EGT],4);
+			rightconcat_short(&payload[1],SENSORSFEED_feed[SENSORSFEED_FEEDID_EGT], 4);
 	}
 	NEXTION_send(buffer,USART_HOLD);
 	if(alert)
@@ -347,7 +353,7 @@ void UIBOARD_update_EGT()
 	}
 }
 
-void update_sensorgroup_bottom()
+static void update_sensorgroup_bottom()
 {
 	NEXTION_INSTRUCTION_BUFFER_BLOCK(5)
 	NEXTION_quote_payloadbuffer(payload,payload_length);
@@ -401,7 +407,7 @@ void update_sensorgroup_bottom()
 	NEXTION_send(buffer,USART_HOLD);
 }
 
-void update_sensorgroup_pressure()
+static void update_sensorgroup_pressure()
 {
 	NEXTION_INSTRUCTION_BUFFER_BLOCK(7)
 	NEXTION_quote_payloadbuffer(payload,payload_length);
@@ -458,7 +464,7 @@ void update_sensorgroup_pressure()
 	NEXTION_send(buffer,USART_HOLD);
 }
 
-void update_visual_alert()
+static void update_visual_alert()
 {
 	NEXTION_INSTRUCTION_BUFFER_BLOCK(5)
 	for(uint8_t i = 0; i < VISUALALERTID_LAST;i++)
@@ -486,7 +492,7 @@ void update_visual_alert()
 	}
 }
 
-void UIBOARD_update_watch()
+static void update_watch()
 {
 	const char WATCHTEMPLATE[]  = "wtd.txt=\"        \"";
 	char buffer[sizeof(WATCHTEMPLATE)];
@@ -498,6 +504,11 @@ void UIBOARD_update_watch()
 		memcpy(&buffer[9],&TIMER_formated[3],8);
 
 	NEXTION_send(buffer,USART_HOLD);
+}
+
+void UIBOARD_switch_maindisplay()
+{
+	UIBOARD_maindisplay_activecomponent = UIBOARD_maindisplay_activecomponent->nextComponent;
 }
 
 void UIBOARD_setup()
@@ -520,7 +531,7 @@ void UIBOARD_update()
 			raise_critical = 0;
 		case 4:
 			update_sensorgroup_bottom();
-			UIBOARD_update_EGT();
+			update_EGT();
 		break;
 		case 2:
 		case 5:
@@ -528,7 +539,7 @@ void UIBOARD_update()
 			((NEXTION_Executable_Component*)UIBOARD_maindisplay_activecomponent)->execute();
 		break;
 	}
-	UIBOARD_update_watch();
+	update_watch();
 	update_visual_alert();
 	if(raise_critical)
 	{

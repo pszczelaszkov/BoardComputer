@@ -17,7 +17,7 @@
 #define USART_EOT_COUNT 3 //EOT must appear EOT_COUNT times in a row to be valid.
 
 extern char USART_RX_buffer[];
-extern char USART_TX_buffer[];
+TESTUSE extern char USART_TX_buffer[];
 TESTUSE extern uint8_t USART_TX_message_length;
 TESTUSE extern uint8_t USART_RX_buffer_index;
 extern uint8_t USART_TX_buffer_index;

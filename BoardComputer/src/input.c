@@ -15,7 +15,7 @@ INPUT_Component INPUT_components[] = {
 	{
 		.componentID = INPUT_COMPONENT_WATCH,
 		.nextcomponentID = INPUT_COMPONENT_WATCHSEL,
-		.on_hold = TIMER_watch_zero,
+		.on_hold = TIMER_clear_active_watch,
 		.nextion_component = &UIBOARD_components[UIBOARD_COMPONENT_WATCH]
 	},
 	{
@@ -178,7 +178,7 @@ void INPUT_userinput(INPUT_Keystatus_t keystatus, INPUT_Key_t key, INPUT_Compone
 		if(componentID == INPUT_COMPONENT_WATCH && key == INPUT_KEY_ENTER)
 		{	
 			if(TIMER_active_timertype == TIMER_TIMERTYPE_STOPWATCH)
-				TIMER_watch_toggle();
+				TIMER_active_watch_toggle();
 		}
 	}
 	else

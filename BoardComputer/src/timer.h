@@ -57,10 +57,11 @@ TESTUSE typedef struct TIMER_watch
 TESTUSE extern enum TIMER_TIMERTYPE TIMER_active_timertype;
 TESTUSE extern char TIMER_formated[];
 
-TESTUSE void TIMER_watch_toggle();
-TESTUSE void TIMER_watch_zero();
+TESTUSE void TIMER_active_watch_toggle();
+TESTUSE void TIMER_clear_active_watch();
 TESTUSE void TIMER_next_watch();
 TESTUSE void TIMER_update();
+TESTUSE uint8_t TIMER_set_watch(enum TIMER_TIMERTYPE type);
 TESTUSE TIMER_watch* TIMER_get_watch(enum TIMER_TIMERTYPE type);
 void TIMER_initialize();
 
