@@ -80,7 +80,8 @@ EVENT_TIMER_ISR
     switch(SYSTEM_event_timer)
     {
         case 7:
-			COUNTERSFEED_pushfeed(COUNTERSFEED_FEEDID_FUELPS);
+			COUNTERSFEED_feed[COUNTERSFEED_FEEDID_FUELPS] = COUNTERSFEED_feed[COUNTERSFEED_FEEDID_FUEL];
+            COUNTERSFEED_feed[COUNTERSFEED_FEEDID_FUEL] = 0;
             SYSTEM_event_timer = 0;
 			return;
         break;

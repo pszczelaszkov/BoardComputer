@@ -1,7 +1,9 @@
 #include "sensorsfeed.h"
 #include "system.h"
 
-#ifndef __AVR__
+#ifdef __AVR__
+	#include<util/atomic.h>
+#else
 	uint8_t SPDR0;
 #endif
 
@@ -21,7 +23,7 @@ uint8_t SENSORSFEED_injtmodifier;
 
 TESTUSE void TESTADDPREFIX(update_fuel)()
 {
-	uint16_t fuel_time = COUNTERSFEED_feed[COUNTERSFEED_FEEDID_FUELPS][FRONTBUFFER];
+	uint16_t fuel_time = SENSORSFEED_feed[SENSORSFEED_FEEDID_FUELPS];
 	fuel_time = (uint32_t)(fuel_time * SENSORSFEED_fuelmodifier) >> 8;
 	SENSORSFEED_feed[SENSORSFEED_FEEDID_LPH] = fuel_time;
 }
@@ -30,7 +32,7 @@ TESTUSE static void TESTADDPREFIX(update_speed)()
 {
 	uint16_t lp100 = 0;
 	uint16_t liters = SENSORSFEED_feed[SENSORSFEED_FEEDID_LPH];
-	uint16_t speed = COUNTERSFEED_feed[COUNTERSFEED_FEEDID_SPEED][FRONTBUFFER];
+	uint16_t speed = SENSORSFEED_feed[SENSORSFEED_FEEDID_SPEED];
 	if(speed > speed_max)
 		speed = speed_max;
 
@@ -38,7 +40,6 @@ TESTUSE static void TESTADDPREFIX(update_speed)()
 	if(speed)
 		lp100 = (uint32_t)(liters)*(100<<8)/speed;
 
-	SENSORSFEED_feed[SENSORSFEED_FEEDID_SPEED] = speed;
 	SENSORSFEED_feed[SENSORSFEED_FEEDID_LP100] = lp100;
 	SENSORSFEED_feed[SENSORSFEED_FEEDID_SPEED_AVG] = AVERAGE_addvalue(AVERAGE_BUFFER_SPEED, speed);
 	SENSORSFEED_feed[SENSORSFEED_FEEDID_LP100_AVG] = AVERAGE_addvalue(AVERAGE_BUFFER_LP100, lp100);
@@ -74,9 +75,22 @@ TESTUSE static void TESTADDPREFIX(update_EGT)()
 	}
 }
 
+static void copy_countersfeed()
+{
+	#ifdef __AVR__
+		ATOMIC_BLOCK(ATOMIC_RESTORESTATE)
+	#endif
+	{
+		SENSORSFEED_feed[SENSORSFEED_FEEDID_FUELPS] = (uint16_t)COUNTERSFEED_feed[COUNTERSFEED_FEEDID_FUELPS];
+		SENSORSFEED_feed[SENSORSFEED_FEEDID_SPEED] = (uint16_t)COUNTERSFEED_feed[COUNTERSFEED_FEEDID_SPEED];
+		SENSORSFEED_feed[SENSORSFEED_FEEDID_INJT] = (uint16_t)COUNTERSFEED_feed[COUNTERSFEED_FEEDID_INJT] * SENSORSFEED_injtmodifier;
+	}
+}
+
 void SENSORSFEED_update()
 {
 	uint8_t timer = SYSTEM_event_timer;
+	copy_countersfeed();
 	switch(timer)
 	{
 		case 0:

@@ -13,8 +13,6 @@
 #else
 #include "utils.h"
 TESTUSE void PCINT0_vect();
-TESTUSE inline void COUNTERSFEED_pushfeed(uint8_t index);
-TESTUSE inline void COUNTERSFEED_resetfeed(uint8_t index);
 #endif
 
 #define FRONTBUFFER 0
@@ -36,24 +34,14 @@ enum COUNTERSFEED_TIMESTAMP
 TESTUSE enum COUNTERSFEED_FEEDID
 {
     COUNTERSFEED_FEEDID_FUELPS,
+    COUNTERSFEED_FEEDID_FUEL,
     COUNTERSFEED_FEEDID_INJT,
     COUNTERSFEED_FEEDID_SPEED,
     COUNTERSFEED_FEEDID_LAST
 };
 
-TESTUSE extern uint16_t COUNTERSFEED_feed[][2];
+TESTUSE extern volatile uint16_t COUNTERSFEED_feed[];
 
-inline void COUNTERSFEED_pushfeed(uint8_t index)
-{
-    COUNTERSFEED_feed[index][FRONTBUFFER] = COUNTERSFEED_feed[index][BACKBUFFER];
-    COUNTERSFEED_feed[index][BACKBUFFER] = 0;
-}
-
-inline void COUNTERSFEED_resetfeed(uint8_t index)
-{
-    COUNTERSFEED_feed[index][FRONTBUFFER] = 0;
-    COUNTERSFEED_feed[index][BACKBUFFER] = 0;
-}
 
 ISR(PCINT0_vect);
 #endif

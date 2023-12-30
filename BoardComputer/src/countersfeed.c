@@ -9,7 +9,7 @@ enum Direction
     RISING = 1
 };
 
-uint16_t COUNTERSFEED_feed[COUNTERSFEED_FEED_SIZE][2];
+volatile uint16_t COUNTERSFEED_feed[COUNTERSFEED_FEED_SIZE];
 static uint16_t timestamps[COUNTERSFEED_LAST_TIMESTAMP_SIZE];
 static uint8_t last_PINB_state;
 
@@ -29,8 +29,8 @@ void count_fuelusage(enum Direction direction)
             result = timestamp + (0xffff-*last_timestamp) + 1;
         else
             result = timestamp - *last_timestamp;
-        COUNTERSFEED_feed[COUNTERSFEED_FEEDID_FUELPS][BACKBUFFER] += result;
-        COUNTERSFEED_feed[COUNTERSFEED_FEEDID_INJT][FRONTBUFFER] = result;tu potrzeba atomicznosci, jakis atopmic move po irq w glownej petli
+        COUNTERSFEED_feed[COUNTERSFEED_FEEDID_FUEL] += result;
+        COUNTERSFEED_feed[COUNTERSFEED_FEEDID_INJT] = result;
     }
 }
 

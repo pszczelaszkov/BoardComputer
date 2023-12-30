@@ -269,6 +269,11 @@ static void renderer_md_lp100()
 	lp100 = SENSORSFEED_feed[SENSORSFEED_FEEDID_LP100];
 	liters = lp100 >> 8;
 	fraction = (lp100 & 0x00ff) * FP8_weight;
+	if(liters > 99)
+	{
+		liters = 99;
+		fraction = 9999;
+	}
 	rightconcat_short(&buffer[9], liters, 2);
 	if(fraction > 999)
 		rightnconcat_short(&buffer[9], fraction, 4, 1);
@@ -281,6 +286,11 @@ static void renderer_md_lp100_avg()
 	uint16_t lp100 = SENSORSFEED_feed[SENSORSFEED_FEEDID_LP100_AVG];
 	uint8_t liters = lp100 >> 8;
 	uint16_t fraction = (lp100 & 0x00ff) * FP8_weight;
+	if(liters > 99)
+	{
+		liters = 99;
+		fraction = 9999;
+	}
 	rightconcat_short(&buffer[9], liters ,2);
 	if(fraction > 999)
 		rightnconcat_short(&buffer[9], fraction, 4, 1);
@@ -300,11 +310,14 @@ static void renderer_md_inj_t()
 	char buffer[] = "mdv.txt=\"  .0\"";
 	uint8_t integral;
 	uint16_t fraction;
-	uint16_t fuel_time = COUNTERSFEED_feed[COUNTERSFEED_FEEDID_INJT][FRONTBUFFER];
-	fuel_time = fuel_time*SENSORSFEED_injtmodifier;//that needs another abstraction with sensorsfeed
+	uint16_t fuel_time = SENSORSFEED_feed[SENSORSFEED_FEEDID_INJT];
 	integral = fuel_time >> 8;
 	fraction = (fuel_time & 0xff) * FP8_weight;
-
+	if(integral > 99)
+	{
+		integral = 99;
+		fraction = 9999;
+	}
 	rightconcat_short(&buffer[9], integral, 2);
 	if(fraction > 999)
 		rightnconcat_short(&buffer[9], fraction, 4, 1);
@@ -320,7 +333,10 @@ static void renderer_md_range()
 
 	if(lp100)
 		range = tank*100/lp100;
-
+	if(range > 9999)
+	{
+		range = 9999;
+	}
 	rightconcat_short(&buffer[9], range, 4);
 	NEXTION_send(buffer, USART_HOLD);
 }
