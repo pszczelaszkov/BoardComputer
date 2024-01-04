@@ -8,7 +8,6 @@
 
 #ifndef __UTILS__
 #define __UTILS__
-#define TESTUSE
 #define TESTADDPREFIX(...) __VA_ARGS__
 #define TESTSTATICVAR(...) __VA_ARGS__
 #ifdef __AVR__

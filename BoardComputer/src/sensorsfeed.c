@@ -130,7 +130,7 @@ void SENSORSFEED_initialize()
 	//Calculate ticks for 1km, which in short is 360/ticksp100
 	//Result is in fp 8+8.
 	//As an addition speed_max is limiter to protect from overflow during further processing.
-	uint32_t base_fp16 = 360 << 8;//reduced from 3600sec
+	uint32_t base_fp16 = 360U << 8;//reduced from 3600sec
 	SENSORSFEED_speedmodifier = base_fp16/SENSORSFEED_speed_ticks_100m;
 	speed_max = 0xffff/SENSORSFEED_speedmodifier;
 

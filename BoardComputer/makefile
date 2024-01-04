@@ -1,13 +1,16 @@
-PYTHON_VER = 3.8
+PYTHON_VER := $(shell python3 -c "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}')")
 IDIR = src/
 TDIR = test/src/
 
-TESTFLAGS = -O1 -fpic -D__DEBUG__ -I$(IDIR)
-AVRFLAGS = -O1 -mmcu=atmega324pb -fshort-enums -I$(IDIR)
+TESTDEFINES = -DTESTUSE=
+TESTFLAGS = -O1 -fpic -D__DEBUG__ $(TESTDEFINES) -I$(IDIR)
+AVRFLAGS = -O1 -mmcu=atmega324pb $(TESTDEFINES) -fshort-enums -I$(IDIR)
+
 
 test: clean
 	cp -R $(IDIR) $(TDIR)
 	python3 testsuite/fileswrapper.py $(TDIR) test/generatedDefinitions
+	@echo "Using Python${PYTHON_VER}"
 	gcc $(TESTFLAGS) -c $(TDIR)USART.c -o bin/USART_.o
 	gcc $(TESTFLAGS) -c $(TDIR)input.c -o bin/input_.o
 	gcc $(TESTFLAGS) -c $(TDIR)nextion.c -o bin/nextion_.o
