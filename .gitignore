@@ -30,6 +30,7 @@ Thumbs.db
 *.o
 *_.c
 obj/
+.vscode/
 [Rr]elease*/
 _ReSharper*/
 [Tt]est[Rr]esult*
