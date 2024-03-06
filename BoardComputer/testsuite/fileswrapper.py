@@ -108,6 +108,7 @@ def elevate_definitions(path: str):
         raise WrongFileExtension
 
     updatedsource = ''
+    header_definitions = ParsedData()
     with open(path, mode='r') as source:
         with open(path.replace('.c', '.h'), mode='a') as header:
             updatedsource = source.read()
@@ -117,14 +118,24 @@ def elevate_definitions(path: str):
                     for definition in definitions:
                         #updatedsource = updatedsource.replace(
                         #    f"TESTUSE {definition}", '')
-                        new_definition = definition.replace("static ", "")
-                        updatedsource = updatedsource.replace(
-                            definition.replace(';', ''),
-                            new_definition.replace(';', ''))
-                        storage_specifier = "extern"
-                        header.write(
-                            f"TESTUSE {storage_specifier} {new_definition}\n"
-                            )
+                        if "static" in definition:
+                            new_definition = definition.replace("static ", "")
+                            updatedsource = updatedsource.replace(
+                                definition.replace(';', ''),
+                                new_definition.replace(';', ''))
+                            header_definitions.__dict__[datatype].append(f"TESTUSE extern {new_definition}\n")
+                        else:
+                            updatedsource = updatedsource.replace(definition,"")
+                            header_definitions.__dict__[datatype].append(f"TESTUSE {definition}\n")
+                        #header.write(
+                        #    f"TESTUSE {new_definition}\n"
+                        #    )
+            header.writelines(header_definitions.unions)
+            header.writelines(header_definitions.structs)
+            header.writelines(header_definitions.enumerations)
+            header.writelines(header_definitions.functiontypedefs)
+            header.writelines(header_definitions.variables)
+            header.writelines(header_definitions.functions)
 
     with open(path, mode='w') as source:
         source.write(updatedsource)

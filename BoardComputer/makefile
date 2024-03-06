@@ -3,7 +3,7 @@ IDIR = src/
 TDIR = test/src/
 
 TESTDEFINES = -DTESTUSE=
-TESTFLAGS = -O1 -fpic -D__DEBUG__ $(TESTDEFINES) -I$(IDIR)
+TESTFLAGS = -O1 -fpic -g -D__DEBUG__ $(TESTDEFINES) -I$(IDIR)
 AVRFLAGS = -O1 -mmcu=atmega324pb $(TESTDEFINES) -fshort-enums -I$(IDIR)
 
 
