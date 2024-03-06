@@ -7,12 +7,21 @@
 	uint8_t SPDR0;
 #endif
 
-TESTUSE static enum SENSORSFEED_EGT_TRANSMISSION_STATUS TESTADDPREFIX(EGT_transmission_status);
+TESTUSE typedef enum TESTADDPREFIX(EGT_TRANSMISSION_STATUS)
+{
+	SENSORSFEED_EGT_TRANSMISSION_READY,
+	SENSORSFEED_EGT_TRANSMISSION_HALF,
+	SENSORSFEED_EGT_TRANSMISSION_FULL
+}TESTADDPREFIX(egt_transmission_status_t);
+
+TESTUSE static egt_transmission_status_t TESTADDPREFIX(EGT_transmission_status);
 static uint16_t max6675_data;
 static uint16_t speed_max;
 
+static PROGRAMDATA_LUT_t ADC_luts[SENSORSFEED_ADC_CHANNELS] = { [0 ... SENSORSFEED_ADC_CHANNELS-1] = PROGRAMDATA_LUT_NTC_2200_INVERTED};
 enum SENSORSFEED_EGT_STATUS SENSORSFEED_EGT_status;
-uint16_t SENSORSFEED_feed[SENSORSFEED_FEED_SIZE];//ADC 0...SENSORSFEED_ADC_CHANNELS
+
+FP16_t SENSORSFEED_feed[SENSORSFEED_FEED_SIZE];
 int16_t SENSORSFEED_speed_ticks_100m = 1;
 int16_t SENSORSFEED_injector_ccm = 1;
 
@@ -46,7 +55,7 @@ TESTUSE static void TESTADDPREFIX(update_speed)()
 }
 
 TESTUSE static void TESTADDPREFIX(update_ADC)()
-{	
+{
 	if(ADCMULTIPLEXER != 0)// Relaunch only at 0
 		return;
 
@@ -74,6 +83,14 @@ TESTUSE static void TESTADDPREFIX(update_EGT)()
 		SPDR0 = 0x0;
 	}
 }
+static void calculate_adc()
+{
+	for(uint8_t i; i < SENSORSFEED_ADC_CHANNELS; i++)
+	{
+		int16_t value = SENSORSFEED_feed[i];
+		SENSORSFEED_feed[i] = PROGRAMDATA_get_lut_value(ADC_luts[i], value);
+	}
+}
 
 static void copy_countersfeed()
 {
@@ -90,6 +107,7 @@ static void copy_countersfeed()
 void SENSORSFEED_update()
 {
 	uint8_t timer = SYSTEM_event_timer;
+	calculate_adc();
 	copy_countersfeed();
 	switch(timer)
 	{

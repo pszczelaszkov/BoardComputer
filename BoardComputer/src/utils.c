@@ -26,9 +26,6 @@
     }
 #endif
 
-const uint8_t FP8_weight = 10000/0xff;
-const uint16_t FP16_weight = SENSORSFEED_HIGH_PRECISION_BASE/0xffff;
-
 /* reverse:  reverse string s in place */
 void reverse(char s[])
 {
@@ -53,7 +50,21 @@ void uitoa(uint16_t n, char s[])
     s[i] = '\0';
     reverse(s);
 }
+/*
+Extracts Integer and Fractional part from 16bit(8+8) fixedpoint variable.
+@param fixedpoint Value for conversion.
+@param integer Ptr to resulting integer
+@param fractional Ptr to resulting fractional part.
+*/
+void extractfp16(int16_t fixedpoint, int8_t* integral, uint16_t* fractional)
+{    
+    const uint8_t ch = 0x27;
+    const uint8_t cl = 0x36;
+    uint8_t fixedpoint_l = fixedpoint & 0xff;
 
+    *integral = fixedpoint >> 8;
+    *fractional = (ch * fixedpoint_l) + ((cl * fixedpoint_l) >> 8);
+}
 /*
 Converts 16bit(8+8) fixedpoint variable to ascii.
 @param fixedpoint Value for conversion.
@@ -62,30 +73,34 @@ Converts 16bit(8+8) fixedpoint variable to ascii.
 @param fractionlength Maximal length of converted fractionpart(Max 4).
 */
 void fp16toa(int16_t fixedpoint, char* dest, uint8_t integrallength, uint8_t fractionlength)
-{
+{    
+    const uint8_t ch = 0x27;
     const uint8_t max_precision = 4;
     const uint8_t fractionstart = integrallength + 1;
+    int8_t integral = 0;
+    int8_t sign = 1;
+	uint16_t fraction = 0;
+    uint8_t fixedpoint_l = 0;
 
-    int8_t integral = fixedpoint >> 8;
-	uint16_t fraction = (fixedpoint & 0xff) * FP8_weight;
-
+    fractionlength = MAX(1,MIN(fractionlength, max_precision));
+    if(fixedpoint < 0)
+    {
+        sign = -1;
+        fixedpoint = (fixedpoint ^ 0xffff) + 1;
+    }
+    fixedpoint_l = fixedpoint & 0xff;
+    integral = fixedpoint >> 8;
+    fraction = (ch * fixedpoint_l) +  (fixedpoint_l >> 4);
+    
+    
     char fractionascii[7];
     memset(fractionascii, '0', max_precision);
 
-    //clamp fractionlength
-    if(!fractionlength)
-    {
-        fractionlength = 1;
-    }
-    else
-    {
-        if(fractionlength > max_precision)
-            fractionlength = max_precision;
-    }
-
 	rightnconcat_short(dest, integral, integrallength, integrallength);
-	dest[integrallength] = '.';
-    
+    dest[integrallength] = '.';
+    if(sign < 0)
+        dest[0] = '-';
+        
     rightconcat_short(fractionascii, fraction, max_precision);
     memcpy(&dest[fractionstart],fractionascii,fractionlength);
 }

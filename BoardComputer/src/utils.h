@@ -10,6 +10,8 @@
 #define __UTILS__
 #define TESTADDPREFIX(...) __VA_ARGS__
 #define TESTSTATICVAR(...) __VA_ARGS__
+#define MIN(i, j) (((i) < (j)) ? (i) : (j))
+#define MAX(i, j) (((i) > (j)) ? (i) : (j))
 #ifdef __AVR__
 #include<stdlib.h>
 #else
@@ -33,9 +35,8 @@
 #include "sensorsfeed.h"
 TESTUSE int16_t UTILS_atoi(char* stringvalue);
 void uitoa(uint16_t n, char s[]);
+void extractfp16(int16_t fixedpoint, int8_t* integral, uint16_t* fractional);
 TESTUSE void fp16toa(int16_t fixedpoint, char* dest, uint8_t integrallength, uint8_t fractionlength);
-extern const uint8_t FP8_weight;
-extern const uint16_t FP16_weight;
 TESTUSE typedef void (*Callback)();
 TESTUSE typedef void (*Callback_32)(uint32_t);
 TESTUSE void rightconcat_short(char* dest, int16_t value, uint8_t spacing);

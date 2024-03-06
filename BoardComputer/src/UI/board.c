@@ -1,45 +1,18 @@
 #include "board.h"
 #include "../sensorsfeed.h"
-#include "../programdata.h"
 #include "timer.h"
 #include "../USART.h"
 #include "../system.h"
 #include "../input.h"
 
-static const int16_t fuelmanifold_threshold = 2 << 8;//2 Bar
-static const char str_mdv[NEXTION_OBJNAME_LEN] = "mdv";
-static const char str_egt[NEXTION_OBJNAME_LEN] = "egt";
-static const char str_wtd[NEXTION_OBJNAME_LEN] = "wtd"; 
-static const char str_wts[NEXTION_OBJNAME_LEN] = "wts";
-static const char str_mds[NEXTION_OBJNAME_LEN] = "mds";
-static const char str_cfg[NEXTION_OBJNAME_LEN] = "cfg";
-static const char str_oil[NEXTION_OBJNAME_LEN] = "oil";
-static const char str_out[NEXTION_OBJNAME_LEN] = "out";
-static const char str_int[NEXTION_OBJNAME_LEN] = "int";
-static const char str_frp[NEXTION_OBJNAME_LEN] = "frp";
-static const char str_map[NEXTION_OBJNAME_LEN] = "map";
-static const char str_fmd[NEXTION_OBJNAME_LEN] = "fmd";
-static const char str_pco[NEXTION_OBJNAME_LEN] = "pco";
-
-static uint8_t critical_raised;
-TESTSTATICVAR(static uint8_t raise_critical);
-
-static void renderer_md_lph();
-static void renderer_md_lp100();
-static void renderer_md_lp100_avg();
-static void renderer_md_speed_avg();
-static void renderer_md_inj_t();
-static void renderer_md_range();
-TESTUSE static void TESTADDPREFIX(update_EGT)();
-
-typedef enum VISUALALERTSEVERITY
+TESTUSE typedef enum VISUALALERTSEVERITY
 {
 	VISUALALERT_SEVERITY_NOTIFICATION,
 	VISUALALERT_SEVERITY_WARNING,
 	VISUALALERT_SEVERITY_BADVALUE
 }Visualalertseverity_t;
 
-typedef enum VISUALALERTID
+TESTUSE typedef enum VISUALALERTID
 {
 	VISUALALERTID_MAINDISPLAY,
 	VISUALALERTID_EGT,
@@ -51,7 +24,7 @@ typedef enum VISUALALERTID
 	VISUALALERTID_LAST
 }Visualalertid_t;
 
-typedef struct Visualalert
+TESTUSE typedef struct Visualalert
 {
 	const char* objname;
 	uint8_t temppattern;
@@ -59,29 +32,49 @@ typedef struct Visualalert
 	uint16_t color;
 }Visualalert;
 
+static const int16_t fuelmanifold_threshold = 2 << 8;//2 Bar
+static const uint16_t MD_MAX_VALUE = 0x63e7;//99.9
+
+static uint8_t critical_raised;
+TESTSTATICVAR(static uint8_t raise_critical);
+
+static void renderer_md_lph();
+static void renderer_md_lp100();
+static void renderer_md_lp100_avg();
+static void renderer_md_speed_avg();
+static void renderer_md_inj_t();
+static void renderer_md_range();
+TESTUSE static Visualalert TESTADDPREFIX(visualalerts)[];
+TESTUSE static void TESTADDPREFIX(update_EGT)();
+TESTUSE static void TESTADDPREFIX(update_watch)();
+TESTUSE static void TESTADDPREFIX(raisevisualalert)(Visualalertid_t alertid, Visualalertseverity_t severity);
+TESTUSE static void TESTADDPREFIX(update_visual_alert)();
+TESTUSE static void TESTADDPREFIX(update_sensorgroup_bottom)();
+TESTUSE static void TESTADDPREFIX(update_sensorgroup_pressure)();
+
 //Object needs to have "pco" variable, as its used to visualize alert.
 static Visualalert visualalerts[] = 
 {
 	[VISUALALERTID_MAINDISPLAY] = {
-		.objname = str_mdv
+		.objname = "mdv"
 	},
 	[VISUALALERTID_EGT] = {
-		.objname = str_egt
+		.objname = "egt"
 	},
 	[VISUALALERTID_MAP] = {
-		.objname = str_map
+		.objname = "map"
 	},
 	[VISUALALERTID_FRP] = {
-		.objname = str_frp
+		.objname = "frp"
 	},
 	[VISUALALERTID_OIL] = {
-		.objname = str_oil
+		.objname = "oil"
 	},
 	[VISUALALERTID_INTAKE] = {
-		.objname = str_int 
+		.objname = "int" 
 	},
 	[VISUALALERTID_OUTSIDE] = {
-		.objname = str_out
+		.objname = "out"
 	}
 };
 
@@ -91,21 +84,21 @@ NEXTION_Component UIBOARD_components[] = {
 		.highlighttype = NEXTION_HIGHLIGHTTYPE_CROPPEDIMAGE,
 		.value_default = 1,
 		.value_selected = 25,
-		.name = str_wtd
+		.name = "wtd"
 	},
 	[UIBOARD_COMPONENT_WATCHSEL]=
 	{
 		.highlighttype = NEXTION_HIGHLIGHTTYPE_IMAGE,
 		.value_default = 2,
 		.value_selected = 17,
-		.name = str_wts
+		.name = "wts"
 	},
 	[UIBOARD_COMPONENT_CONFIG]=
 	{
 		.highlighttype = NEXTION_HIGHLIGHTTYPE_IMAGE,
 		.value_default = 3,
 		.value_selected = 18,
-		.name = str_cfg
+		.name = "cfg"
 	}
 };
 
@@ -119,7 +112,7 @@ UIBOARD_MDComponent UIBOARD_maindisplay_components[] = {
 			{
 				.value_default = 11,
 				.value_selected = 22,
-				.name = str_mds,
+				.name = "mds",
 				.highlighttype = NEXTION_HIGHLIGHTTYPE_IMAGE
 			},
 			.execute = renderer_md_lph,
@@ -134,7 +127,7 @@ UIBOARD_MDComponent UIBOARD_maindisplay_components[] = {
 			{
 				.value_default = 12,
 				.value_selected = 23,
-				.name = str_mds,
+				.name = "mds",
 				.highlighttype = NEXTION_HIGHLIGHTTYPE_IMAGE
 			},
 			.execute = renderer_md_lp100
@@ -149,7 +142,7 @@ UIBOARD_MDComponent UIBOARD_maindisplay_components[] = {
 			{
 				.value_default = 13,
 				.value_selected = 24,
-				.name = str_mds,
+				.name = "mds",
 				.highlighttype = NEXTION_HIGHLIGHTTYPE_IMAGE
 			},
 			.execute = renderer_md_lp100_avg
@@ -164,7 +157,7 @@ UIBOARD_MDComponent UIBOARD_maindisplay_components[] = {
 			{
 				.value_default = 14,
 				.value_selected = 19,
-				.name = str_mds,
+				.name = "mds",
 				.highlighttype = NEXTION_HIGHLIGHTTYPE_IMAGE
 			},
 			.execute = renderer_md_speed_avg
@@ -179,7 +172,7 @@ UIBOARD_MDComponent UIBOARD_maindisplay_components[] = {
 			{
 				.value_default = 15,
 				.value_selected = 20,
-				.name = str_mds,
+				.name = "mds",
 				.highlighttype = NEXTION_HIGHLIGHTTYPE_IMAGE
 			},
 			.execute = renderer_md_inj_t
@@ -194,7 +187,7 @@ UIBOARD_MDComponent UIBOARD_maindisplay_components[] = {
 			{
 				.value_default = 16,
 				.value_selected = 21,
-				.name = str_mds,
+				.name = "mds",
 				.highlighttype = NEXTION_HIGHLIGHTTYPE_IMAGE
 			},
 			.execute = renderer_md_range
@@ -237,116 +230,101 @@ static void raisevisualalert(Visualalertid_t alertid, Visualalertseverity_t seve
 }
 /*Display liters per hour*/
 static void renderer_md_lph()
-{
-	char buffer[] = "mdv.txt=\"  .0\"";
-	if(SENSORSFEED_feed[SENSORSFEED_FEEDID_SPEED])
+{	NEXTION_INSTRUCTION_BUFFER_BLOCK(6)
+	NEXTION_instruction_compose("mdv","txt",instruction);
+	NEXTION_quote_payloadbuffer(payload,payload_length);
+
+	uint16_t speed = SENSORSFEED_feed[SENSORSFEED_FEEDID_SPEED];
+	uint16_t lph = SENSORSFEED_feed[SENSORSFEED_FEEDID_LPH];
+
+	if(speed)
 		UIBOARD_maindisplay_activecomponent = &UIBOARD_maindisplay_components[UIBOARD_MD_LP100];
-		
-	uint8_t liters = SENSORSFEED_feed[SENSORSFEED_FEEDID_LPH] >> 8;
-	uint16_t fraction = (SENSORSFEED_feed[SENSORSFEED_FEEDID_LPH] & 0x00ff)*FP8_weight;
-	if(liters > 99)
-	{
-		liters = 99;
-		fraction = 9999;
-	}
-	rightconcat_short(&buffer[9],liters,2);
-	if(fraction > 999)
-		rightnconcat_short(&buffer[9], fraction, 4, 1);
+
+	lph = MIN(lph,MD_MAX_VALUE);
+	fp16toa(lph,&buffer[9],2,1);
 	NEXTION_send(buffer, USART_HOLD);
 }
 /*Display realtime liters per 100km, if not in motion fallback to liters per hour*/
 static void renderer_md_lp100()
 {	
-	char buffer[] = "mdv.txt=\"  .0\"";
-	uint16_t fraction, lp100;
-	uint8_t liters;
-	if(!SENSORSFEED_feed[SENSORSFEED_FEEDID_SPEED])
+	NEXTION_INSTRUCTION_BUFFER_BLOCK(6)
+	NEXTION_instruction_compose("mdv","txt",instruction);
+	NEXTION_quote_payloadbuffer(payload,payload_length);
+
+	uint16_t lp100 = SENSORSFEED_feed[SENSORSFEED_FEEDID_LP100];
+	uint16_t speed = SENSORSFEED_feed[SENSORSFEED_FEEDID_SPEED];
+
+	if(!speed)
 	{
 		UIBOARD_maindisplay_activecomponent = &UIBOARD_maindisplay_components[UIBOARD_MD_LPH];
 		return;
 	}
-
-	lp100 = SENSORSFEED_feed[SENSORSFEED_FEEDID_LP100];
-	liters = lp100 >> 8;
-	fraction = (lp100 & 0x00ff) * FP8_weight;
-	if(liters > 99)
-	{
-		liters = 99;
-		fraction = 9999;
-	}
-	rightconcat_short(&buffer[9], liters, 2);
-	if(fraction > 999)
-		rightnconcat_short(&buffer[9], fraction, 4, 1);
+	lp100 = MIN(lp100,MD_MAX_VALUE);
+	fp16toa(lp100,&buffer[9],2,1);
 	NEXTION_send(buffer, USART_HOLD);
 }
 /*Display average liters per 100km*/
 static void renderer_md_lp100_avg()
 {
-	char buffer[] = "mdv.txt=\"  .0\"";
+	NEXTION_INSTRUCTION_BUFFER_BLOCK(6)
+	NEXTION_instruction_compose("mdv","txt",instruction);
+	NEXTION_quote_payloadbuffer(payload,payload_length);
 	uint16_t lp100 = SENSORSFEED_feed[SENSORSFEED_FEEDID_LP100_AVG];
-	uint8_t liters = lp100 >> 8;
-	uint16_t fraction = (lp100 & 0x00ff) * FP8_weight;
-	if(liters > 99)
-	{
-		liters = 99;
-		fraction = 9999;
-	}
-	rightconcat_short(&buffer[9], liters ,2);
-	if(fraction > 999)
-		rightnconcat_short(&buffer[9], fraction, 4, 1);
-	NEXTION_send(buffer, USART_HOLD);
-}
-/*Display average speed*/
-static void renderer_md_speed_avg()
-{
-	char buffer[] = "mdv.txt=\"   0\"";
-	uint16_t speed = SENSORSFEED_feed[SENSORSFEED_FEEDID_SPEED_AVG] >> 8;
-	rightconcat_short(&buffer[9], speed, 4);
-	NEXTION_send(buffer, USART_HOLD);
-}
-/*Display current injector open time */
-static void renderer_md_inj_t()
-{
-	char buffer[] = "mdv.txt=\"  .0\"";
-	uint8_t integral;
-	uint16_t fraction;
-	uint16_t fuel_time = SENSORSFEED_feed[SENSORSFEED_FEEDID_INJT];
-	integral = fuel_time >> 8;
-	fraction = (fuel_time & 0xff) * FP8_weight;
-	if(integral > 99)
-	{
-		integral = 99;
-		fraction = 9999;
-	}
-	rightconcat_short(&buffer[9], integral, 2);
-	if(fraction > 999)
-		rightnconcat_short(&buffer[9], fraction, 4, 1);
+
+	lp100 = MIN(lp100,MD_MAX_VALUE);
+	fp16toa(lp100,&buffer[9],2,1);
 	NEXTION_send(buffer, USART_HOLD);
 }
 
+/*Display average speed*/
+static void renderer_md_speed_avg()
+{
+	NEXTION_INSTRUCTION_BUFFER_BLOCK(6)
+	NEXTION_instruction_compose("mdv","txt",instruction);
+	NEXTION_quote_payloadbuffer(payload,payload_length);
+	uint16_t speed = SENSORSFEED_feed[SENSORSFEED_FEEDID_SPEED_AVG] >> 8;
+	rightconcat_short(&payload[1], speed, 4);
+	NEXTION_send(buffer, USART_HOLD);
+}
+
+
+/*Display current injector open time */
+static void renderer_md_inj_t()
+{
+	NEXTION_INSTRUCTION_BUFFER_BLOCK(6)
+	NEXTION_instruction_compose("mdv","txt",instruction);
+	NEXTION_quote_payloadbuffer(payload,payload_length);
+	uint16_t fuel_time = SENSORSFEED_feed[SENSORSFEED_FEEDID_INJT];
+
+	fuel_time = MIN(fuel_time,MD_MAX_VALUE);
+	fp16toa(fuel_time,&buffer[9],2,1);
+	NEXTION_send(buffer, USART_HOLD);
+}
+
+
+
 static void renderer_md_range()
 {
-	char buffer[] = "mdv.txt=\"   0\"";
+	NEXTION_INSTRUCTION_BUFFER_BLOCK(6)
+	NEXTION_instruction_compose("mdv","txt",instruction);
+	NEXTION_quote_payloadbuffer(payload,payload_length);
 	uint8_t tank = SENSORSFEED_feed[SENSORSFEED_FEEDID_TANK];
 	uint8_t lp100 = SENSORSFEED_feed[SENSORSFEED_FEEDID_LP100_AVG] >> 8;
 	uint16_t range = 0;
 
 	if(lp100)
 		range = tank*100/lp100;
-	if(range > 9999)
-	{
-		range = 9999;
-	}
-	rightconcat_short(&buffer[9], range, 4);
+
+	range = MIN(range,9999);
+	rightconcat_short(&payload[1], range, 4);
 	NEXTION_send(buffer, USART_HOLD);
 }
 
 static void update_EGT()
 {
 	NEXTION_INSTRUCTION_BUFFER_BLOCK(6)
+	NEXTION_instruction_compose("egt","txt",instruction);
 	NEXTION_quote_payloadbuffer(payload,payload_length);
-	NEXTION_instruction_compose(str_egt,str_txt,instruction);
-
 	uint8_t alert = 0;
 	switch(SENSORSFEED_EGT_status)
 	{
@@ -372,52 +350,50 @@ static void update_EGT()
 static void update_sensorgroup_bottom()
 {
 	NEXTION_INSTRUCTION_BUFFER_BLOCK(5)
+	NEXTION_instruction_compose("out","txt",instruction);
 	NEXTION_quote_payloadbuffer(payload,payload_length);
 
-	int16_t out_temp = SENSORSFEED_feed[0];
-	int16_t int_temp = SENSORSFEED_feed[0];
-	int16_t oil_temp = SENSORSFEED_feed[0];
+	const uint8_t num_of_digits = 3;
+	int16_t out_temp = SENSORSFEED_feed[SENSORSFEED_FEEDID_OUTTEMP];
+	int16_t int_temp = SENSORSFEED_feed[SENSORSFEED_FEEDID_INTAKETEMP];
+	int16_t oil_temp = SENSORSFEED_feed[SENSORSFEED_FEEDID_OILTEMP];
 
-	NEXTION_instruction_compose(str_out,str_txt,instruction);
 	if(out_temp)
-	{	
-		out_temp = pgm_read_word(&PROGRAMDATA_NTC_2200_INVERTED[out_temp]);
-		rightconcat_short(&payload[1],out_temp,3);
+	{
+		rightconcat_short(&payload[1],out_temp, num_of_digits);
 	}
 	else
 	{
 		raisevisualalert(VISUALALERTID_OUTSIDE,VISUALALERT_SEVERITY_BADVALUE);
-		memset(&payload[1], '-', 3);
+		memset(&payload[1], '-', num_of_digits);
 		raise_critical = 1;
 	}
 	NEXTION_send(buffer,USART_HOLD);
-	memset(&payload[1],' ',payload_length-2);
+	memset(&payload[1],' ',num_of_digits);
 
-	NEXTION_instruction_compose(str_int,str_txt,instruction);
+	memcpy(buffer,"int",3);
 	if(int_temp)
 	{
-		int_temp = pgm_read_word(&PROGRAMDATA_NTC_2200_INVERTED[int_temp]);
-		rightconcat_short(&payload[1],int_temp,3);
+		rightconcat_short(&payload[1],int_temp,num_of_digits);
 	}
 	else
 	{
 		raisevisualalert(VISUALALERTID_INTAKE,VISUALALERT_SEVERITY_BADVALUE);
-		memset(&payload[1], '-', 3);
+		memset(&payload[1], '-', num_of_digits);
 		raise_critical = 1;
 	}
 	NEXTION_send(buffer,USART_HOLD);
-	memset(&payload[1],' ',payload_length-2);
+	memset(&payload[1],' ', num_of_digits);
 
-	NEXTION_instruction_compose(str_oil,str_txt,instruction);
+	memcpy(buffer,"oil", 3);
 	if(oil_temp)
 	{
-		oil_temp = pgm_read_word(&PROGRAMDATA_NTC_2200_INVERTED[oil_temp]);
-		rightconcat_short(&payload[1],oil_temp,3);
+		rightconcat_short(&payload[1],oil_temp, num_of_digits);
 	}
 	else
 	{
 		raisevisualalert(VISUALALERTID_OIL,VISUALALERT_SEVERITY_BADVALUE);
-		memset(&payload[1], '-', 3);
+		memset(&payload[1], '-', num_of_digits);
 		raise_critical = 1;
 	}
 	NEXTION_send(buffer,USART_HOLD);
@@ -426,15 +402,14 @@ static void update_sensorgroup_bottom()
 static void update_sensorgroup_pressure()
 {
 	NEXTION_INSTRUCTION_BUFFER_BLOCK(7)
+	NEXTION_instruction_compose("map","txt",instruction);
 	NEXTION_quote_payloadbuffer(payload,payload_length);
 
-	int16_t manifoldpressure = SENSORSFEED_feed[0];
-	int16_t fuelrailpressure = SENSORSFEED_feed[0];
+	int16_t manifoldpressure = SENSORSFEED_feed[SENSORSFEED_FEEDID_MAP];
+	int16_t fuelrailpressure = SENSORSFEED_feed[SENSORSFEED_FEEDID_FRP];
 
-	NEXTION_instruction_compose(str_map,str_txt,instruction);
 	if(manifoldpressure)
 	{
-		manifoldpressure = pgm_read_word(&PROGRAMDATA_NTC_2200_INVERTED[manifoldpressure]);
 		fp16toa(manifoldpressure,&payload[1],2,2);
 	}
 	else
@@ -445,11 +420,10 @@ static void update_sensorgroup_pressure()
 	}
 	NEXTION_send(buffer,USART_HOLD);
 	memset(&payload[1],' ',payload_length-2);
+	memcpy(buffer,"frp",3);
 	///
-	NEXTION_instruction_compose(str_frp,str_txt,instruction);
 	if(fuelrailpressure)
 	{
-		fuelrailpressure = pgm_read_word(&PROGRAMDATA_NTC_2200_INVERTED[fuelrailpressure]);
 		fp16toa(fuelrailpressure,&payload[1],2,2);
 	}
 	else
@@ -460,23 +434,15 @@ static void update_sensorgroup_pressure()
 	}
 	NEXTION_send(buffer,USART_HOLD);
 	memset(payload,' ',payload_length);
+	NEXTION_instruction_compose("fmd","var",instruction);
 	///
-	NEXTION_instruction_compose(str_fmd,str_val,instruction);
-	int16_t deltapressure = fuelrailpressure - manifoldpressure - fuelmanifold_threshold;
-	if(deltapressure < 0)
-	{
-		deltapressure = 0;
-	}
-	else
-	{
-		if(deltapressure > 1 << 8)
-			deltapressure = 0xff;
-	}
+	int16_t deltapressure = MIN(MAX(0, fuelrailpressure - manifoldpressure - fuelmanifold_threshold),0x100);
 	//Delta has resolution of 1Bar, only fraction part is used
 	//Multiply by 100 to shift 2 fraction positions into integer part
 	//Then unpack value with a 8 times shift
 	deltapressure = deltapressure * 100 >> 8;
-	itoa(deltapressure, payload, 10);
+	itoa(deltapressure, payload, 10);+
+	
 	NEXTION_send(buffer,USART_HOLD);
 }
 
@@ -498,10 +464,9 @@ static void update_visual_alert()
 			alert->temppattern >>= 1;
 			if(patternmatch)
 			{
-				if(alert->temppattern || alert->pattern)
 					color = alert->color;
 			}
-			NEXTION_instruction_compose(alert->objname,str_pco,instruction);
+			NEXTION_instruction_compose(alert->objname,"pco",instruction);
 			uitoa(color,payload);
 			NEXTION_send(buffer,USART_HOLD);
 		}
@@ -510,14 +475,13 @@ static void update_visual_alert()
 
 static void update_watch()
 {
-	const char WATCHTEMPLATE[]  = "wtd.txt=\"        \"";
-	char buffer[sizeof(WATCHTEMPLATE)];
-	strcpy(buffer,WATCHTEMPLATE);
-	
+	NEXTION_INSTRUCTION_BUFFER_BLOCK(10)
+	NEXTION_instruction_compose("wtd","txt",instruction);
+	NEXTION_quote_payloadbuffer(payload,payload_length);
 	if(TIMER_active_timertype == TIMER_TIMERTYPE_WATCH)
-		memcpy(&buffer[11],TIMER_formated,5);
+		memcpy(&payload[3],TIMER_formated,5);
 	else
-		memcpy(&buffer[9],&TIMER_formated[3],8);
+		memcpy(&payload[1],&TIMER_formated[3],8);
 
 	NEXTION_send(buffer,USART_HOLD);
 }

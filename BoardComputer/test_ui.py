@@ -1,5 +1,5 @@
 import pytest
-from helpers import load, ModuleWrapper
+from helpers import load, ModuleWrapper, read_nextion_output, fptofloat, floattofp
 
 m, ffi = load("testmodule")
 session = ModuleWrapper(m)
@@ -239,16 +239,153 @@ class TestBoardUI:
         for i in range(int(100 / STEP)):
             m.USART_TX_clear()
             m.UIBOARDCONFIG_modify_dbs()
-        assert ffi.unpack(m.USART_TX_buffer, 7) == f"dim={100}".encode("utf-8")
+        assert read_nextion_output(m, ffi)["dim"] == "100"
 
         for i in range(8):
             m.USART_TX_clear()
             m.UIBOARDCONFIG_modify_dbs()
-        assert ffi.unpack(m.USART_TX_buffer, 7) == f"dim={100}".encode("utf-8")
+        assert not read_nextion_output(m, ffi)
 
-        m.USART_TX_clear()
         m.UIBOARDCONFIG_modify_dbs()
-        assert ffi.unpack(m.USART_TX_buffer, 5) == f"dim={0}".encode("utf-8")
+        assert read_nextion_output(m, ffi)["dim"] == "0"
+
+    @pytest.mark.parametrize(
+        "oiltemp,intaketemp,outtemp",
+        [
+            (0, 0, 0),
+            (0, 0, 10),
+            (1, 0, 100),
+            (0, 10, 0),
+            (0, 10, 10),
+            (0, 10, 100),
+            (0, 100, 0),
+            (0, 100, 10),
+            (0, 100, 100),
+            (10, 0, 0),
+            (10, 0, 10),
+            (10, 0, 100),
+            (10, 10, 0),
+            (10, 10, 10),
+            (10, 10, 100),
+            (10, 100, 0),
+            (10, 100, 1),
+            (10, 100, 100),
+            (100, 0, 0),
+            (100, 0, 10),
+            (100, 0, 100),
+            (100, 10, 0),
+            (100, 1, 10),
+            (100, 10, 100),
+            (100, 100, 0),
+            (100, 100, 10),
+            (100, 100, 100),
+        ],
+    )
+    def test_uiboard_sensorgroup_bottom(self, oiltemp, intaketemp, outtemp):
+        m.SENSORSFEED_feed[m.SENSORSFEED_FEEDID_OILTEMP] = oiltemp
+        m.SENSORSFEED_feed[m.SENSORSFEED_FEEDID_INTAKETEMP] = intaketemp
+        m.SENSORSFEED_feed[m.SENSORSFEED_FEEDID_OUTTEMP] = outtemp
+
+        m.UIBOARD_update_sensorgroup_bottom()
+        output = read_nextion_output(m, ffi)
+        assert output["out.txt"] == (
+            f'"{str(outtemp).rjust(3)}"' if outtemp else '"---"'
+        )
+        assert output["int.txt"] == (
+            f'"{str(intaketemp).rjust(3)}"' if intaketemp else '"---"'
+        )
+        assert output["oil.txt"] == (
+            f'"{str(oiltemp).rjust(3)}"' if oiltemp else '"---"'
+        )
+
+    @pytest.mark.parametrize(
+        "map, frp",
+        [
+            (0, 0),
+            (0, floattofp(2.5, 8)),
+            (floattofp(2.5, 8), 0),
+            (floattofp(2, 8), 0),
+            (0, floattofp(2, 8)),
+            (0, floattofp(2.999, 8)),
+            (floattofp(2.999, 8), 0),
+            (0, floattofp(99, 8)),
+            (floattofp(-0.5, 8), 0),
+        ],
+    )
+    def test_uiboard_sensorgroup_pressure(self, map, frp):
+        threshold = 2 << 8
+        m.SENSORSFEED_feed[m.SENSORSFEED_FEEDID_MAP] = map
+        m.SENSORSFEED_feed[m.SENSORSFEED_FEEDID_FRP] = frp
+        deltapressure = min(max(0, frp - map - threshold), 0x100)
+
+        m.UIBOARD_update_sensorgroup_pressure()
+        output = read_nextion_output(m, ffi)
+        assert output["map.txt"] == (
+            f'"{f"{fptofloat(map,8):.2f}".rjust(5)}"' if map else '"-----"'
+        )
+        assert output["frp.txt"] == (
+            f'"{f"{fptofloat(frp,8):.2f}".rjust(5)}"' if frp else '"-----"'
+        )
+        print(deltapressure)
+        print(deltapressure * 100 >> 8)
+        assert int(output["fmd.var"]) == deltapressure * 100 >> 8
+
+    @pytest.mark.parametrize(
+        "watchtype,expectedstring",
+        [
+            (m.TIMER_TIMERTYPE_WATCH, "  12:34 "),
+            (m.TIMER_TIMERTYPE_STOPWATCH, "34:56:78"),
+        ],
+    )
+    def test_uiboard_watch(self, watchtype, expectedstring):
+        fullwatchstring = b"12:34:56:78"
+        m.TIMER_set_watch(watchtype)
+        m.TIMER_formated = fullwatchstring
+        m.UIBOARD_update_watch()
+        assert read_nextion_output(m, ffi)["wtd.txt"] == f'"{expectedstring}"'
+
+    @pytest.mark.parametrize(
+        "alert_severity,pattern,color",
+        [
+            (m.VISUALALERT_SEVERITY_NOTIFICATION, 0xCC, m.BRIGHTBLUE),
+            (m.VISUALALERT_SEVERITY_BADVALUE, 0xFF, m.CRIMSONRED),
+            (m.VISUALALERT_SEVERITY_WARNING, 0xAA, m.SAFETYYELLOW),
+        ],
+    )
+    def test_uiboard_visualalert_raise_and_decay_all(
+        self, alert_severity, pattern, color
+    ):
+        for i in range(m.VISUALALERTID_LAST):
+            m.UIBOARD_raisevisualalert(i, alert_severity)
+        for i in range(m.VISUALALERTID_LAST):
+            assert m.UIBOARD_visualalerts[i].color == color
+            assert m.UIBOARD_visualalerts[i].pattern == pattern
+        for _ in range(8):
+            m.UIBOARD_update_visual_alert()
+
+        assert not m.UIBOARD_visualalerts[i].pattern
+
+    @pytest.mark.parametrize(
+        "alert_severity,expected_pattern",
+        [
+            (m.VISUALALERT_SEVERITY_NOTIFICATION, 0xCC),
+            (m.VISUALALERT_SEVERITY_BADVALUE, 0xFF),
+            (m.VISUALALERT_SEVERITY_WARNING, 0xAA),
+        ],
+    )
+    def test_uiboard_visualalert_patternshift_single(
+        self, alert_severity, expected_pattern
+    ):
+        m.UIBOARD_raisevisualalert(0, alert_severity)
+        result_pattern = 0
+        for i in range(8):
+            m.UIBOARD_update_visual_alert()
+            value = int(read_nextion_output(m, ffi).popitem()[1])
+
+            if value != m.DEFAULTCOLOR:
+                result_pattern = result_pattern | (1 << i)
+
+        assert result_pattern == expected_pattern
 
 
 class TestNumpadUI:
