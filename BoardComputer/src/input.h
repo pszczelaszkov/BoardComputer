@@ -8,72 +8,19 @@
 #ifndef __INPUT__
 #define __INPUT__
 
-#include "timer.h"
 #include "nextion.h"
-
-/*
-With short enums option(byte enum) it should represent address of input component.
-Page&Component(4+4) ID's, which gives capacity of 16 pages with 16 input components.
-Keep in sorted ascending condition, important for further search algorithm.
-*/  
+#include "system.h"
 /*
 Workaround clean definition for testuse
 TESTUSE typedef enum INPUT_COMPONENTID
 {
 	INPUT_COMPONENT_NONE,
-	INPUT_COMPONENT_MAINDISPLAY,
-	INPUT_COMPONENT_WATCH,
-	INPUT_COMPONENT_WATCHSEL,
-	INPUT_COMPONENT_CONFIG,
-	INPUT_COMPONENT_CONFIGWHH,
-	INPUT_COMPONENT_CONFIGWMM,
-	INPUT_COMPONENT_CONFIGWSS,
-	INPUT_COMPONENT_CONFIGIPM,
-	INPUT_COMPONENT_CONFIGCCM,
-	INPUT_COMPONENT_CONFIGDBS,
-	INPUT_COMPONENT_CONFIGBCK,
-	INPUT_COMPONENT_NUMPAD1,
-	INPUT_COMPONENT_NUMPAD2,
-	INPUT_COMPONENT_NUMPAD3,
-	INPUT_COMPONENT_NUMPAD4,
-	INPUT_COMPONENT_NUMPAD5,
-	INPUT_COMPONENT_NUMPAD6,
-	INPUT_COMPONENT_NUMPAD7,
-	INPUT_COMPONENT_NUMPAD8,
-	INPUT_COMPONENT_NUMPAD9,
-	INPUT_COMPONENT_NUMPAD0,
-	INPUT_COMPONENT_NUMPADMINUS,
-	INPUT_COMPONENT_NUMPADDEL,
-	INPUT_COMPONENT_NUMPADSEND
 }INPUT_ComponentID_t;
 */
+
 typedef enum INPUT_COMPONENTID
 {
 	INPUT_COMPONENT_NONE = 0,
-	INPUT_COMPONENT_MAINDISPLAY = 1 | (NEXTION_PAGEID_BOARD << 4),
-	INPUT_COMPONENT_WATCH = 4 | (NEXTION_PAGEID_BOARD << 4),
-	INPUT_COMPONENT_WATCHSEL = 5 | (NEXTION_PAGEID_BOARD << 4),
-	INPUT_COMPONENT_CONFIG = 6 | (NEXTION_PAGEID_BOARD << 4),
-	INPUT_COMPONENT_CONFIGWHH = 1 | (NEXTION_PAGEID_BOARDCONFIG << 4),
-	INPUT_COMPONENT_CONFIGWMM = 2 | (NEXTION_PAGEID_BOARDCONFIG << 4),
-	INPUT_COMPONENT_CONFIGWSS = 3 | (NEXTION_PAGEID_BOARDCONFIG << 4),
-	INPUT_COMPONENT_CONFIGIPM = 4 | (NEXTION_PAGEID_BOARDCONFIG << 4),
-	INPUT_COMPONENT_CONFIGCCM = 5 | (NEXTION_PAGEID_BOARDCONFIG << 4),
-	INPUT_COMPONENT_CONFIGDBS = 6 | (NEXTION_PAGEID_BOARDCONFIG << 4),
-	INPUT_COMPONENT_CONFIGBCK = 7 | (NEXTION_PAGEID_BOARDCONFIG << 4),
-	INPUT_COMPONENT_NUMPAD1 = 1 | (NEXTION_PAGEID_NUMPAD << 4),
-	INPUT_COMPONENT_NUMPAD2 = 2 | (NEXTION_PAGEID_NUMPAD << 4),
-	INPUT_COMPONENT_NUMPAD3 = 3 | (NEXTION_PAGEID_NUMPAD << 4),
-	INPUT_COMPONENT_NUMPAD4 = 4 | (NEXTION_PAGEID_NUMPAD << 4),
-	INPUT_COMPONENT_NUMPAD5 = 5 | (NEXTION_PAGEID_NUMPAD << 4),
-	INPUT_COMPONENT_NUMPAD6 = 6 | (NEXTION_PAGEID_NUMPAD << 4),
-	INPUT_COMPONENT_NUMPAD7 = 7 | (NEXTION_PAGEID_NUMPAD << 4),
-	INPUT_COMPONENT_NUMPAD8 = 8 | (NEXTION_PAGEID_NUMPAD << 4),
-	INPUT_COMPONENT_NUMPAD9 = 9 | (NEXTION_PAGEID_NUMPAD << 4),
-	INPUT_COMPONENT_NUMPAD0 = 10 | (NEXTION_PAGEID_NUMPAD << 4),
-	INPUT_COMPONENT_NUMPADMINUS = 11 | (NEXTION_PAGEID_NUMPAD << 4),
-	INPUT_COMPONENT_NUMPADDEL = 12 | (NEXTION_PAGEID_NUMPAD << 4),
-	INPUT_COMPONENT_NUMPADSEND = 14 | (NEXTION_PAGEID_NUMPAD << 4)
 }INPUT_ComponentID_t;
 
 TESTUSE typedef enum INPUT_KEYSTATUS
@@ -100,20 +47,31 @@ TESTUSE typedef struct INPUT_Component
 	Callback on_hold;
 	NEXTION_Component* nextion_component;
 }INPUT_Component;
+struct INPUT_Event;
+typedef void (*INPUT_Userinput_Handler)(struct INPUT_Event*);
+typedef struct INPUT_Event{
+	INPUT_ComponentID_t componentID;
+	INPUT_Key_t key;
+	INPUT_Keystatus_t keystatus;
+	SYSTEM_cycle_timestamp_t timestamp;
+	/*Next handler can be specified to create chain*/
+	INPUT_Userinput_Handler next_handler;
+}INPUT_Event;
+
+
 
 static const uint8_t components_count;
 static uint8_t pending_componentID;
 extern uint8_t INPUT_active_page;
+extern INPUT_Userinput_Handler INPUT_userinput_handler;
 TESTUSE extern INPUT_Keystatus_t INPUT_keystatus[];
 extern INPUT_Component INPUT_components[];
 TESTUSE extern INPUT_Component* INPUT_active_component;
 
 void INPUT_switch_maindisplay();
 TESTUSE void INPUT_userinput(INPUT_Keystatus_t keystatus, INPUT_Key_t key, INPUT_ComponentID_t componentID);
-TESTUSE INPUT_Component* INPUT_findcomponent(uint8_t componentID);
 TESTUSE void INPUT_update();
 void INPUT_initialize();
-INPUT_Component* getnextcomponent();
 ISR(INT0_vect);
 ISR(INT1_vect);
 #endif

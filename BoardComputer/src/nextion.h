@@ -41,13 +41,11 @@ TESTUSE typedef enum NEXTION_PAGEID
 	NEXTION_PAGEID_BOARDCONFIG = 2,
 	NEXTION_PAGEID_NUMPAD = 3
 }NEXTION_PageID_t;
-TESTUSE typedef enum NEXTION_COMPONENTSTATUS
+TESTUSE typedef enum NEXTION_COMPONENTSELECTSTATUS
 {
-	NEXTION_COMPONENTSTATUS_DEFAULT,
-	NEXTION_COMPONENTSTATUS_SELECTED,
-	NEXTION_COMPONENTSTATUS_WARNING
-	
-}NEXTION_Componentstatus_t;
+	NEXTION_COMPONENTSELECTSTATUS_DEFAULT,
+	NEXTION_COMPONENTSELECTSTATUS_SELECTED,
+}NEXTION_Component_select_status_t;
 
 TESTUSE typedef enum NEXTION_HIGHLIGHTTYPE
 {
@@ -93,9 +91,10 @@ inline void NEXTION_quote_payloadbuffer(char* payload,uint8_t payload_length)
 }
 
 TESTUSE void NEXTION_set_brightness(uint8_t brightness);
-TESTUSE void NEXTION_set_componentstatus(NEXTION_Component* component, NEXTION_Componentstatus_t status);
+TESTUSE void NEXTION_set_component_select_status(NEXTION_Component* component, NEXTION_Component_select_status_t status);
 void NEXTION_request_brightness();
 void NEXTION_set_previous_page();
+void NEXTION_clear_active_component();
 void NEXTION_reset();
 void NEXTION_instruction_compose(const char* objname, const char* varname, char* instruction);
 

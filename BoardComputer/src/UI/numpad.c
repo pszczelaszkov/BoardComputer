@@ -1,123 +1,32 @@
 #include "numpad.h"
 #include "../nextion.h"
 #include "../USART.h"
-#include "../input.h"
+
+typedef enum INPUTCOMPONENTID
+{
+	INPUTCOMPONENT_NONE = 0,
+	INPUTCOMPONENT_NUMPAD1 = 1,
+	INPUTCOMPONENT_NUMPAD2 = 2,
+	INPUTCOMPONENT_NUMPAD3 = 3,
+	INPUTCOMPONENT_NUMPAD4 = 4,
+	INPUTCOMPONENT_NUMPAD5 = 5,
+	INPUTCOMPONENT_NUMPAD6 = 6,
+	INPUTCOMPONENT_NUMPAD7 = 7,
+	INPUTCOMPONENT_NUMPAD8 = 8,
+	INPUTCOMPONENT_NUMPAD9 = 9,
+	INPUTCOMPONENT_NUMPAD0 = 10,
+	INPUTCOMPONENT_NUMPADMINUS = 11,
+	INPUTCOMPONENT_NUMPADDEL = 12,
+	INPUTCOMPONENT_NUMPADSEND = 14,
+    INPUTCOMPONENT_LAST = 15,
+}InputComponentID_t;
 
 static const uint8_t max_length = DISPLAYLENGTH;
 static const uint8_t cursor = DISPLAYLENGTH - 1;
 
-static const char str_b00[NEXTION_OBJNAME_LEN] = "b00";
-static const char str_b01[NEXTION_OBJNAME_LEN] = "b01";
-static const char str_b02[NEXTION_OBJNAME_LEN] = "b02";
-static const char str_b03[NEXTION_OBJNAME_LEN] = "b03";
-static const char str_b04[NEXTION_OBJNAME_LEN] = "b04";
-static const char str_b05[NEXTION_OBJNAME_LEN] = "b05";
-static const char str_b06[NEXTION_OBJNAME_LEN] = "b06";
-static const char str_b07[NEXTION_OBJNAME_LEN] = "b07";
-static const char str_b08[NEXTION_OBJNAME_LEN] = "b08";
-static const char str_b09[NEXTION_OBJNAME_LEN] = "b09";
-static const char str_snd[NEXTION_OBJNAME_LEN] = "snd";
-static const char str_mns[NEXTION_OBJNAME_LEN] = "mns";
-static const char str_del[NEXTION_OBJNAME_LEN] = "del";
-
 static char stringvalue[DISPLAYLENGTH+1];
 static uint8_t current_length;
-static uint16_t* target_ptr;
-
-NEXTION_Component UINUMPAD_components[] = 
-{
-    [UINUMPAD_COMPONENT_B0] = 
-    {
-        .highlighttype = NEXTION_HIGHLIGHTTYPE_BACKCOLOR,
-		.value_default = PASTELORANGE,
-		.value_selected = BRIGHTBLUE,
-		.name = str_b00
-    },
-    [UINUMPAD_COMPONENT_B1] = 
-    {
-        .highlighttype = NEXTION_HIGHLIGHTTYPE_BACKCOLOR,
-		.value_default = PASTELORANGE,
-		.value_selected = BRIGHTBLUE,
-		.name = str_b01
-    },
-    [UINUMPAD_COMPONENT_B2] = 
-    {
-        .highlighttype = NEXTION_HIGHLIGHTTYPE_BACKCOLOR,
-		.value_default = PASTELORANGE,
-		.value_selected = BRIGHTBLUE,
-		.name = str_b02
-    },
-    [UINUMPAD_COMPONENT_B3] = 
-    {
-        .highlighttype = NEXTION_HIGHLIGHTTYPE_BACKCOLOR,
-		.value_default = PASTELORANGE,
-		.value_selected = BRIGHTBLUE,
-		.name = str_b03
-    },
-    [UINUMPAD_COMPONENT_B4] = 
-    {
-        .highlighttype = NEXTION_HIGHLIGHTTYPE_BACKCOLOR,
-		.value_default = PASTELORANGE,
-		.value_selected = BRIGHTBLUE,
-		.name = str_b04
-    },
-    [UINUMPAD_COMPONENT_B5] = 
-    {
-        .highlighttype = NEXTION_HIGHLIGHTTYPE_BACKCOLOR,
-		.value_default = PASTELORANGE,
-		.value_selected = BRIGHTBLUE,
-		.name = str_b05
-    },
-    [UINUMPAD_COMPONENT_B6] = 
-    {
-        .highlighttype = NEXTION_HIGHLIGHTTYPE_BACKCOLOR,
-		.value_default = PASTELORANGE,
-		.value_selected = BRIGHTBLUE,
-		.name = str_b06
-    },
-    [UINUMPAD_COMPONENT_B7] = 
-    {
-        .highlighttype = NEXTION_HIGHLIGHTTYPE_BACKCOLOR,
-		.value_default = PASTELORANGE,
-		.value_selected = BRIGHTBLUE,
-		.name = str_b07
-    },
-    [UINUMPAD_COMPONENT_B8] = 
-    {
-        .highlighttype = NEXTION_HIGHLIGHTTYPE_BACKCOLOR,
-		.value_default = PASTELORANGE,
-		.value_selected = BRIGHTBLUE,
-		.name = str_b08
-    },
-    [UINUMPAD_COMPONENT_B9] = 
-    {
-        .highlighttype = NEXTION_HIGHLIGHTTYPE_BACKCOLOR,
-		.value_default = PASTELORANGE,
-		.value_selected = BRIGHTBLUE,
-		.name = str_b09
-    },
-    [UINUMPAD_COMPONENT_MINUS] = 
-    {
-        .highlighttype = NEXTION_HIGHLIGHTTYPE_BACKCOLOR,
-		.value_default = PASTELORANGE,
-		.value_selected = BRIGHTBLUE,
-		.name = str_mns
-    },
-    [UINUMPAD_COMPONENT_DEL] = 
-    {
-        .highlighttype = NEXTION_HIGHLIGHTTYPE_BACKCOLOR,
-		.value_default = PASTELORANGE,
-		.value_selected = BRIGHTBLUE,
-		.name = str_del
-    },
-    [UINUMPAD_COMPONENT_SEND] = 
-    {
-        .highlighttype = NEXTION_HIGHLIGHTTYPE_BACKCOLOR,
-		.value_default = PASTELORANGE,
-		.value_selected = BRIGHTBLUE,
-		.name = str_snd
-    }
-};
+static uint16_t* returnvalue_ptr;
 
 void append(const char character)
 {
@@ -151,91 +60,106 @@ void toggle_sign()
             stringvalue[0] = ' ';
     }    
 }
-void UINUMPAD_click_b0()
-{
-    if(current_length > 0)
-        append('0');
-}
-void UINUMPAD_click_b1()
-{
-    append('1');
-}
-void UINUMPAD_click_b2()
-{
-    append('2');
-}
-void UINUMPAD_click_b3()
-{
-    append('3');
-}
-void UINUMPAD_click_b4()
-{
-    append('4');
-}
-void UINUMPAD_click_b5()
-{
-    append('5');
-}
-void UINUMPAD_click_b6()
-{
-    append('6');
-}
-void UINUMPAD_click_b7()
-{
-    append('7');
-}
-void UINUMPAD_click_b8()
-{
-    append('8');
-}
-void UINUMPAD_click_b9()
-{
-    append('9');
-}
-void UINUMPAD_click_del()
-{
-    delete();
-}
-void UINUMPAD_click_mns()
-{
-    toggle_sign();
-}
 
-void UINUMPAD_click_snd()
+void send()
 {
     if(current_length > 0)
-        *target_ptr = UTILS_atoi(stringvalue);
+        *returnvalue_ptr = UTILS_atoi(stringvalue);
     NEXTION_set_previous_page();
 }
 
 /*The only safe way to trigger numpad*/
-void UINUMPAD_switch(int16_t* target)
+void UINUMPAD_switch(int16_t* returnvalue)
 {
-    target_ptr = target;
-    if(target_ptr)
+    returnvalue_ptr = returnvalue;
+    if(returnvalue_ptr)
         NEXTION_switch_page(NEXTION_PAGEID_NUMPAD, 1);
+}
+
+void UINUMPAD_handle_userinput(INPUT_Event* input_event)
+{
+    static uint8_t input_order_it = 0;
+    static NEXTION_Component generic_button_component = 
+    {
+        .highlighttype = NEXTION_HIGHLIGHTTYPE_BACKCOLOR,
+		.value_default = PASTELORANGE,
+		.value_selected = BRIGHTBLUE,
+    };//Placeholder for highlighting on nextion side.
+    char* name[NEXTION_OBJNAME_LEN+1];
+
+    if(input_event->keystatus == INPUT_KEYSTATUS_CLICK)
+    {
+        if(input_event->key == INPUT_KEY_ENTER)
+        {
+            InputComponentID_t componentID = input_event->componentID;
+            if(INPUTCOMPONENT_NONE == componentID)
+            {
+                componentID = (InputComponentID_t)input_order_it;
+            }
+
+            switch(componentID)
+            {
+                case INPUTCOMPONENT_NUMPADSEND:
+                    send();
+                break;
+                case INPUTCOMPONENT_NUMPADDEL:
+                    delete();
+                    *name = "del";
+                break;
+                case INPUTCOMPONENT_NUMPADMINUS:
+                    toggle_sign();
+                    *name = "mns";
+                break;
+                default:
+                    if(INPUTCOMPONENT_NONE < componentID && INPUTCOMPONENT_NUMPAD0 > componentID || (INPUTCOMPONENT_NUMPAD0 == componentID && current_length > 0))
+                    {
+                        uint8_t digit = (INPUTCOMPONENT_NUMPAD0 == componentID)? 0 : (uint8_t)componentID;
+                        //Contraption to build "b0n" string, where n is button number
+                        *name = "b0 ";
+                        digit = '0' + digit;
+                        (*name)[2] = digit;
+                        append(digit);
+                    } 
+            }
+        }
+        else if(input_event->key == INPUT_KEY_DOWN)
+        {
+            input_order_it++;
+            if(INPUTCOMPONENT_LAST == input_order_it)
+            {
+                input_order_it = 0;
+            }
+        }
+        /*
+        For optimization purpose there's only one component in numpad
+        if previous one is active it will have the same ptr.
+        Manual clear is needed to ensure new component will be accepted. 
+        */
+        NEXTION_clear_active_component();
+        generic_button_component.name = *name;
+        NEXTION_set_component_select_status(&generic_button_component, NEXTION_COMPONENTSELECTSTATUS_SELECTED);
+    }
 }
 
 void UINUMPAD_setup()
 {
     char buffer[7];
     uint8_t buffer_length;
-    int16_t target_value = *target_ptr;
-    uint16_t target_absvalue = (target_value > 0 ? target_value:target_value*-1);
+    int16_t returnvalue_value = *returnvalue_ptr;
+    uint16_t returnvalue_absvalue = (returnvalue_value > 0 ? returnvalue_value:returnvalue_value*-1);
 
-    itoa(target_absvalue,buffer,10);
+    itoa(returnvalue_absvalue,buffer,10);
     buffer_length = strlen(buffer);
-    if(target_absvalue)
+    if(returnvalue_absvalue)
         current_length = buffer_length;
     else
         current_length = 0;
     
     memset(stringvalue,' ',max_length);
     memcpy(&stringvalue[max_length-buffer_length],buffer,buffer_length);
-    if(target_value < 0)
+    if(returnvalue_value < 0)
         toggle_sign();
 
-    INPUT_active_component = INPUT_findcomponent(INPUT_COMPONENT_NUMPADSEND);
 }
 
 void UINUMPAD_update()

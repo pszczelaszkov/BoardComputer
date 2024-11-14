@@ -120,7 +120,7 @@ class TestPreRun:
     def test_nextion_selection(self):
         selectionvalue = 100
         objname_length = m.NEXTION_OBJNAME_LEN
-        status_selected = m.NEXTION_COMPONENTSTATUS_SELECTED
+        status_selected = m.NEXTION_COMPONENTSELECTSTATUS_SELECTED
 
         name = ffi.new("const char[" + str(objname_length) + "]", b"tst")
         component = ffi.new("NEXTION_Component*")
@@ -128,7 +128,7 @@ class TestPreRun:
         component.name = name
         component.highlighttype = m.NEXTION_HIGHLIGHTTYPE_IMAGE
         component = ffi.cast("void*", component)
-        m.NEXTION_set_componentstatus(component, status_selected)
+        m.NEXTION_set_component_select_status(component, status_selected)
         m.USART_flush()
 
         parse_nextion(m, read_usart(m), nextion_data)
@@ -137,7 +137,7 @@ class TestPreRun:
     def test_nextion_selection_decay(self):
         defaultvalue = 50
         objname_length = m.NEXTION_OBJNAME_LEN
-        status_selected = m.NEXTION_COMPONENTSTATUS_SELECTED
+        status_selected = m.NEXTION_COMPONENTSELECTSTATUS_SELECTED
         decay_ticks = m.NEXTION_SELECT_DECAY_TICKS
 
         name = ffi.new("const char[" + str(objname_length) + "]", b"tst")
@@ -146,7 +146,7 @@ class TestPreRun:
         component.name = name
         component.highlighttype = m.NEXTION_HIGHLIGHTTYPE_IMAGE
         component = ffi.cast("void*", component)
-        m.NEXTION_set_componentstatus(component, status_selected)
+        m.NEXTION_set_component_select_status(component, status_selected)
 
         for i in range(decay_ticks):
             m.NEXTION_update_select_decay()

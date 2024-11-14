@@ -8,9 +8,8 @@
 #define __TIMER__
 #include <string.h>
 #include "utils.h"
-
-
-#define TIMER_REGISTER TCNT2
+#include "system.h"
+#include "input.h"
 
 enum TIMER_FORMATFLAG
 {
@@ -50,14 +49,22 @@ TESTUSE typedef struct TIMER_watch
         uint8_t minutes;
         uint8_t seconds;
         uint8_t miliseconds;//2digit
-        uint8_t watchstatus;
+        enum TIMER_TIMERSTATUS watchstatus;
     }timer; 
 }TIMER_watch;
-
+/*Unit representing 1/100 of second, should be handled as FPint 7+1 bit*/
+TESTUSE typedef uint8_t TIMER_centisecond_t;
 TESTUSE extern enum TIMER_TIMERTYPE TIMER_active_timertype;
 TESTUSE extern char TIMER_formated[];
 
-TESTUSE void TIMER_active_watch_toggle();
+/*
+Convert cycle timestamp to centiseconds.
+*/
+uint8_t TIMER_cycle_timestamp_to_cs(SYSTEM_cycle_timestamp_t timestamp);
+
+void TIMER_handle_userinput_stopwatch(INPUT_Event* input_event);
+void TIMER_userinput_handle_watch(INPUT_Event* input_event);
+TESTUSE void TIMER_active_watch_toggle(TIMER_centisecond_t time_offset);
 TESTUSE void TIMER_clear_active_watch();
 TESTUSE void TIMER_next_watch();
 TESTUSE void TIMER_update();

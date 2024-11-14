@@ -9,6 +9,7 @@
 #define UIBOARD_H_
 #include <inttypes.h>
 #include "../nextion.h"
+#include "../input.h"
 
 TESTUSE enum UIBOARD_MD
 {
@@ -40,8 +41,8 @@ TESTUSE extern NEXTION_Component UIBOARD_components[];
 TESTUSE extern UIBOARD_MDComponent UIBOARD_maindisplay_components[];
 TESTUSE extern UIBOARD_MDComponent* UIBOARD_maindisplay_activecomponent;
 
-TESTUSE void UIBOARD_switch_maindisplay();
 void UIBOARD_callback_config();
+void UIBOARD_handle_userinput(INPUT_Event* input_event);
 void UIBOARD_update();
 void UIBOARD_setup();
 

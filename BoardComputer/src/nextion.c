@@ -40,28 +40,31 @@ enum DISPLAYSTATUS
 static struct Page
 {
 	Callback callback_update;
-	Callback callback_setup; 
+	Callback callback_setup;
+	INPUT_Userinput_Handler userinput_handler;
 }pages[] = 
 {
 	[NEXTION_PAGEID_INIT]= 
 	{
 		.callback_setup = init_setup,
-		.callback_update = init_update
+		.callback_update = init_update,
 	},
 	[NEXTION_PAGEID_BOARD]=
 	{
 		.callback_setup = UIBOARD_setup,
-		.callback_update = UIBOARD_update
+		.callback_update = UIBOARD_update,
+		.userinput_handler = UIBOARD_handle_userinput,
 	},
 	[NEXTION_PAGEID_BOARDCONFIG]=
 	{
 		.callback_setup = UIBOARDCONFIG_setup,
-		.callback_update = UIBOARDCONFIG_update
+		.callback_update = UIBOARDCONFIG_update,
 	},
 	[NEXTION_PAGEID_NUMPAD]=
 	{
 		.callback_setup = UINUMPAD_setup,
-		.callback_update = UINUMPAD_update
+		.callback_update = UINUMPAD_update,
+		.userinput_handler = UINUMPAD_handle_userinput,
 	}
 
 };
@@ -78,8 +81,10 @@ TESTUSE static void TESTADDPREFIX(update_select_decay)()
 	if(NEXTION_selection_counter)
 	{
 		if(NEXTION_selection_counter == 1)
-			NEXTION_set_componentstatus(selected_component, NEXTION_COMPONENTSTATUS_DEFAULT);
-		
+		{
+			NEXTION_set_component_select_status(selected_component, NEXTION_COMPONENTSELECTSTATUS_DEFAULT);
+			selected_component = NULL;
+		}
 		NEXTION_selection_counter--;
 	}
 }
@@ -104,11 +109,10 @@ static void init_update()
 /*
 Clears active component.
 */ 
-static void clear_active_component()
+void NEXTION_clear_active_component()
 {
 	NEXTION_selection_counter = 1;
 	update_select_decay();
-	INPUT_active_component = NULL;
 }
 
 /*
@@ -195,62 +199,64 @@ uint8_t NEXTION_send(char data[], uint8_t flush)
 	return 0;
 }
 
-//Selects component by sending its data to display
-void NEXTION_set_componentstatus(NEXTION_Component* component, NEXTION_Componentstatus_t status)
+/*
+Set selection status of component on display.
+Only one component is allowed to be selected.
+If there is already selected component in system it will be deselected prior to set.
+Component ptr will be copied, it's existence in memory must be secured by caller.
+Nullptr safe.
+*/
+void NEXTION_set_component_select_status(NEXTION_Component* component, NEXTION_Component_select_status_t status)
 {
-	if(!component)
-		return;
+	if(component){
+		uint16_t value;
+		switch(status){
+			case NEXTION_COMPONENTSELECTSTATUS_SELECTED:
+				if(selected_component != component){
+					NEXTION_set_component_select_status(selected_component,NEXTION_COMPONENTSELECTSTATUS_DEFAULT);
+					value = component->value_selected;
+					selected_component = component;
+				}
+				NEXTION_selection_counter = NEXTION_SELECT_DECAY_TICKS;
+			break;
+			case NEXTION_COMPONENTSELECTSTATUS_DEFAULT:
+				value = component->value_default;
+			break;
+		}
 
-	uint16_t value;
-	if(status == NEXTION_COMPONENTSTATUS_SELECTED)
-	{
-				
-		NEXTION_selection_counter = NEXTION_SELECT_DECAY_TICKS;
-		if(selected_component == component)
-			return;
-		value = component->value_selected;
-		selected_component = component;
-	}
-	else
-	{
-		if(!NEXTION_selection_counter)
-			return;
-		value = component->value_default;
-		selected_component = NULL;
-	}
+		char buffer[16];
+		char* highlight_type;
+		uint8_t iterator = 3;
+		uint8_t highlight_type_len;
+		memcpy(buffer,component->name,iterator);
+		buffer[iterator] = '.';
+		iterator++;
+		switch(component->highlighttype)
+		{
+			case NEXTION_HIGHLIGHTTYPE_IMAGE:
+				highlight_type = "pic";
+			break;
+			case NEXTION_HIGHLIGHTTYPE_IMAGE2:
+				highlight_type = "pic2";
+			break;
+			case NEXTION_HIGHLIGHTTYPE_CROPPEDIMAGE:
+				highlight_type = "picc";
+			break;
+			case NEXTION_HIGHLIGHTTYPE_BACKCOLOR:
+				highlight_type = "bco";
+			break;
+			case NEXTION_HIGHLIGHTTYPE_FRONTCOLOR:
+				highlight_type = "pco";
+		}
+		highlight_type_len = strlen(highlight_type);
+		memcpy(&buffer[iterator],highlight_type,highlight_type_len);
+		iterator += highlight_type_len;
+		buffer[iterator] = '=';
+		iterator++;
 
-	char buffer[16];
-	char* highlight_type;
-	uint8_t iterator = 3;
-	uint8_t highlight_type_len;
-	memcpy(buffer,component->name,iterator);
-	buffer[iterator] = '.';
-	iterator++;
-	switch(component->highlighttype)
-	{
-		case NEXTION_HIGHLIGHTTYPE_IMAGE:
-			highlight_type = "pic";
-		break;
-		case NEXTION_HIGHLIGHTTYPE_IMAGE2:
-			highlight_type = "pic2";
-		break;
-		case NEXTION_HIGHLIGHTTYPE_CROPPEDIMAGE:
-			highlight_type = "picc";
-		break;
-		case NEXTION_HIGHLIGHTTYPE_BACKCOLOR:
-			highlight_type = "bco";
-		break;
-		case NEXTION_HIGHLIGHTTYPE_FRONTCOLOR:
-			highlight_type = "pco";
+		uitoa(value,&buffer[iterator]);
+		NEXTION_send(buffer,USART_HOLD);
 	}
-	highlight_type_len = strlen(highlight_type);
-	memcpy(&buffer[iterator],highlight_type,highlight_type_len);
-	iterator += highlight_type_len;
-	buffer[iterator] = '=';
-	iterator++;
-
-	uitoa(value,&buffer[iterator]);
-	NEXTION_send(buffer,USART_HOLD);
 }
 
 int8_t NEXTION_switch_page(NEXTION_PageID_t pageID, uint8_t push_to_history)
@@ -259,7 +265,7 @@ int8_t NEXTION_switch_page(NEXTION_PageID_t pageID, uint8_t push_to_history)
 	if(pageID >= 0xff)
 		return 0;
 	
-	clear_active_component();
+	NEXTION_clear_active_component();
 	if(push_to_history)
 		pagehistory_push(active_pageID);
 
@@ -339,6 +345,6 @@ int8_t NEXTION_update()
 void NEXTION_reset()
 {
 	displaystatus = DISPLAYSTATUS_DISCONNECTED;
-	clear_active_component();
+	NEXTION_clear_active_component();
 	reset();
 }

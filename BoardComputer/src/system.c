@@ -4,10 +4,13 @@
 #ifdef __AVR__
 #include <avr/io.h>
 #endif
+
+#define RTC_REGISTER TCNT2
 volatile SYSTEM_STATUS_t SYSTEM_status;
 volatile uint8_t SYSTEM_run = 1;
 volatile uint8_t SYSTEM_exec;
 volatile uint8_t SYSTEM_event_timer;//Represent fraction of second in values from 0 to 7.
+const SYSTEM_cycle_timestamp_t SYSTEM_fullcycle_rtc_steps = 128;
 
 typedef struct Alert
 {
@@ -34,6 +37,12 @@ static Alert alert_register[] =
 };
 
 static Alert active_alert;
+
+SYSTEM_cycle_timestamp_t SYSTEM_get_cycle_timestamp()
+{
+    SYSTEM_cycle_timestamp_t result = SYSTEM_event_timer * 0xf + RTC_REGISTER;
+    return result;
+}
 
 void SYSTEM_raisealert(SYSTEM_ALERT_t alert)
 {

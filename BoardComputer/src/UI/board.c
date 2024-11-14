@@ -3,7 +3,15 @@
 #include "timer.h"
 #include "../USART.h"
 #include "../system.h"
-#include "../input.h"
+
+typedef enum INPUTCOMPONENTID
+{
+	INPUTCOMPONENT_NONE = 0,
+	INPUTCOMPONENT_MAINDISPLAY = 1,
+	INPUTCOMPONENT_WATCH = 4,
+	INPUTCOMPONENT_WATCHSEL = 5,
+	INPUTCOMPONENT_CONFIG = 6,
+}InputComponentID_t;
 
 TESTUSE typedef enum VISUALALERTSEVERITY
 {
@@ -51,6 +59,7 @@ TESTUSE static void TESTADDPREFIX(raisevisualalert)(Visualalertid_t alertid, Vis
 TESTUSE static void TESTADDPREFIX(update_visual_alert)();
 TESTUSE static void TESTADDPREFIX(update_sensorgroup_bottom)();
 TESTUSE static void TESTADDPREFIX(update_sensorgroup_pressure)();
+
 
 //Object needs to have "pco" variable, as its used to visualize alert.
 static Visualalert visualalerts[] = 
@@ -486,20 +495,88 @@ static void update_watch()
 	NEXTION_send(buffer,USART_HOLD);
 }
 
-void UIBOARD_switch_maindisplay()
+static void switch_page_to_config()
+{
+	NEXTION_switch_page(NEXTION_PAGEID_BOARDCONFIG, 1);
+}
+
+static void switch_maindisplay()
 {
 	UIBOARD_maindisplay_activecomponent = UIBOARD_maindisplay_activecomponent->nextComponent;
 }
+/*---STATIC END---*/
+
 
 void UIBOARD_setup()
 {
-	INPUT_active_component = INPUT_findcomponent(INPUT_COMPONENT_MAINDISPLAY);
+	//INPUT_active_component = INPUT_findcomponent(INPUT_COMPONENT_MAINDISPLAY);
 	SENSORSFEED_update();
 }
 
 void UIBOARD_callback_config()
 {
 	NEXTION_switch_page(NEXTION_PAGEID_BOARDCONFIG, 1);
+}
+
+void UIBOARD_handle_userinput(INPUT_Event* input_event)
+{
+	static uint8_t input_order_it = 0;
+	static const InputComponentID_t input_order[] = {
+		INPUTCOMPONENT_MAINDISPLAY,
+		INPUTCOMPONENT_WATCHSEL,
+		INPUTCOMPONENT_CONFIG,
+		INPUTCOMPONENT_WATCH,
+	};
+
+	Callback on_press = NULL;
+	Callback on_hold = NULL;
+	Callback on_click = NULL;
+	NEXTION_Component* component = NULL;
+	InputComponentID_t componentID = input_event->componentID;
+
+	if(input_event->key == INPUT_KEY_DOWN && input_event->keystatus == INPUT_KEYSTATUS_CLICK){
+		input_order_it++;
+		if(input_order_it >= sizeof(input_order)/sizeof(InputComponentID_t)){
+			input_order_it = 0;
+		}
+	}
+
+	if(INPUT_COMPONENT_NONE == componentID)
+	{
+		componentID = input_order[input_order_it];
+	}
+	
+	switch(componentID)
+	{
+		case INPUTCOMPONENT_MAINDISPLAY:
+			component = (NEXTION_Component*)UIBOARD_maindisplay_activecomponent;
+			on_click = switch_maindisplay;
+		break;
+		case INPUTCOMPONENT_WATCHSEL:
+			component = &UIBOARD_components[UIBOARD_COMPONENT_WATCHSEL];
+			on_hold = TIMER_next_watch;
+		break;
+		case INPUTCOMPONENT_WATCH:
+			component = &UIBOARD_components[UIBOARD_COMPONENT_WATCH];
+			TIMER_userinput_handle_watch(input_event);
+		break;
+		case INPUTCOMPONENT_CONFIG:
+			component = &UIBOARD_components[UIBOARD_COMPONENT_CONFIG];
+			on_click = switch_page_to_config;
+		break;
+	}
+
+	NEXTION_set_component_select_status(component, NEXTION_COMPONENTSELECTSTATUS_SELECTED);
+
+	if(input_event->key == INPUT_KEY_ENTER)
+	{
+		if(input_event->keystatus == INPUT_KEYSTATUS_CLICK)
+			on_click();
+		else if(input_event->keystatus == INPUT_KEYSTATUS_HOLD)
+			on_hold();
+		else if(input_event->keystatus == INPUT_KEYSTATUS_PRESSED)
+			on_press();
+	}
 }
 
 void UIBOARD_update()

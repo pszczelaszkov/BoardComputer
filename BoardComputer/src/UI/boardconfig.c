@@ -167,7 +167,7 @@ void UIBOARDCONFIG_modify_ipm()
 
 void UIBOARDCONFIG_setup()
 {
-    INPUT_active_component = INPUT_findcomponent(INPUT_COMPONENT_CONFIGBCK);
+    //INPUT_active_component = INPUT_findcomponent(INPUT_COMPONENT_CONFIGBCK);
 }
 
 void UIBOARDCONFIG_update()
