@@ -1157,7 +1157,11 @@ def read_nextion_output(m, ffi):
     print(f"OUTPUT: {output}")
     m.USART_TX_clear()
     for message in output[:-1]:
-        variable, value = message.decode().split("=")
+        msg_decoded = message.decode()
+        if "page" in msg_decoded:
+            variable, value = msg_decoded.split(" ")
+        else:
+            variable, value = msg_decoded.split("=")
         result[variable] = value
 
     print(f"NEXTION: {result}")

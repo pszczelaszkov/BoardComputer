@@ -56,12 +56,13 @@ TESTUSE typedef enum NEXTION_HIGHLIGHTTYPE
 	NEXTION_HIGHLIGHTTYPE_FRONTCOLOR
 }NEXTION_Highlighttype_t;
 
+
 TESTUSE typedef struct NEXTION_Component
 {
 	const char* name;
-	uint16_t value_default;
-	uint16_t value_selected;
-	NEXTION_Highlighttype_t highlighttype;
+	const uint16_t value_default;
+	const uint16_t value_selected;
+	const NEXTION_Highlighttype_t highlighttype;
 }NEXTION_Component;
 
 TESTUSE typedef struct NEXTION_Executable_Component
@@ -92,9 +93,9 @@ inline void NEXTION_quote_payloadbuffer(char* payload,uint8_t payload_length)
 
 TESTUSE void NEXTION_set_brightness(uint8_t brightness);
 TESTUSE void NEXTION_set_component_select_status(NEXTION_Component* component, NEXTION_Component_select_status_t status);
+TESTUSE void NEXTION_clear_active_component();
+TESTUSE void NEXTION_set_previous_page();
 void NEXTION_request_brightness();
-void NEXTION_set_previous_page();
-void NEXTION_clear_active_component();
 void NEXTION_reset();
 void NEXTION_instruction_compose(const char* objname, const char* varname, char* instruction);
 

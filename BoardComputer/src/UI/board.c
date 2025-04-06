@@ -488,9 +488,9 @@ static void update_watch()
 	NEXTION_instruction_compose("wtd","txt",instruction);
 	NEXTION_quote_payloadbuffer(payload,payload_length);
 	if(TIMER_active_timertype == TIMER_TIMERTYPE_WATCH)
-		memcpy(&payload[3],TIMER_formated,5);
+		memcpy(&payload[3],TIMER_active_watch_formated.c_str,5);
 	else
-		memcpy(&payload[1],&TIMER_formated[3],8);
+		memcpy(&payload[1],&TIMER_active_watch_formated.segments.mm,8);
 
 	NEXTION_send(buffer,USART_HOLD);
 }
@@ -509,7 +509,6 @@ static void switch_maindisplay()
 
 void UIBOARD_setup()
 {
-	//INPUT_active_component = INPUT_findcomponent(INPUT_COMPONENT_MAINDISPLAY);
 	SENSORSFEED_update();
 }
 

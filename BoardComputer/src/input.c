@@ -59,11 +59,6 @@ void INPUT_userinput(INPUT_Keystatus_t keystatus, INPUT_Key_t key, INPUT_Compone
 {	
 	if(keystatus == INPUT_KEYSTATUS_PRESSED)
 	{
-		/*if(componentID == INPUT_COMPONENT_WATCH && key == INPUT_KEY_ENTER)
-		{	
-			if(TIMER_active_timertype == TIMER_TIMERTYPE_STOPWATCH)
-				TIMER_active_watch_toggle();
-		}*/
 	}
 	else//if keystatus released
 	{
@@ -84,10 +79,8 @@ void INPUT_userinput(INPUT_Keystatus_t keystatus, INPUT_Key_t key, INPUT_Compone
 
 void INPUT_update()
 {
-	//Callback callback = NULL;
-	INPUT_Userinput_Handler handler = (&input_event)->next_handler;//INPUT_userinput_handler;//tutaj inputevent next_handler
-	//if(input_event.pending)
-	//{
+	INPUT_Userinput_Handler handler = (&input_event)->next_handler;
+
 	while(handler)
 	{
 		handler((INPUT_Event*)&input_event);
@@ -101,15 +94,7 @@ void INPUT_update()
 		}
 		
 	}
-		/*if(INPUT_userinput_handler)
-		{
-			callback = INPUT_userinput_handler((INPUT_Event*)&input_event);
-			if(callback)
-				callback();
-		}*/
-		//input_event.pending = 0;
-	//}
-	///////
+
 	for(uint8_t i = 0; i < INPUT_KEY_LAST; i++)
 	{	
 		uint8_t status = INPUT_keystatus[i];

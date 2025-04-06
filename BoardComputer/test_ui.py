@@ -4,18 +4,19 @@ from helpers import load, ModuleWrapper, read_nextion_output, fptofloat, floatto
 m, ffi = load("testmodule")
 session = ModuleWrapper(m)
 
+def cast_void(variable):
+    return ffi.cast("void*", variable)
 
 class TestBoardUI:
     @classmethod
     def setup_class(cls):
         m.SYSTEM_run = False
         m.test()
-        session.create_snapshot()
 
     @pytest.fixture(autouse=True)
-    def snapshot_control(self):
-        session.load_snapshot()
-        yield
+    def clear(self):
+        m.NEXTION_clear_active_component()
+        m.USART_TX_clear()
 
     @pytest.mark.parametrize(
         "component,inputdata,expectedstring",
@@ -199,7 +200,6 @@ class TestBoardUI:
         assert ffi.unpack(
             m.USART_TX_buffer, 14
         ) == f'mdv.txt="{expectedstring}"'.encode("utf-8")
-        m.USART_TX_clear()
 
     @pytest.mark.parametrize(
         "status,expected",
@@ -216,7 +216,6 @@ class TestBoardUI:
         assert ffi.unpack(m.USART_TX_buffer, 14) == f'egt.txt="{expected}"'.encode(
             "utf-8"
         )
-        m.USART_TX_clear()
 
     @pytest.mark.parametrize(
         "status,expected",
@@ -340,7 +339,7 @@ class TestBoardUI:
     def test_uiboard_watch(self, watchtype, expectedstring):
         fullwatchstring = b"12:34:56:78"
         m.TIMER_set_watch(watchtype)
-        m.TIMER_formated = fullwatchstring
+        m.TIMER_active_watch_formated.c_str = fullwatchstring
         m.UIBOARD_update_watch()
         assert read_nextion_output(m, ffi)["wtd.txt"] == f'"{expectedstring}"'
 
@@ -389,69 +388,179 @@ class TestBoardUI:
 
 
 class TestNumpadUI:
+
+    INPUTCOMPONENT_NUMPAD1 = 1
+    INPUTCOMPONENT_NUMPAD2 = 2
+    INPUTCOMPONENT_NUMPAD3 = 3
+    INPUTCOMPONENT_NUMPAD4 = 4
+    INPUTCOMPONENT_NUMPAD5 = 5
+    INPUTCOMPONENT_NUMPAD6 = 6
+    INPUTCOMPONENT_NUMPAD7 = 7
+    INPUTCOMPONENT_NUMPAD8 = 8
+    INPUTCOMPONENT_NUMPAD9 = 9
+    INPUTCOMPONENT_NUMPAD0 = 10
+    INPUTCOMPONENT_NUMPADMINUS = 11
+    INPUTCOMPONENT_NUMPADDEL = 12
+    INPUTCOMPONENT_NUMPADSEND = 13
+
     @classmethod
     def setup_class(cls):
         cls.nullptr = ffi.NULL
         m.SYSTEM_run = False
         m.test()
 
-    @pytest.mark.parametrize(
-        "testvalue,expectedvalue",
-        [
-            (100, "   100"),
-            (-100, "-  100"),
-        ],
-    )
-    def test_uinumpad_setup(self, testvalue, expectedvalue):
-        length = m.DISPLAYLENGTH
-        target = ffi.new("int16_t*", testvalue)
-        m.UINUMPAD_switch(target)
-        stringvalue = ffi.unpack(m.UINUMPAD_getstringvalue(), length).decode("ascii")
-        assert stringvalue == expectedvalue
+    @pytest.fixture(autouse=True)
+    def clear(self):
+        m.NEXTION_clear_active_component()
+        m.UINUMPAD_reset()
+        m.USART_TX_clear()
 
     @pytest.mark.parametrize(
         "testvalue,expectedvalue",
         [
             (0, "     0"),
-            (5, "-    5"),
+            (100, "   100"),
+            (-100, "-  100"),
         ],
     )
-    def test_uinumpad_minus(self, testvalue, expectedvalue):
-        length = m.DISPLAYLENGTH
+    def test_setup(self, testvalue, expectedvalue):
+        length = m.UINUMPAD_DISPLAYLENGTH
         target = ffi.new("int16_t*", testvalue)
         m.UINUMPAD_switch(target)
-        m.UINUMPAD_click_mns()
+        stringvalue = ffi.unpack(m.UINUMPAD_getstringvalue(), length).decode("ascii")
+        m.NEXTION_set_previous_page()
+        assert stringvalue == expectedvalue
+
+    @pytest.mark.parametrize(
+        "inputseq,expectedvalue",
+        [
+            (([INPUTCOMPONENT_NUMPADMINUS]),"      "),
+            ((INPUTCOMPONENT_NUMPAD0,INPUTCOMPONENT_NUMPADMINUS),"      "),
+            ((INPUTCOMPONENT_NUMPAD0,INPUTCOMPONENT_NUMPAD0),"      "),
+            ((INPUTCOMPONENT_NUMPAD1,INPUTCOMPONENT_NUMPAD2),"    12"),
+            ((INPUTCOMPONENT_NUMPAD1,INPUTCOMPONENT_NUMPAD2,INPUTCOMPONENT_NUMPAD3,INPUTCOMPONENT_NUMPAD4,INPUTCOMPONENT_NUMPAD5), " 12345"),
+            ((INPUTCOMPONENT_NUMPAD6,INPUTCOMPONENT_NUMPAD7,INPUTCOMPONENT_NUMPAD8,INPUTCOMPONENT_NUMPAD9,INPUTCOMPONENT_NUMPAD0), " 67890"),
+            ((INPUTCOMPONENT_NUMPAD1,INPUTCOMPONENT_NUMPAD2,INPUTCOMPONENT_NUMPAD3,INPUTCOMPONENT_NUMPAD4,INPUTCOMPONENT_NUMPAD5,INPUTCOMPONENT_NUMPAD6), " 12345"),
+            ((INPUTCOMPONENT_NUMPAD1,INPUTCOMPONENT_NUMPAD2,INPUTCOMPONENT_NUMPAD3,INPUTCOMPONENT_NUMPAD4,INPUTCOMPONENT_NUMPAD5,INPUTCOMPONENT_NUMPADMINUS), "-12345"),
+            ((INPUTCOMPONENT_NUMPAD1,INPUTCOMPONENT_NUMPAD2,INPUTCOMPONENT_NUMPAD3,INPUTCOMPONENT_NUMPAD4,INPUTCOMPONENT_NUMPAD5,INPUTCOMPONENT_NUMPADMINUS,INPUTCOMPONENT_NUMPADMINUS), " 12345"),
+            ((INPUTCOMPONENT_NUMPAD1,INPUTCOMPONENT_NUMPADDEL), "      "),
+            ((INPUTCOMPONENT_NUMPAD1,INPUTCOMPONENT_NUMPADDEL,INPUTCOMPONENT_NUMPADDEL), "      "),
+            ((INPUTCOMPONENT_NUMPAD1,INPUTCOMPONENT_NUMPADDEL,INPUTCOMPONENT_NUMPAD2), "     2"),
+            ((INPUTCOMPONENT_NUMPAD1,INPUTCOMPONENT_NUMPAD2,INPUTCOMPONENT_NUMPAD3,INPUTCOMPONENT_NUMPAD4,INPUTCOMPONENT_NUMPAD5,INPUTCOMPONENT_NUMPADDEL,INPUTCOMPONENT_NUMPADDEL), "   123"),
+        ],
+    )
+    def test_inputhandler(self, inputseq, expectedvalue):
+        length = m.UINUMPAD_DISPLAYLENGTH
+        for input_componentID in inputseq:
+            inputevent = ffi.new("INPUT_Event*")
+            inputevent.componentID = input_componentID
+            inputevent.key = m.INPUT_KEY_ENTER
+            inputevent.keystatus = m.INPUT_KEYSTATUS_CLICK
+            m.UINUMPAD_handle_userinput(cast_void(inputevent))
+
         stringvalue = ffi.unpack(m.UINUMPAD_getstringvalue(), length).decode("ascii")
         assert stringvalue == expectedvalue
 
-    def test_uinumpad_append(self):
-        length = m.DISPLAYLENGTH
-        target = ffi.new("int16_t*", 0)
+    @pytest.mark.parametrize("inputvalue",[0,100,-100,1000,-1000,10000,-10000,-32768,32767])
+    def test_switch_send_check_targetuntouched(self, inputvalue):
+        target = ffi.new("int16_t*", inputvalue)
+        inputevent = ffi.new("INPUT_Event*")
+        inputevent.componentID = self.INPUTCOMPONENT_NUMPADSEND
+        inputevent.key = m.INPUT_KEY_ENTER
+        inputevent.keystatus = m.INPUT_KEYSTATUS_CLICK
+                
         m.UINUMPAD_switch(target)
-        m.UINUMPAD_click_b1()
-        m.UINUMPAD_click_b2()
-        m.UINUMPAD_click_b3()
-        m.UINUMPAD_click_b4()
-        stringvalue = ffi.unpack(m.UINUMPAD_getstringvalue(), length).decode("ascii")
-        expectedvalue = "".join([" " for i in range(length)])[0:-4] + str(1234)
-        assert stringvalue == expectedvalue
+        target[0] = 0x7FFF
+        m.UINUMPAD_handle_userinput(cast_void(inputevent))
 
-    def test_uinumpad_delete(self):
-        testvalue = 12345
-        length = m.DISPLAYLENGTH
-        target = ffi.new("int16_t*", testvalue)
-        m.UINUMPAD_switch(target)
-        m.UINUMPAD_click_del()
-        m.UINUMPAD_click_del()
-        stringvalue = ffi.unpack(m.UINUMPAD_getstringvalue(), length).decode("ascii")
-        expectedvalue = "".join([" " for i in range(length)])[0:-3] + str(123)
-        assert stringvalue == expectedvalue
-
-    def test_uinumpad_send(self):
-        target = ffi.new("int16_t*", 100)
-        m.UINUMPAD_switch(target)
-        m.UINUMPAD_click_b0()
-        m.UINUMPAD_click_b0()
-        m.UINUMPAD_click_snd()
         target = int(ffi.cast("int16_t", target[0]))
-        assert target == 10000
+        assert target == inputvalue
+
+    @pytest.mark.parametrize("stringvalue, expectedvalue",[
+        (b"      0",0),(b"      1",1),(b"     10",10),(b"    100",100),
+        (b"   1000",1000),(b" 10000",10000),(b"-10000",-10000)
+    ])
+    def test_switch_modify_send_check_targetmodified(self, stringvalue, expectedvalue):
+        target = ffi.new("int16_t*")
+        m.UINUMPAD_switch(target)
+        inputevent = ffi.new("INPUT_Event*")
+        c_stringvalue = ffi.new("char[7]",stringvalue)
+        inputevent.componentID = self.INPUTCOMPONENT_NUMPADSEND
+        inputevent.key = m.INPUT_KEY_ENTER
+        inputevent.keystatus = m.INPUT_KEYSTATUS_CLICK
+        ffi.memmove(m.UINUMPAD_getstringvalue(),c_stringvalue,m.UINUMPAD_DISPLAYLENGTH+1)
+        m.UINUMPAD_handle_userinput(cast_void(inputevent))
+
+        target = int(ffi.cast("int16_t", target[0]))
+        assert target == expectedvalue
+
+    def test_nextion_select_with_down_key(self):
+        truth_table = [
+            {},
+            { "b01.bco" : m.BRIGHTBLUE},
+            { "b01.bco" : m.PASTELORANGE, "b02.bco" : m.BRIGHTBLUE},
+            { "b02.bco" : m.PASTELORANGE, "b03.bco" : m.BRIGHTBLUE},
+            { "b03.bco" : m.PASTELORANGE, "b04.bco" : m.BRIGHTBLUE},
+            { "b04.bco" : m.PASTELORANGE, "b05.bco" : m.BRIGHTBLUE},
+            { "b05.bco" : m.PASTELORANGE, "b06.bco" : m.BRIGHTBLUE},
+            { "b06.bco" : m.PASTELORANGE, "b07.bco" : m.BRIGHTBLUE},
+            { "b07.bco" : m.PASTELORANGE, "b08.bco" : m.BRIGHTBLUE},
+            { "b08.bco" : m.PASTELORANGE, "b09.bco" : m.BRIGHTBLUE},
+            { "b09.bco" : m.PASTELORANGE, "b00.bco" : m.BRIGHTBLUE},
+            { "b00.bco" : m.PASTELORANGE, "mns.bco" : m.BRIGHTBLUE},
+            { "mns.bco" : m.PASTELORANGE, "del.bco" : m.BRIGHTBLUE},
+            { "del.bco" : m.PASTELORANGE, "snd.bco" : m.BRIGHTBLUE},
+            { "snd.bco" : m.PASTELORANGE, "b01.bco" : m.BRIGHTBLUE},
+        ]
+        value_default = m.PASTELORANGE
+        value_selected = m.BRIGHTBLUE
+        for selected in range(0,15):
+            inputevent = ffi.new("INPUT_Event*")
+            inputevent.key = m.INPUT_KEY_DOWN
+            inputevent.keystatus = m.INPUT_KEYSTATUS_CLICK
+            m.UINUMPAD_handle_userinput(cast_void(inputevent))
+            output = read_nextion_output(m, ffi)
+            expected_values = truth_table[selected]
+            assert len(expected_values) == len(output)
+            print(selected)
+            for k, v in expected_values.items():
+                assert int(output[k]) == v
+
+    def test_nextion_delivered_componentID_dont_touch_iterator(self):
+        touch_event = ffi.new("INPUT_Event*")
+        touch_event.key = m.INPUT_KEY_ENTER
+        touch_event.keystatus = m.INPUT_KEYSTATUS_CLICK
+        touch_event.componentID = 5
+
+        key_event = ffi.new("INPUT_Event*")
+        key_event.key = m.INPUT_KEY_DOWN
+        key_event.keystatus = m.INPUT_KEYSTATUS_CLICK
+
+        m.UINUMPAD_handle_userinput(cast_void(touch_event))
+        m.UINUMPAD_handle_userinput(cast_void(key_event))
+        m.UINUMPAD_handle_userinput(cast_void(key_event))
+
+        output = read_nextion_output(m, ffi)
+        assert int(output["b05.bco"]) == m.PASTELORANGE
+        assert int(output["b01.bco"]) == m.BRIGHTBLUE
+
+    def test_nextion_output_stringvaluecontent(self):
+        stringvalue = b"-99999"
+        expectedstring = '"-99999"'
+        c_stringvalue = ffi.new("char[7]",stringvalue)
+        ffi.memmove(m.UINUMPAD_getstringvalue(), c_stringvalue, m.UINUMPAD_DISPLAYLENGTH+1)
+        m.UINUMPAD_update()
+        output = read_nextion_output(m, ffi)
+        assert output["dsp.txt"] == expectedstring
+
+    @pytest.mark.parametrize("keystatus",[
+        m.INPUT_KEYSTATUS_RELEASED,
+        m.INPUT_KEYSTATUS_PRESSED,
+        m.INPUT_KEYSTATUS_HOLD,
+    ])
+    def test_nextion_unused_keystatus_dont_select(self, keystatus):
+        touch_event = ffi.new("INPUT_Event*")
+        touch_event.key = m.INPUT_KEY_ENTER
+        touch_event.keystatus = keystatus
+        touch_event.componentID = 5
+        assert 0 == len(read_nextion_output(m, ffi))

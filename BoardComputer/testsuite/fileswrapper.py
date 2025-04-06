@@ -152,7 +152,7 @@ def scan_for_definitions(path: str) -> ParsedData:
     enumeration = re.compile(r"TESTUSE \w* ?enum \w+")
     struct = re.compile(r"TESTUSE \w* ?struct \w+")
     union = re.compile(r"TESTUSE \w* ?union \w+")
-    functiontypedef = re.compile(r"TESTUSE typedef \w* \([*\w]*\)\([*\w]*\)")
+    functiontypedef = re.compile(r"TESTUSE typedef \w* \([*\w]*\)\([* \w]*\)")
     data = ParsedData()
 
     def get_the_objectbody(iterator, head):
@@ -345,6 +345,9 @@ def create_definitions(path: str, parsed: ParsedData):
             else:
                 declaration = firstline
             uniondeclarations.append(f"{declaration};\n")
+
+
+        definitions.writelines("%s\n" % line for line in parsed.variables if re.match(r"typedef u?int\d*_t", line))
         definitions.writelines(structdeclarations)
         definitions.writelines(uniondeclarations)
         definitions.writelines("%s\n" % struct for struct in parsed.structs)
@@ -352,7 +355,7 @@ def create_definitions(path: str, parsed: ParsedData):
         for i in range(len(parsed.variables)):
             if parsed.variables[i].find("extern") == -1:
                 parsed.variables[i] = f"extern {parsed.variables[i]}"
-        definitions.writelines("%s\n" % line for line in parsed.variables)
+        definitions.writelines("%s\n" % line for line in parsed.variables if not re.match(r"typedef u?int\d*_t", line))
         definitions.writelines("%s\n" % line for line in parsed.functions)
 
 

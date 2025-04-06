@@ -1,147 +1,148 @@
+import pytest
 import unittest
-from helpers import load, floattofp
+from helpers import load, floattofp, ModuleWrapper
 
 # This test class should be launched first to check global definitions
 
+m, ffi = load("testmodule")
+def cast_void(ffi, variable):
+    return ffi.cast("void*", ffi.addressof(variable))
 
 class testInit(unittest.TestCase):
-    @classmethod
-    def setUpClass(cls):
-        cls.bc, cls.ffi = load("testmodule")
-        cls.nullptr = cls.ffi.NULL
-
-    def test_USART(self):
-        # Test buffers and counters are at 0
-        self.assertFalse(self.bc.USART_RX_buffer_index)
-        self.assertFalse(self.bc.USART_eot_counter)
-
     def test_sensorsfeed(self):
         # Cant be 0(0 division issue at init)
-        self.assertTrue(self.bc.SENSORSFEED_injector_ccm)
-        self.assertTrue(self.bc.SENSORSFEED_speed_ticks_100m)
+        self.assertTrue(m.SENSORSFEED_injector_ccm)
+        self.assertTrue(m.SENSORSFEED_speed_ticks_100m)
 
     def test_countersfeed(self):
-        self.assertTrue(self.bc.COUNTERSFEED_TICKSPERSECOND)
+        self.assertTrue(m.COUNTERSFEED_TICKSPERSECOND)
 
     def test_average(self):
-        self.assertTrue(self.bc.AVERAGE_BUFFERS_SIZE)
+        self.assertTrue(m.AVERAGE_BUFFERS_SIZE)
 
-    def test_timer(self):
-        self.assertTrue(self.bc.TIMER_getMILISECOND_WEIGHT())
-        self.assertTrue(self.bc.TIMER_getREGISTER_WEIGHT())
-        self.bc.TCNT2 = 14
-        miliseconds = self.bc.TIMER_counter_to_miliseconds()
-        self.assertEqual(10, miliseconds)
-        self.bc.TCNT2 = 0
+    def test_timer_cycle_timestamp_to_cs(self):
+        self.assertTrue(m.TIMER_getCENTISECONDSPERSTEP())
+        self.assertTrue(m.TIMER_getRTC_REGISTER_WEIGHT())
+        self.assertEqual(12, m.TIMER_cycle_timestamp_to_cs(15))
+        self.assertEqual(5, m.TIMER_cycle_timestamp_to_cs(6))
+        self.assertEqual(0, m.TIMER_cycle_timestamp_to_cs(0))
 
     def test_input(self):
-        self.assertTrue(self.bc.INPUT_KEY_LAST)
-        self.assertTrue(self.bc.INPUT_KEYSTATUS_RELEASED == 0)
-        self.assertTrue(self.bc.INPUT_KEYSTATUS_PRESSED == 1)
-        self.assertTrue(self.bc.INPUT_KEYSTATUS_HOLD > self.bc.INPUT_KEYSTATUS_PRESSED)
-        self.assertTrue(self.bc.INPUT_KEYSTATUS_CLICK > self.bc.INPUT_KEYSTATUS_HOLD)
+        self.assertTrue(m.INPUT_KEY_LAST)
+        self.assertTrue(m.INPUT_KEYSTATUS_RELEASED == 0)
+        self.assertTrue(m.INPUT_KEYSTATUS_PRESSED == 1)
+        self.assertTrue(m.INPUT_KEYSTATUS_HOLD > m.INPUT_KEYSTATUS_PRESSED)
+        self.assertTrue(m.INPUT_KEYSTATUS_CLICK > m.INPUT_KEYSTATUS_HOLD)
 
     def test_nextion(self):
         # EOT must be null-terminated triple 0xff
-        eot = self.ffi.unpack(self.bc.NEXTION_eot, 4)
+        eot = ffi.unpack(m.NEXTION_eot, 4)
         for byte in eot[0:3]:
             self.assertEqual(byte, 0xFF)
         self.assertEqual(eot[3], 0)
 
-    def test_uiboard_switch_maindisplay(self):
+    #move?
+    def test_uiboard_maindisplay_order(self):
         # Must have default component and be circular
-        initial = self.bc.UIBOARD_maindisplay_activecomponent
-        desired = self.bc.UIBOARD_maindisplay_components[0]
+        initial = m.UIBOARD_maindisplay_activecomponent
+        desired = m.UIBOARD_maindisplay_components[0]
         self.assertEqual(initial, desired)
         temp = initial.nextComponent
-        for i in range(self.bc.UIBOARD_MD_LAST):
+        for i in range(m.UIBOARD_MD_LAST):
             if temp == initial:
                 break
             temp = temp.nextComponent
 
         self.assertEqual(initial, temp)
 
-    def test_uiboardconfig_components_cohesion(self):
-        frontcolor = self.bc.NEXTION_HIGHLIGHTTYPE_FRONTCOLOR
-        backcolor = self.bc.NEXTION_HIGHLIGHTTYPE_BACKCOLOR
-        brightblue = 0x4DF
-        brightbrown = 0xBC8D
-        white = 0xFFFF
-        model = [
-            [white, brightblue, b"ipm", backcolor],
-            [white, brightblue, b"ccm", backcolor],
-            [white, brightblue, b"whh", backcolor],
-            [white, brightblue, b"wmm", backcolor],
-            [white, brightblue, b"wss", backcolor],
-            [brightbrown, brightblue, b"dbs", frontcolor],
-        ]  # default,selected,name,highlighttype
-        zipped = zip(
-            self.ffi.unpack(
-                self.bc.UIBOARDCONFIG_executable_components,
-                self.bc.UIBOARDCONFIG_COMPONENT_LAST,
-            ),
-            model,
-        )
-        i = 0
-        for t, m in zipped:
-            msg = "Failed @ " + str(i)
-            t = self.ffi.cast("NEXTION_Component *", self.ffi.addressof(t))
-            self.assertEqual(t.value_default, m[0], msg=msg)
-            self.assertEqual(t.value_selected, m[1], msg=msg)
-            name = self.ffi.unpack(t.name, self.bc.NEXTION_OBJNAME_LEN)
-            self.assertEqual(name, m[2], msg=msg)
-            self.assertEqual(t.highlighttype, m[3], msg=msg)
-            i = i + 1
+    def test_input_common_bck_conformance(self):
+        image = m.NEXTION_HIGHLIGHTTYPE_IMAGE
+        bckcomponent = m.NEXTION_common_bckcomponent
+        self.assertEqual(bckcomponent.value_default, 28)
+        self.assertEqual(bckcomponent.value_selected, 29)
+        name = ffi.unpack(bckcomponent.name, m.NEXTION_OBJNAME_LEN)
+        self.assertEqual(name, b"bck")
+        self.assertEqual(bckcomponent.highlighttype, image)
 
-    def test_uinumpad_components_conformance(self):
-        backcolor = self.bc.NEXTION_HIGHLIGHTTYPE_BACKCOLOR
-        model = [
-            [0xFD88, 0x4DF, b"b01", backcolor],
-            [0xFD88, 0x4DF, b"b02", backcolor],
-            [0xFD88, 0x4DF, b"b03", backcolor],
-            [0xFD88, 0x4DF, b"b04", backcolor],
-            [0xFD88, 0x4DF, b"b05", backcolor],
-            [0xFD88, 0x4DF, b"b06", backcolor],
-            [0xFD88, 0x4DF, b"b07", backcolor],
-            [0xFD88, 0x4DF, b"b08", backcolor],
-            [0xFD88, 0x4DF, b"b09", backcolor],
-            [0xFD88, 0x4DF, b"b00", backcolor],
-            [0xFD88, 0x4DF, b"mns", backcolor],
-            [0xFD88, 0x4DF, b"del", backcolor],
-            [0xFD88, 0x4DF, b"snd", backcolor],
-        ]  # default,selected,name,highlighttype
-        zipped = zip(self.ffi.unpack(self.bc.UINUMPAD_components, len(model)), model)
-        i = 0
-        for t, m in zipped:
-            msg = "Failed @ " + str(i)
-            self.assertEqual(t.value_default, m[0], msg=msg)
-            self.assertEqual(t.value_selected, m[1], msg=msg)
-            name = self.ffi.unpack(t.name, self.bc.NEXTION_OBJNAME_LEN)
-            self.assertEqual(name, m[2], msg=msg)
-            self.assertEqual(t.highlighttype, m[3], msg=msg)
-            i = i + 1
+    def test_utils_atoi(self):
+        sample = [b"2", b"0", b"0", b"0", b"0"]
+        testvalue = ffi.new("char[]", sample)
+        self.assertEqual(m.UTILS_atoi(testvalue), 20000)
 
-    def test_uiboard_components_cohesion(self):
-        image = self.bc.NEXTION_HIGHLIGHTTYPE_IMAGE
-        croppedimage = self.bc.NEXTION_HIGHLIGHTTYPE_CROPPEDIMAGE
-        model = [
-            [1, 25, b"wtd", croppedimage],
-            [2, 17, b"wts", image],
-            [3, 18, b"cfg", image],
-        ]  # default,selected,name,highlighttype
-        zipped = zip(self.ffi.unpack(self.bc.UIBOARD_components, 2), model)
-        i = 0
-        for t, m in zipped:
-            msg = "Failed @ " + str(i)
-            self.assertEqual(t.value_default, m[0], msg=msg)
-            self.assertEqual(t.value_selected, m[1], msg=msg)
-            name = self.ffi.unpack(t.name, self.bc.NEXTION_OBJNAME_LEN)
-            self.assertEqual(name, m[2], msg=msg)
-            self.assertEqual(t.highlighttype, m[3], msg=msg)
-            i = i + 1
+    def test_utils_atoi_minus(self):
+        sample = [b"-", b"2", b"0", b"0", b"0", b"0"]
+        testvalue = ffi.new("char[]", sample)
+        self.assertEqual(m.UTILS_atoi(testvalue), -20000)
 
+    def test_utils_rightconcat(self):
+        buffer = ffi.new("char[7]")
+
+        for i in range(7):
+            buffer[i] = b"\x00"
+        testvalue = 100
+        expectedstring = b"\x00\x00\x00100\x00"
+        m.rightconcat_short(buffer, testvalue, 6)
+        self.assertEqual(ffi.unpack(buffer, 7), expectedstring)
+
+        for i in range(7):
+            buffer[i] = b"\x00"
+        expectedstring = b"100\x00\x00\x00\x00"
+        m.rightconcat_short(buffer, testvalue, 3)
+        self.assertEqual(ffi.unpack(buffer, 7), expectedstring)
+
+    def test_utils_rightnconcat(self):
+        buffer = ffi.new("char[7]")
+        testvalue = 10
+        expectedstring = b"\x00\x00\x00\x0010\x00"
+        m.rightnconcat_short(buffer, testvalue, 6, 3)
+        self.assertEqual(ffi.unpack(buffer, 7), expectedstring)
+
+    def test_utils_fp16toa_zero(self):
+        buffer = ffi.new("char[7]")
+        testvalue = 0
+        expectedstring = b"\x000.00\x00\x00"
+        m.fp16toa(testvalue, buffer, 2, 2)
+        self.assertEqual(ffi.unpack(buffer, 7), expectedstring)
+
+    def test_utils_fp16toa_minus_half(self):
+        buffer = ffi.new("char[7]")
+        testvalue = -128
+        expectedstring = b"-0.50\x00\x00"
+        m.fp16toa(testvalue, buffer, 2, 2)
+        self.assertEqual(ffi.unpack(buffer, 7), expectedstring)
+
+    def test_utils_fp16toa_minus(self):
+        buffer = ffi.new("char[7]")
+        testvalue = floattofp(-5.8, 8)
+        expectedstring = b"-5.80\x00\x00"
+        m.fp16toa(testvalue, buffer, 2, 2)
+        self.assertEqual(ffi.unpack(buffer, 7), expectedstring)
+
+    def test_utils_fp16toa_half(self):
+        buffer = ffi.new("char[7]")
+        testvalue = 128
+        expectedstring = b"\x000.50\x00\x00"
+        m.fp16toa(testvalue, buffer, 2, 2)
+        self.assertEqual(ffi.unpack(buffer, 7), expectedstring)
+
+    def test_utils_fp16toa_threeofthousand(self):
+        buffer = ffi.new("char[7]")
+        testvalue = 1
+        expectedstring = b"\x000.003\x00"
+        m.fp16toa(testvalue, buffer, 2, 3)
+        self.assertEqual(ffi.unpack(buffer, 7), expectedstring)
+
+    def test_utils_fp16toa_maxfractionlength(self):
+        buffer = ffi.new("char[7]")
+        testvalue = 1
+        expectedstring = b"\x000.0039"
+        m.fp16toa(testvalue, buffer, 2, 10)
+        self.assertEqual(ffi.unpack(buffer, 7), expectedstring)
+
+
+class TestBasicUIBOARD:
     def test_uiboard_MDcomponents_cohesion(self):
-        image = self.bc.NEXTION_HIGHLIGHTTYPE_IMAGE
+        image = m.NEXTION_HIGHLIGHTTYPE_IMAGE
         model = [
             [11, 22],
             [12, 23],
@@ -150,154 +151,89 @@ class testInit(unittest.TestCase):
             [15, 20],
             [16, 21],
         ]  # default,selected
-        zipped = zip(self.ffi.unpack(self.bc.UIBOARD_maindisplay_components, 6), model)
+        zipped = zip(ffi.unpack(m.UIBOARD_maindisplay_components, 6), model)
         i = 0
-        for t, m in zipped:
+        for target, model in zipped:
             msg = "Failed @ " + str(i)
-            component = t.executable_component.component
-            self.assertEqual(component.value_default, m[0], msg=msg)
-            self.assertEqual(component.value_selected, m[1], msg=msg)
-            name = self.ffi.unpack(component.name, self.bc.NEXTION_OBJNAME_LEN)
-            self.assertEqual(name, b"mds", msg=msg)
-            self.assertEqual(component.highlighttype, image, msg=msg)
+            component = target.executable_component.component
+            assert component.value_default == model[0]
+            assert component.value_selected == model[1]
+            name = ffi.unpack(component.name, m.NEXTION_OBJNAME_LEN)
+            assert name == b"mds"
+            assert component.highlighttype == image
             i = i + 1
 
-        self.assertEqual(
-            self.bc.UIBOARD_maindisplay_activecomponent,
-            self.bc.UIBOARD_maindisplay_components[0],
-        )
+        assert m.UIBOARD_maindisplay_activecomponent == m.UIBOARD_maindisplay_components[0]
 
-    def test_input_components_cohesion(self):
-        model = [
-            [self.bc.INPUT_COMPONENT_MAINDISPLAY, b"mds"],
-            [self.bc.INPUT_COMPONENT_WATCH, b"wtd"],
-            [self.bc.INPUT_COMPONENT_WATCHSEL, b"wts"],
-            [self.bc.INPUT_COMPONENT_CONFIG, b"cfg"],
-            [self.bc.INPUT_COMPONENT_CONFIGIPM, b"ipm"],
-            [self.bc.INPUT_COMPONENT_CONFIGCCM, b"ccm"],
-            [self.bc.INPUT_COMPONENT_CONFIGDBS, b"dbs"],
-            [self.bc.INPUT_COMPONENT_CONFIGWHH, b"whh"],
-            [self.bc.INPUT_COMPONENT_CONFIGWMM, b"wmm"],
-            [self.bc.INPUT_COMPONENT_CONFIGWSS, b"wss"],
-            [self.bc.INPUT_COMPONENT_CONFIGBCK, b"bck"],
-            [self.bc.INPUT_COMPONENT_NUMPAD0, b"b00"],
-            [self.bc.INPUT_COMPONENT_NUMPAD1, b"b01"],
-            [self.bc.INPUT_COMPONENT_NUMPAD2, b"b02"],
-            [self.bc.INPUT_COMPONENT_NUMPAD3, b"b03"],
-            [self.bc.INPUT_COMPONENT_NUMPAD4, b"b04"],
-            [self.bc.INPUT_COMPONENT_NUMPAD5, b"b05"],
-            [self.bc.INPUT_COMPONENT_NUMPAD6, b"b06"],
-            [self.bc.INPUT_COMPONENT_NUMPAD7, b"b07"],
-            [self.bc.INPUT_COMPONENT_NUMPAD8, b"b08"],
-            [self.bc.INPUT_COMPONENT_NUMPAD9, b"b09"],
-            [self.bc.INPUT_COMPONENT_NUMPADMINUS, b"mns"],
-            [self.bc.INPUT_COMPONENT_NUMPADDEL, b"del"],
-            [self.bc.INPUT_COMPONENT_NUMPADSEND, b"snd"],
-        ]
+class TestBasicTimer:
+    @pytest.mark.parametrize("centiseconds,result,expected_format_flag",[
+        (0,"0:0:0:0",m.FORMATFLAG_NONE),
+        (100,"0:0:0:100",m.FORMATFLAG_CENTISECONDS),
+        (200,"0:0:1:0",m.FORMATFLAG_SECONDS),
+        (200*60,"0:1:0:0",m.FORMATFLAG_MINUTES),
+        (200*3600,"1:0:0:0",m.FORMATFLAG_HOURS),
+        (200*86399,"23:59:59:0",m.FORMATFLAG_HOURS),
+        (200*86399+100,"23:59:59:100",m.FORMATFLAG_HOURS),
+        (200*86400,"0:0:0:0",m.FORMATFLAG_HOURS),
+    ])
+    def test_timer_increment(self,centiseconds,result,expected_format_flag):
+        watch = ffi.new("TIMER_watch*")
+        resultformatflag = m.FORMATFLAG_NONE
+        while True:
+            clipped_centiseconds = min(centiseconds,0xff)
+            resultformatflag = resultformatflag | m.TIMER_increment(ffi.cast("void*",watch), clipped_centiseconds)
+            centiseconds = centiseconds - clipped_centiseconds
+            if(centiseconds == 0):
+                break
 
-        nullptr = self.bc.INPUT_findcomponent(self.bc.INPUT_COMPONENT_NONE)
-        self.assertFalse(nullptr)
-        i = 0
-        for sample in model:
-            msg = "Failed @ " + str(i)
-            component = self.bc.INPUT_findcomponent(sample[0])
-            self.assertTrue(component, msg=msg)
-            nextion_component = component.nextion_component
-            self.assertTrue(nextion_component, msg=msg)
-            name = nextion_component.name
-            name = self.ffi.unpack(name, self.bc.NEXTION_OBJNAME_LEN)
-            self.assertEqual(name, sample[1], msg=msg)
-            i = i + 1
+        timer = watch.timer
+        assert [timer.hours,timer.minutes,timer.seconds,timer.centiseconds] == [int(i) for i in result.split(':')]
+        assert expected_format_flag == resultformatflag
 
-        self.assertFalse(self.bc.INPUT_active_component)
+    @pytest.mark.parametrize("centiseconds,result,expected_format_flag",[
+        (0,"23:59:59:200",m.FORMATFLAG_NONE),
+        (100,"23:59:59:100",m.FORMATFLAG_CENTISECONDS),
+        (200,"23:59:59:0",m.FORMATFLAG_CENTISECONDS),
+        (201,"23:59:58:199",m.FORMATFLAG_SECONDS),
+        (200*60,"23:59:0:0",m.FORMATFLAG_SECONDS),
+        (200*3600,"23:0:0:0",m.FORMATFLAG_MINUTES),
+        (200*86399,"0:0:1:0",m.FORMATFLAG_HOURS),
+        (200*86399+100,"0:0:0:100",m.FORMATFLAG_HOURS),
+        (200*86400,"0:0:0:0",m.FORMATFLAG_HOURS),
+    ])
+    def test_timer_decrement(self,centiseconds,result,expected_format_flag):
+        watch = ffi.new("TIMER_watch*")
+        watch.timer=[23,59,59,200,0]
+        resultformatflag = m.FORMATFLAG_NONE
+        while True:
+            clipped_centiseconds = min(centiseconds,0xff)
+            resultformatflag = resultformatflag | m.TIMER_decrement(ffi.cast("void*",watch), clipped_centiseconds)
+            centiseconds = centiseconds - clipped_centiseconds
+            if(centiseconds == 0):
+                break
 
-    def test_input_common_bck_conformance(self):
-        image = self.bc.NEXTION_HIGHLIGHTTYPE_IMAGE
-        bckcomponent = self.bc.NEXTION_common_bckcomponent
-        self.assertEqual(bckcomponent.value_default, 28)
-        self.assertEqual(bckcomponent.value_selected, 29)
-        name = self.ffi.unpack(bckcomponent.name, self.bc.NEXTION_OBJNAME_LEN)
-        self.assertEqual(name, b"bck")
-        self.assertEqual(bckcomponent.highlighttype, image)
+        timer = watch.timer
+        assert [timer.hours,timer.minutes,timer.seconds,timer.centiseconds] == [int(i) for i in result.split(':')]
+        assert expected_format_flag == resultformatflag
 
-    def test_utils_atoi(self):
-        sample = [b"2", b"0", b"0", b"0", b"0"]
-        testvalue = self.ffi.new("char[]", sample)
-        self.assertEqual(self.bc.UTILS_atoi(testvalue), 20000)
+    @pytest.mark.parametrize("timer_value,format_flag,expected_formated_str",
+    [
+      ([0,0,0,0],m.FORMATFLAG_NONE,b"  :  :  :  "),
+      ([0,0,0,0],m.FORMATFLAG_CENTISECONDS,b"  :  :  :00"),
+      ([0,0,0,0],m.FORMATFLAG_SECONDS,b"  :  :00:00"),
+      ([0,0,0,0],m.FORMATFLAG_MINUTES,b"  :00:00:00"),
+      ([0,0,0,0],m.FORMATFLAG_HOURS,b" 0:00:00:00"),
+      ([5,5,5,5<<1],m.FORMATFLAG_HOURS,b" 5:05:05:05"),
+      ([10,10,10,10<<1],m.FORMATFLAG_HOURS,b"10:10:10:10"),
+      ([12,34,56,78<<1],m.FORMATFLAG_HOURS,b"12:34:56:78"),
+    ])
+    def test_timer_format(self,timer_value,format_flag,expected_formated_str):
+        timer_formated = ffi.new("TIMER_FORMATED_t*")
+        timer_formated.c_str = b"  :  :  :  "
+        watch = ffi.new("TIMER_watch*")
 
-    def test_utils_atoi_minus(self):
-        sample = [b"-", b"2", b"0", b"0", b"0", b"0"]
-        testvalue = self.ffi.new("char[]", sample)
-        self.assertEqual(self.bc.UTILS_atoi(testvalue), -20000)
+        timer = watch.timer
+        timer.hours, timer.minutes, timer.seconds, timer.centiseconds = timer_value
 
-    def test_system_defaultstate(self):
-        self.assertEqual(self.bc.SYSTEM_status, self.bc.SYSTEM_STATUS_IDLE)
-
-    def test_utils_rightconcat(self):
-        buffer = self.ffi.new("char[7]")
-
-        for i in range(7):
-            buffer[i] = b"\x00"
-        testvalue = 100
-        expectedstring = b"\x00\x00\x00100\x00"
-        self.bc.rightconcat_short(buffer, testvalue, 6)
-        self.assertEqual(self.ffi.unpack(buffer, 7), expectedstring)
-
-        for i in range(7):
-            buffer[i] = b"\x00"
-        expectedstring = b"100\x00\x00\x00\x00"
-        self.bc.rightconcat_short(buffer, testvalue, 3)
-        self.assertEqual(self.ffi.unpack(buffer, 7), expectedstring)
-
-    def test_utils_rightnconcat(self):
-        buffer = self.ffi.new("char[7]")
-        testvalue = 10
-        expectedstring = b"\x00\x00\x00\x0010\x00"
-        self.bc.rightnconcat_short(buffer, testvalue, 6, 3)
-        self.assertEqual(self.ffi.unpack(buffer, 7), expectedstring)
-
-    def test_utils_fp16toa_zero(self):
-        buffer = self.ffi.new("char[7]")
-        testvalue = 0
-        expectedstring = b"\x000.00\x00\x00"
-        self.bc.fp16toa(testvalue, buffer, 2, 2)
-        self.assertEqual(self.ffi.unpack(buffer, 7), expectedstring)
-
-    def test_utils_fp16toa_minus_half(self):
-        buffer = self.ffi.new("char[7]")
-        testvalue = -128
-        expectedstring = b"-0.50\x00\x00"
-        self.bc.fp16toa(testvalue, buffer, 2, 2)
-        self.assertEqual(self.ffi.unpack(buffer, 7), expectedstring)
-
-    def test_utils_fp16toa_minus(self):
-        buffer = self.ffi.new("char[7]")
-        testvalue = floattofp(-5.8, 8)
-        expectedstring = b"-5.80\x00\x00"
-        self.bc.fp16toa(testvalue, buffer, 2, 2)
-        self.assertEqual(self.ffi.unpack(buffer, 7), expectedstring)
-
-    def test_utils_fp16toa_half(self):
-        buffer = self.ffi.new("char[7]")
-        testvalue = 128
-        expectedstring = b"\x000.50\x00\x00"
-        self.bc.fp16toa(testvalue, buffer, 2, 2)
-        self.assertEqual(self.ffi.unpack(buffer, 7), expectedstring)
-
-    def test_utils_fp16toa_threeofthousand(self):
-        buffer = self.ffi.new("char[7]")
-        testvalue = 1
-        expectedstring = b"\x000.003\x00"
-        self.bc.fp16toa(testvalue, buffer, 2, 3)
-        self.assertEqual(self.ffi.unpack(buffer, 7), expectedstring)
-
-    def test_utils_fp16toa_maxfractionlength(self):
-        buffer = self.ffi.new("char[7]")
-        testvalue = 1
-        expectedstring = b"\x000.0039"
-        self.bc.fp16toa(testvalue, buffer, 2, 10)
-        self.assertEqual(self.ffi.unpack(buffer, 7), expectedstring)
-
-
-if __name__ == "__main__":
-    unittest.main()
+        m.TIMER_format(ffi.cast("void*",watch),ffi.cast("void*",timer_formated),format_flag)
+        assert ffi.unpack(timer_formated.c_str,11) == expected_formated_str

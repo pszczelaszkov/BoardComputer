@@ -20,7 +20,7 @@ extern char USART_RX_buffer[];
 TESTUSE extern char USART_TX_buffer[];
 TESTUSE extern uint8_t USART_TX_message_length;
 TESTUSE extern uint8_t USART_RX_buffer_index;
-extern uint8_t USART_TX_buffer_index;
+TESTUSE extern uint8_t USART_TX_buffer_index;
 //note: indexes work as status flags too I.E: TX index with value of TX_BUFFER_SIZE means "TX is ready to go" 
 TESTUSE extern int8_t USART_eot_counter;
 

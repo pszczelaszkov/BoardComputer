@@ -48,8 +48,8 @@ TESTUSE typedef struct INPUT_Component
 	NEXTION_Component* nextion_component;
 }INPUT_Component;
 struct INPUT_Event;
-typedef void (*INPUT_Userinput_Handler)(struct INPUT_Event*);
-typedef struct INPUT_Event{
+TESTUSE typedef void (*INPUT_Userinput_Handler)(struct INPUT_Event*);
+TESTUSE typedef struct INPUT_Event{
 	INPUT_ComponentID_t componentID;
 	INPUT_Key_t key;
 	INPUT_Keystatus_t keystatus;
@@ -59,14 +59,12 @@ typedef struct INPUT_Event{
 }INPUT_Event;
 
 
-
 static const uint8_t components_count;
 static uint8_t pending_componentID;
 extern uint8_t INPUT_active_page;
 extern INPUT_Userinput_Handler INPUT_userinput_handler;
 TESTUSE extern INPUT_Keystatus_t INPUT_keystatus[];
 extern INPUT_Component INPUT_components[];
-TESTUSE extern INPUT_Component* INPUT_active_component;
 
 void INPUT_switch_maindisplay();
 TESTUSE void INPUT_userinput(INPUT_Keystatus_t keystatus, INPUT_Key_t key, INPUT_ComponentID_t componentID);

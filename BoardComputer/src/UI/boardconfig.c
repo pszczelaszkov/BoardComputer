@@ -27,7 +27,7 @@ NEXTION_Executable_Component UIBOARDCONFIG_executable_components[] =
     {
         .component = 
         {
-            .name = ipm_str,
+            .name = "ipm",
             .highlighttype = NEXTION_HIGHLIGHTTYPE_BACKCOLOR,
             .value_default = WHITE,
             .value_selected = BRIGHTBLUE
@@ -38,7 +38,7 @@ NEXTION_Executable_Component UIBOARDCONFIG_executable_components[] =
     {
         .component = 
         {
-            .name = ccm_str,
+            .name = "ccm",
             .highlighttype = NEXTION_HIGHLIGHTTYPE_BACKCOLOR,
             .value_default = WHITE,
             .value_selected = BRIGHTBLUE
@@ -49,7 +49,7 @@ NEXTION_Executable_Component UIBOARDCONFIG_executable_components[] =
     {
         .component = 
         {
-            .name = whh_str,
+            .name = "whh",
             .highlighttype = NEXTION_HIGHLIGHTTYPE_BACKCOLOR,
             .value_default = WHITE,
             .value_selected = BRIGHTBLUE
@@ -60,7 +60,7 @@ NEXTION_Executable_Component UIBOARDCONFIG_executable_components[] =
     {
         .component = 
         {
-            .name = wmm_str,
+            .name = "wmm",
             .highlighttype = NEXTION_HIGHLIGHTTYPE_BACKCOLOR,
             .value_default = WHITE,
             .value_selected = BRIGHTBLUE
@@ -71,7 +71,7 @@ NEXTION_Executable_Component UIBOARDCONFIG_executable_components[] =
     {
         .component = 
         {
-            .name = wss_str,
+            .name = "wss",
             .highlighttype = NEXTION_HIGHLIGHTTYPE_BACKCOLOR,
             .value_default = WHITE,
             .value_selected = BRIGHTBLUE
@@ -82,7 +82,7 @@ NEXTION_Executable_Component UIBOARDCONFIG_executable_components[] =
     {
         .component = 
         {
-            .name = dbs_str,
+            .name = "dbs",
             .highlighttype = NEXTION_HIGHLIGHTTYPE_FRONTCOLOR,
             .value_default = BRIGHTBROWN,
             .value_selected = BRIGHTBLUE

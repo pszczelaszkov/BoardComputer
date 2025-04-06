@@ -73,7 +73,7 @@ NEXTION_Component NEXTION_common_bckcomponent = {
 		.highlighttype = NEXTION_HIGHLIGHTTYPE_IMAGE,
 		.value_default = 28,
 		.value_selected = 29,
-		.name = str_bck
+		.name = "bck"
 };
 
 TESTUSE static void TESTADDPREFIX(update_select_decay)()

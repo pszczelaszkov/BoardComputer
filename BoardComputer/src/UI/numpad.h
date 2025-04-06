@@ -10,13 +10,13 @@
 #include "../nextion.h"
 #include "../input.h"
 
-#define DISPLAYLENGTH 6
+#define UINUMPAD_DISPLAYLENGTH 6
 
-TESTUSE extern NEXTION_Component UINUMPAD_components[];
 TESTUSE void UINUMPAD_switch(int16_t* returnvalue);
 void UINUMPAD_setup();
-void UINUMPAD_update();
-void UINUMPAD_handle_userinput(INPUT_Event* input_event);
+TESTUSE void UINUMPAD_update();
+TESTUSE void UINUMPAD_reset();
+TESTUSE void UINUMPAD_handle_userinput(INPUT_Event* input_event);
 #ifndef __AVR__
 TESTUSE char* UINUMPAD_getstringvalue();
 #endif

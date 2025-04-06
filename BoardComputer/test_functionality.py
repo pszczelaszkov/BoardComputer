@@ -38,6 +38,9 @@ class TestPreRun:
         session.load_snapshot()
         yield
 
+    def test_system_defaultstate(self):
+        assert m.SYSTEM_status == m.SYSTEM_STATUS_OPERATIONAL
+
     @pytest.mark.parametrize("testvalue", [100, 0])
     def test_nextion_set_brightness(self, testvalue):
         m.NEXTION_set_brightness(testvalue)
@@ -46,37 +49,28 @@ class TestPreRun:
     @pytest.mark.parametrize(
         "watchtype,formatedresult,ticks",
         [
-            (
-                m.TIMER_TIMERTYPE_STOPWATCH,
-                b" 0:00:00:62",
-                5,
-            ),  # miliseconds should work on stopwatch
-            (
-                m.TIMER_TIMERTYPE_WATCH,
-                b" 0:00:00:00",
-                5,
-            ),  # miliseconds should be ignored on watch
-            (m.TIMER_TIMERTYPE_WATCH, b" 0:00:30:00", 30 * 8),  # 30sec
-            (m.TIMER_TIMERTYPE_WATCH, b" 0:01:00:00", 60 * 8),  # 1 min
-            (m.TIMER_TIMERTYPE_WATCH, b" 1:00:00:00", 3600 * 8),  #  1 h
-            (m.TIMER_TIMERTYPE_WATCH, b"23:59:59:00", 86399 * 8),  # Almost day
-            (m.TIMER_TIMERTYPE_WATCH, b" 0:00:00:00", 86400 * 8),  # Day cycle
+            (m.TIMER_TIMERTYPE_STOPWATCH,b" 0:00:00:62",5,),
+            (m.TIMER_TIMERTYPE_WATCH, b" 0:00:00:62",5,),
+            (m.TIMER_TIMERTYPE_STOPWATCH, b"23:59:59:00", 86399 * 8),
+            (m.TIMER_TIMERTYPE_WATCH, b"23:59:59:00", 86399 * 8),
+            (m.TIMER_TIMERTYPE_STOPWATCH, b" 0:00:00:00", 86400 * 8),
+            (m.TIMER_TIMERTYPE_WATCH, b" 0:00:00:00", 86400 * 8),
         ],
     )
     def test_watches_update(self, watchtype, formatedresult, ticks):
         def formated_time():
-            time = ffi.unpack(m.TIMER_formated, 11)
+            time = ffi.unpack(m.TIMER_active_watch_formated.c_str, 11)
             return time
 
         m.TIMER_set_watch(watchtype)
         m.TIMER_clear_active_watch()
-        m.TIMER_active_watch_toggle()
+        m.TIMER_active_watch_toggle(0)
         for i in range(ticks):
             m.TIMER_update()
         assert formated_time() == formatedresult
 
         m.TIMER_clear_active_watch()
-        m.TIMER_active_watch_toggle()
+        m.TIMER_active_watch_toggle(0)
 
     def test_watch_order(self):
         order = [
@@ -109,11 +103,11 @@ class TestPreRun:
         watch = m.TIMER_get_watch(targettype)
         assert watch.timer.watchstatus == m.TIMER_TIMERSTATUS_ZERO
 
-        m.TIMER_active_watch_toggle()
+        m.TIMER_active_watch_toggle(0)
         check_other_notaffected(watch)
         assert watch.timer.watchstatus == m.TIMER_TIMERSTATUS_COUNTING
 
-        m.TIMER_active_watch_toggle()
+        m.TIMER_active_watch_toggle(0)
         check_other_notaffected(watch)
         assert watch.timer.watchstatus == m.TIMER_TIMERSTATUS_STOP
 
@@ -130,6 +124,7 @@ class TestPreRun:
         component = ffi.cast("void*", component)
         m.NEXTION_set_component_select_status(component, status_selected)
         m.USART_flush()
+        m.NEXTION_clear_active_component()
 
         parse_nextion(m, read_usart(m), nextion_data)
         assert int(nextion_data["pic"]["tst"]) == selectionvalue
@@ -152,6 +147,7 @@ class TestPreRun:
             m.NEXTION_update_select_decay()
         m.USART_flush()
 
+        m.NEXTION_clear_active_component()
         parse_nextion(m, read_usart(m), nextion_data)
         assert int(nextion_data["pic"]["tst"]) == defaultvalue
 
@@ -388,6 +384,9 @@ class TestPreRun:
         response = read_usart(m)
         assert response[:4] == b"PONG"
         m.USART_TX_clear()
+        assert m.USART_RX_buffer_index == 0
+        assert m.USART_TX_buffer_index == m.USART_TX_BUFFER_SIZE
+        assert m.USART_eot_counter == 3
 
     def test_USART_passthrough_mode(self):
         write_usart(m, None, b"DRAKJHSUYDGBNCJHGJKSHBDN")
