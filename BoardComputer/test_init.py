@@ -1,5 +1,6 @@
 import pytest
 import unittest
+import pandas
 from helpers import load, floattofp, ModuleWrapper
 
 # This test class should be launched first to check global definitions
@@ -237,3 +238,24 @@ class TestBasicTimer:
 
         m.TIMER_format(ffi.cast("void*",watch),ffi.cast("void*",timer_formated),format_flag)
         assert ffi.unpack(timer_formated.c_str,11) == expected_formated_str
+
+class TestBasicConfig:
+    def test_entries_correct_value_range(self):
+        truth_table = []
+        truth_table.insert(m.CONFIG_ENTRY_SYSTEM_ALWAYS_ON,(0, 1))
+        truth_table.insert(m.CONFIG_ENTRY_SYSTEM_DISPLAYBRIGHTNESS,(0, 100))
+        truth_table.insert(m.CONFIG_ENTRY_SYSTEM_BEEP_ON_CLICK,(0, 1))
+        truth_table.insert(m.CONFIG_ENTRY_SENSORS_SIGNAL_PER_100KM,(0, 9999))
+        truth_table.insert(m.CONFIG_ENTRY_SENSORS_INJECTORS_CCM,(0, 9999))
+
+        minvalue = ffi.new("int64_t*")
+        maxvalue = ffi.new("int64_t*")
+
+        result = []
+        i = 0
+        for v in truth_table:
+            m.CONFIG_get_entry_min_max_values(i,minvalue,maxvalue)
+            i = i+1
+            result.append((int(minvalue[0]),int(maxvalue[0])))
+
+        assert truth_table == result

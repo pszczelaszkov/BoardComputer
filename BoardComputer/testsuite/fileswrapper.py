@@ -286,6 +286,8 @@ def elevate(testdirectorypath: str):
     for filepath in get_files(testdirectorypath):
         if filepath.endswith('.c'):
             headerpath = filepath.replace('.c', '.h')
+            if not os.path.exists(headerpath):
+                continue
             prefix = create_prefix(filepath, testdirectorypath)
             with open(headerpath, mode='a') as header:
                 header.write("\n"*2)

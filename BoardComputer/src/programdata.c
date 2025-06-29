@@ -1,7 +1,6 @@
 #include "programdata.h"
 
 #ifndef __AVR__
-#define PROGMEM
 uint16_t pgm_read_word(const int16_t* value)
 {
     return *value;

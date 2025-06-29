@@ -563,4 +563,5 @@ class TestNumpadUI:
         touch_event.key = m.INPUT_KEY_ENTER
         touch_event.keystatus = keystatus
         touch_event.componentID = 5
+        m.UINUMPAD_handle_userinput(cast_void(touch_event))
         assert 0 == len(read_nextion_output(m, ffi))

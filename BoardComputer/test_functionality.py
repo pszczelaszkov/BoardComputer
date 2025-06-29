@@ -19,14 +19,13 @@ nextion_data = {"val": {}, "pic": {}, "txt": {}}
 
 
 def cast_void(ffi, variable):
-    return ffi.cast("void*", cffi.FFI().addressof(variable))
+    return ffi.cast("void*", variable)
 
 
 m, ffi = load("testmodule")
 session = ModuleWrapper(m)
 
-
-class TestPreRun:
+class TestParent:
     @classmethod
     def setup_class(cls):
         m.SYSTEM_run = False
@@ -37,6 +36,8 @@ class TestPreRun:
     def snapshot_control(self):
         session.load_snapshot()
         yield
+
+class TestPreRun(TestParent):
 
     def test_system_defaultstate(self):
         assert m.SYSTEM_status == m.SYSTEM_STATUS_OPERATIONAL
@@ -404,3 +405,71 @@ class TestPreRun:
         m.UDRRX = 0xFE
         m.USART0_RX_vect()
         assert m.UDR2 != 0xFE
+
+class TestConfig(TestParent):
+    CONFIG_SIZE = ffi.sizeof("CONFIG_Config")
+    def test_save_and_load(self):
+        TEST_PATTERN = 0xCE
+        config_sample = ffi.new("uint8_t[]", init=[TEST_PATTERN]*TestConfig.CONFIG_SIZE)
+        m.CONFIG_saveconfig(cast_void(ffi,config_sample))
+        loaded_config = ffi.new("uint8_t[]", init=[0]*TestConfig.CONFIG_SIZE)
+        m.CONFIG_loadconfig(cast_void(ffi,loaded_config))
+        assert(ffi.unpack(config_sample,TestConfig.CONFIG_SIZE) == ffi.unpack(loaded_config,TestConfig.CONFIG_SIZE))
+
+    @pytest.mark.parametrize("entry,expected_min,expected_max",[
+        (m.CONFIG_ENTRY_SYSTEM_ALWAYS_ON, 0, 1),
+        (m.CONFIG_ENTRY_SYSTEM_BEEP_ON_CLICK, 0, 1),
+        (m.CONFIG_ENTRY_SYSTEM_DISPLAYBRIGHTNESS, 0, 100),
+        (m.CONFIG_ENTRY_SENSORS_SIGNAL_PER_100KM, 0, 9999),
+        (m.CONFIG_ENTRY_SENSORS_INJECTORS_CCM, 0, 9999),
+    ])
+    def test_entries_has_correct_validation_min_max(self, entry, expected_min, expected_max):
+        too_small_value = expected_min - 1
+        too_big_value = expected_max + 1
+        #Too small
+        validator_result = m.CONFIG_validate_entry(entry, too_small_value)
+        assert validator_result.value == expected_min
+        assert validator_result.verdict == m.CONFIG_ENTRY_VERDICT_TOO_SMALL
+        #Too big
+        validator_result = m.CONFIG_validate_entry(entry, too_big_value)
+        assert validator_result.value == expected_max
+        assert validator_result.verdict == m.CONFIG_ENTRY_VERDICT_TOO_BIG
+        #OK
+        validator_result = m.CONFIG_validate_entry(entry, expected_min)
+        assert validator_result.verdict == m.CONFIG_ENTRY_VERDICT_PASS
+        validator_result = m.CONFIG_validate_entry(entry, expected_max)
+        assert validator_result.verdict == m.CONFIG_ENTRY_VERDICT_PASS
+
+    def test_entries_has_correct_validation_invalid(self):
+        validator_result = m.CONFIG_validate_entry(m.CONFIG_ENTRY_LAST, 0)
+        assert validator_result.verdict == m.CONFIG_ENTRY_VERDICT_INVALID_ENTRY
+
+    def test_modify_entry_modifies_local_config(self):
+        TESTVAL = 0x7f7f7f7f7f7f7f7f
+        var_dict = {
+            "SYSTEM_ALWAYS_ON" : 1,
+            "SYSTEM_BEEP_ON_CLICK" : 1,
+            "SYSTEM_DISPLAYBRIGHTNESS" : 1,
+            "SENSORS_SIGNAL_PER_100KM" : 2,
+            "SENSORS_INJECTORS_CCM" : 2,
+        }
+        def test_config_variable(var_name,var_size):
+            expected = TESTVAL & (256**var_size-1)
+
+            testval = ffi.cast("CONFIG_maxdata_t*",ffi.new("uint64_t*", TESTVAL))
+            test_config_left = ffi.new("CONFIG_Config*")
+            test_config_right = cast_void(ffi,ffi.new("CONFIG_Config*"))
+
+            lcpy = locals().copy()
+            #execute code changing left value by variable and right side by modifying function
+            exec(f"test_config_left.{var_name} = {expected};modified_bytes = m.CONFIG_modify_entry(test_config_right, m.CONFIG_ENTRY_{var_name}, testval)", globals(), lcpy)
+            assert lcpy["modified_bytes"] == var_size
+
+            #compare if those 2 configs represents the same content
+            unpacked_raw_lconfig = ffi.unpack(ffi.cast("uint8_t*",test_config_left),TestConfig.CONFIG_SIZE)
+            unpacked_raw_rconfig = ffi.unpack(ffi.cast("uint8_t*",test_config_right),TestConfig.CONFIG_SIZE)
+            assert unpacked_raw_lconfig == unpacked_raw_rconfig
+
+        for var_name, var_size in var_dict.items():
+            test_config_variable(var_name, var_size)
+
