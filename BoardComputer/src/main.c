@@ -22,6 +22,7 @@
 #include "input.h"
 #include "system.h"
 #include "config.h"
+#include "persistent_memory.h"
 
 void maintain_display_connection(uint8_t update_result)
 {

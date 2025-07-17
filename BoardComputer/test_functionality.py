@@ -473,3 +473,114 @@ class TestConfig(TestParent):
         for var_name, var_size in var_dict.items():
             test_config_variable(var_name, var_size)
 
+    def test_modify_entry_modifies_persistent_config(self):
+        TESTVAL = 0x7f7f7f7f7f7f7f7f
+        var_dict = {
+            "SYSTEM_ALWAYS_ON" : 1,
+            "SYSTEM_BEEP_ON_CLICK" : 1,
+            "SYSTEM_DISPLAYBRIGHTNESS" : 1,
+            "SENSORS_SIGNAL_PER_100KM" : 2,
+            "SENSORS_INJECTORS_CCM" : 2,
+        }
+        def test_config_variable(var_name,var_size):
+            expected = TESTVAL & (256**var_size-1)
+
+
+            testval = ffi.cast("CONFIG_maxdata_t*",ffi.new("uint64_t*", TESTVAL))
+            test_config_left = ffi.new("CONFIG_Config*")
+            test_config_right = ffi.new("CONFIG_Config*")
+            #write clean config
+            m.PERSISTENT_MEMORY_write(0, cast_void(ffi,test_config_right), TestConfig.CONFIG_SIZE)
+
+            lcpy = locals().copy()
+            #execute code changing left value by variable and right side by modifying function
+            exec(f"test_config_left.{var_name} = {expected};modified_bytes = m.CONFIG_modify_entry(ffi.NULL, m.CONFIG_ENTRY_{var_name}, testval)", globals(), lcpy)
+            assert lcpy["modified_bytes"] == var_size
+            #read modified config
+            m.PERSISTENT_MEMORY_read(0, cast_void(ffi,test_config_right), TestConfig.CONFIG_SIZE)
+
+            #compare if those 2 configs represents the same content
+            unpacked_raw_lconfig = ffi.unpack(ffi.cast("uint8_t*",test_config_left),TestConfig.CONFIG_SIZE)
+            unpacked_raw_rconfig = ffi.unpack(ffi.cast("uint8_t*",test_config_right),TestConfig.CONFIG_SIZE)
+            assert unpacked_raw_lconfig == unpacked_raw_rconfig
+
+        for var_name, var_size in var_dict.items():
+            test_config_variable(var_name, var_size)
+
+    def test_read_config_entry_local(self):
+        TESTVAL = 0x7f7f7f7f7f7f7f7f
+        var_dict = {
+            "SYSTEM_ALWAYS_ON" : 1,
+            "SYSTEM_BEEP_ON_CLICK" : 1,
+            "SYSTEM_DISPLAYBRIGHTNESS" : 1,
+            "SENSORS_SIGNAL_PER_100KM" : 2,
+            "SENSORS_INJECTORS_CCM" : 2,
+        }
+        def test_config_variable(var_name,var_size):
+            expected = TESTVAL & (256**var_size-1)
+
+
+            testval = ffi.cast("CONFIG_maxdata_t*",ffi.new("uint64_t*"))
+            test_config = ffi.new("CONFIG_Config*")
+
+            lcpy = locals().copy()
+            #execute code changing left value by variable and right side by modifying function
+            exec(f"test_config.{var_name} = {expected};read_bytes = m.CONFIG_read_entry(cast_void(ffi,test_config), m.CONFIG_ENTRY_{var_name}, testval)", globals(), lcpy)
+            assert lcpy["read_bytes"] == var_size
+            assert int(ffi.cast("CONFIG_maxdata_t", testval[0])) == expected
+
+        for var_name, var_size in var_dict.items():
+            test_config_variable(var_name, var_size)
+
+    def test_read_config_entry_persistent(self):
+        TESTVAL = 0x7f7f7f7f7f7f7f7f
+        var_dict = {
+            "SYSTEM_ALWAYS_ON" : 1,
+            "SYSTEM_BEEP_ON_CLICK" : 1,
+            "SYSTEM_DISPLAYBRIGHTNESS" : 1,
+            "SENSORS_SIGNAL_PER_100KM" : 2,
+            "SENSORS_INJECTORS_CCM" : 2,
+        }
+        def test_config_variable(var_name,var_size):
+            expected = TESTVAL & (256**var_size-1)
+
+            testval = ffi.cast("CONFIG_maxdata_t*",ffi.new("uint64_t*"))
+            test_config = ffi.new("CONFIG_Config*")
+            #execute code changing config value by variable 
+            exec(f"test_config.{var_name} = {expected}")
+            #put config into persistent memory
+            m.PERSISTENT_MEMORY_write(0, cast_void(ffi,test_config), TestConfig.CONFIG_SIZE)
+            lcpy = locals().copy()
+            #execute code reading variable from persistent memory(config == null)
+            exec(f"read_bytes = m.CONFIG_read_entry(ffi.NULL, m.CONFIG_ENTRY_{var_name}, testval)", globals(), lcpy)
+            assert lcpy["read_bytes"] == var_size
+            assert int(ffi.cast("CONFIG_maxdata_t", testval[0])) == expected
+
+        for var_name, var_size in var_dict.items():
+            test_config_variable(var_name, var_size)
+
+
+    def test_read_config_entry_local(self):
+        TESTVAL = 0x7f7f7f7f7f7f7f7f
+        var_dict = {
+            "SYSTEM_ALWAYS_ON" : 1,
+            "SYSTEM_BEEP_ON_CLICK" : 1,
+            "SYSTEM_DISPLAYBRIGHTNESS" : 1,
+            "SENSORS_SIGNAL_PER_100KM" : 2,
+            "SENSORS_INJECTORS_CCM" : 2,
+        }
+        def test_config_variable(var_name,var_size):
+            expected = TESTVAL & (256**var_size-1)
+
+            testval = ffi.cast("CONFIG_maxdata_t*",ffi.new("uint64_t*"))
+            test_config = ffi.new("CONFIG_Config*")
+            #execute code changing config value by variable 
+            exec(f"test_config.{var_name} = {expected}")
+            lcpy = locals().copy()
+            #execute code reading variable from that config
+            exec(f"read_bytes = m.CONFIG_read_entry(cast_void(ffi,test_config), m.CONFIG_ENTRY_{var_name}, testval)", globals(), lcpy)
+            assert lcpy["read_bytes"] == var_size
+            assert int(ffi.cast("CONFIG_maxdata_t", testval[0])) == expected
+
+        for var_name, var_size in var_dict.items():
+            test_config_variable(var_name, var_size)
