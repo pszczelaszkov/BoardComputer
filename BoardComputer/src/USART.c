@@ -18,6 +18,15 @@ void USART_test()
 
 #define PASSTHROUGHWATCHDOG_THRESHOLD 8
 
+typedef enum NEXTIONMESSAGETYPE
+{
+	NEXTIONMESSAGETYPE_TEST = 0x1,
+	NEXTIONMESSAGETYPE_TOUCHINPUT = 0x65,
+	NEXTIONMESSAGETYPE_PAGEID= 0x66,
+	NEXTIONMESSAGETYPE_INCOMINGDATA = 0x71,
+	NEXTIONMESSAGETYPE_DEVICEREADY = 0x88,
+}NEXTIONMESSAGETYPE;
+
 enum OPERATION_MODE
 {
 	OPERATION_MODE_NORMAL,
@@ -128,30 +137,28 @@ void message_register(uint8_t message_size)
 	}
 	else
 	{
-		switch((uint8_t)USART_RX_buffer[0])
+		switch((NEXTIONMESSAGETYPE)USART_RX_buffer[0])
 		{	
 			#ifndef __AVR__
-			case 0x01:
+			case NEXTIONMESSAGETYPE_TEST:
 				USART_test();
 			break;
 			#endif
-			case 0x65:;
+			case NEXTIONMESSAGETYPE_TOUCHINPUT:
 				INPUT_ComponentID_t componentID = (INPUT_ComponentID_t)(USART_RX_buffer[2]);
 				INPUT_Keystatus_t keystatus = USART_RX_buffer[3];
 				INPUT_userinput(keystatus, INPUT_KEY_ENTER, componentID);
 			break;
-			case 0x66:
-				NEXTION_handler_sendme(USART_RX_buffer[1]);//Pinging purpose
+			case NEXTIONMESSAGETYPE_PAGEID://Pinging purpose
+				NEXTION_handler_sendme(USART_RX_buffer[1]);
 			break;
-			case 0x71:
-				handler = NEXTION_handler_requested_data;
-				if(handler)
+			case NEXTIONMESSAGETYPE_INCOMINGDATA:
+				if(NEXTION_incomingdata_handler)
 				{
 					handler(*(uint32_t*)&USART_RX_buffer[1]);
-					NEXTION_handler_requested_data = NULL;
 				}
 			break;
-			case 0x88:
+			case NEXTIONMESSAGETYPE_DEVICEREADY:
 				NEXTION_handler_ready();
 			break;
 		}

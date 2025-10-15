@@ -1,6 +1,5 @@
 #include "input.h"
 #include "UI/board.h"
-#include "UI/boardconfig.h"
 #include "UI/numpad.h"
 #include "bitwise.h"
 

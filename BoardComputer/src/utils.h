@@ -34,11 +34,13 @@
 #include <string.h>
 #include "sensorsfeed.h"
 TESTUSE int16_t UTILS_atoi(char* stringvalue);
-void uitoa(uint16_t n, char s[]);
+TESTUSE void u16toa(uint16_t n, char s[]);
+TESTUSE void i16toa(int16_t n, char s[]);
+TESTUSE void i32toa(int32_t n, char s[]);
 void extractfp16(int16_t fixedpoint, int8_t* integral, uint16_t* fractional);
 TESTUSE void fp16toa(int16_t fixedpoint, char* dest, uint8_t integrallength, uint8_t fractionlength);
 TESTUSE typedef void (*Callback)();
-TESTUSE typedef void (*Callback_32)(uint32_t);
+TESTUSE typedef void (*Callback_32)(int32_t);
 TESTUSE void rightconcat_short(char* dest, int16_t value, uint8_t spacing);
 TESTUSE void rightnconcat_short(char* dest, int16_t value, uint8_t spacing, uint8_t n);
 #endif

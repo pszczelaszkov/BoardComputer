@@ -8,7 +8,7 @@
 #include "programdata.h"
 #include "timer.h"
 #include "UI/board.h"
-#include "UI/boardconfig.h"
+#include "UI/config.h"
 #include "UI/numpad.h"
 #include "input.h"
 
@@ -19,12 +19,13 @@ static void init_setup();
 static void init_update();
 static NEXTION_Component* selected_component;
 static NEXTION_PageID_t pagehistory[PAGEHISTORY_MAXDEPTH];
-static uint8_t pagehistory_depth;
 static NEXTION_PageID_t active_pageID;
+static uint8_t pagehistory_depth;
+
 static Callback page_callback;
 static const char str_bck[NEXTION_OBJNAME_LEN] = "bck";
 
-Callback_32 NEXTION_handler_requested_data;
+Callback_32 NEXTION_incomingdata_handler;
 uint8_t NEXTION_selection_counter;
 uint8_t NEXTION_brightness;
 volatile uint8_t watchdog_counter = WATCHDOG_THRESHOLD;
@@ -57,8 +58,8 @@ static struct Page
 	},
 	[NEXTION_PAGEID_BOARDCONFIG]=
 	{
-		.callback_setup = UIBOARDCONFIG_setup,
-		.callback_update = UIBOARDCONFIG_update,
+		.callback_setup = UICONFIG_setup,
+		.callback_update = UICONFIG_update,
 	},
 	[NEXTION_PAGEID_NUMPAD]=
 	{
@@ -89,7 +90,7 @@ TESTUSE static void TESTADDPREFIX(update_select_decay)()
 	}
 }
 
-static void handler_brightness(uint32_t data)
+static void handler_brightness(int32_t data)
 {
 	NEXTION_brightness = data;
 }
@@ -109,7 +110,7 @@ static void init_update()
 /*
 Clears active component.
 */ 
-void NEXTION_clear_active_component()
+void NEXTION_clear_selected_component()
 {
 	NEXTION_selection_counter = 1;
 	update_select_decay();
@@ -165,7 +166,7 @@ static inline void reset()
 Compose instruction in form of objname.varname= 
 For best compatibility create buffers before with INSTRUCTION_BUFFER_BLOCK.
 @param objname Pointer to objname const string, must have length of NEXTION_OBJNAME_LEN.
-@param varname Pointer to variable name i.e: var/txt.
+@param varname Pointer to variable name i.e: val/txt.
 @param instruction Pointer to instruction buffer, MUSTHAVE CAPACITY of NEXTION_OBJNAME_LEN + 5.
 */
 void NEXTION_instruction_compose(const char* objname, const char* varname, char* instruction)
@@ -245,7 +246,7 @@ void NEXTION_set_component_select_status(NEXTION_Component* component, NEXTION_C
 			case NEXTION_HIGHLIGHTTYPE_BACKCOLOR:
 				highlight_type = "bco";
 			break;
-			case NEXTION_HIGHLIGHTTYPE_FRONTCOLOR:
+			case NEXTION_HIGHLIGHTTYPE_FONTCOLOR:
 				highlight_type = "pco";
 		}
 		highlight_type_len = strlen(highlight_type);
@@ -254,7 +255,7 @@ void NEXTION_set_component_select_status(NEXTION_Component* component, NEXTION_C
 		buffer[iterator] = '=';
 		iterator++;
 
-		uitoa(value,&buffer[iterator]);
+		u16toa(value,&buffer[iterator]);
 		NEXTION_send(buffer,USART_HOLD);
 	}
 }
@@ -265,13 +266,14 @@ int8_t NEXTION_switch_page(NEXTION_PageID_t pageID, uint8_t push_to_history)
 	if(pageID >= 0xff)
 		return 0;
 	
-	NEXTION_clear_active_component();
+	NEXTION_clear_selected_component();
 	if(push_to_history)
 		pagehistory_push(active_pageID);
 
 	active_pageID = pageID;
 	struct Page newpage = pages[pageID];
 	Callback setup = newpage.callback_setup;
+	NEXTION_incomingdata_handler = NULL;
 	if(setup)
 		setup();
 	page_callback = newpage.callback_update;
@@ -283,22 +285,7 @@ int8_t NEXTION_switch_page(NEXTION_PageID_t pageID, uint8_t push_to_history)
 void NEXTION_request_brightness()
 {
 	if(NEXTION_send("get dim",USART_HOLD))
-		NEXTION_handler_requested_data = handler_brightness;
-}
-
-uint8_t NEXTION_add_brightness(uint8_t value, uint8_t autoreload)
-{
-    uint8_t brightness = NEXTION_brightness+value;
-    if(brightness > 100)
-    {
-		if(autoreload)
-	   		brightness = 0;
-		else
-			return 1;
-	}
-    NEXTION_set_brightness(brightness);
-	
-	return 0;
+		NEXTION_incomingdata_handler = handler_brightness;
 }
 
 void NEXTION_set_brightness(uint8_t brightness)
@@ -345,6 +332,6 @@ int8_t NEXTION_update()
 void NEXTION_reset()
 {
 	displaystatus = DISPLAYSTATUS_DISCONNECTED;
-	NEXTION_clear_active_component();
+	NEXTION_clear_selected_component();
 	reset();
 }

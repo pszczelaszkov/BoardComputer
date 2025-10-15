@@ -38,18 +38,67 @@ void reverse(char s[])
         s[j] = c;
     }
 }
-/* uitoa:  convert unsigned n to characters in s */
-void uitoa(uint16_t n, char s[])
-{
-    uint8_t i;
 
-    i = 0;
+/* u16toa:  convert unsigned n to characters in s */
+void u16toa(uint16_t n, char s[])
+{
+    uint8_t i = 0;
+
     do {       /* generate digits in reverse order */
         s[i++] = n % 10 + '0';   /* get next digit */
     } while ((n /= 10) > 0);     /* delete it */
     s[i] = '\0';
     reverse(s);
 }
+
+/* i16toa:  convert signed n to characters in s */
+void i16toa(int16_t n, char s[])
+{
+    uint8_t i = 0;
+    uint8_t is_negative = 0;
+    uint16_t num;
+
+    if (n < 0) {
+        is_negative = 1;
+        n = -n;   // handle negative safely
+    }
+
+    do {       /* generate digits in reverse order */
+        s[i++] = n % 10 + '0';   /* get next digit */
+    } while ((n /= 10) > 0);     /* delete it */
+
+    if (is_negative) {
+        s[i++] = '-';
+    }
+
+    s[i] = '\0';
+    reverse(s);
+}
+
+/* i32toa:  convert signed n to characters in s */
+void i32toa(int32_t n, char s[])
+{
+    uint8_t i = 0;
+    uint8_t is_negative = 0;
+    uint32_t num;
+
+    if (n < 0) {
+        is_negative = 1;
+        n = -n;   // handle negative safely
+    }
+
+    do {       /* generate digits in reverse order */
+        s[i++] = n % 10 + '0';   /* get next digit */
+    } while ((n /= 10) > 0);     /* delete it */
+
+    if (is_negative) {
+        s[i++] = '-';
+    }
+
+    s[i] = '\0';
+    reverse(s);
+}
+
 /*
 Extracts Integer and Fractional part from 16bit(8+8) fixedpoint variable.
 @param fixedpoint Value for conversion.

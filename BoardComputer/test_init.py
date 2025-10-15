@@ -75,6 +75,41 @@ class testInit(unittest.TestCase):
         testvalue = ffi.new("char[]", sample)
         self.assertEqual(m.UTILS_atoi(testvalue), -20000)
 
+    def test_utils_u16toa_zero(self):
+        buffer = ffi.new("char[6]")
+        testvalue = 0
+        expectedstring = b"0\x00"
+        m.u16toa(testvalue, buffer)
+        self.assertEqual(ffi.unpack(buffer, 2), expectedstring)
+
+    def test_utils_u16toa(self):
+        buffer = ffi.new("char[6]")
+        testvalue = 65355
+        expectedstring = b"65355\x00"
+        m.u16toa(testvalue, buffer)
+        self.assertEqual(ffi.unpack(buffer, 6), expectedstring)
+
+    def test_utils_i32toa_zero(self):
+        buffer = ffi.new("char[11]")
+        testvalue = 0
+        expectedstring = b"0\x00"
+        m.i32toa(testvalue, buffer)
+        self.assertEqual(ffi.unpack(buffer, 2), expectedstring)
+
+    def test_utils_i32toa_positive(self):
+        buffer = ffi.new("char[11]")
+        testvalue = 2147483647
+        expectedstring = b"2147483647\x00"
+        m.i32toa(testvalue, buffer)
+        self.assertEqual(ffi.unpack(buffer, 11), expectedstring)
+    
+    def test_utils_i32toa_negative(self):
+        buffer = ffi.new("char[12]")
+        testvalue = -2147483647
+        expectedstring = b"-2147483647\x00"
+        m.i32toa(testvalue, buffer)
+        self.assertEqual(ffi.unpack(buffer, 12), expectedstring)
+
     def test_utils_rightconcat(self):
         buffer = ffi.new("char[7]")
 
@@ -242,14 +277,15 @@ class TestBasicTimer:
 class TestBasicConfig:
     def test_entries_correct_value_range(self):
         truth_table = []
+        truth_table.insert(m.CONFIG_ENTRY_SYSTEM_FACTORY_RESET,(0, 1))
         truth_table.insert(m.CONFIG_ENTRY_SYSTEM_ALWAYS_ON,(0, 1))
         truth_table.insert(m.CONFIG_ENTRY_SYSTEM_DISPLAYBRIGHTNESS,(0, 100))
         truth_table.insert(m.CONFIG_ENTRY_SYSTEM_BEEP_ON_CLICK,(0, 1))
         truth_table.insert(m.CONFIG_ENTRY_SENSORS_SIGNAL_PER_100KM,(0, 9999))
         truth_table.insert(m.CONFIG_ENTRY_SENSORS_INJECTORS_CCM,(0, 9999))
 
-        minvalue = ffi.new("int64_t*")
-        maxvalue = ffi.new("int64_t*")
+        minvalue = ffi.new("int32_t*")
+        maxvalue = ffi.new("int32_t*")
 
         result = []
         i = 0

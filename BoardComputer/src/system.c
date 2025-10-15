@@ -6,6 +6,7 @@
 #endif
 
 #define RTC_REGISTER TCNT2
+CONFIG_Config SYSTEM_config;
 volatile SYSTEM_STATUS_t SYSTEM_status;
 volatile uint8_t SYSTEM_run = 1;
 volatile uint8_t SYSTEM_exec;

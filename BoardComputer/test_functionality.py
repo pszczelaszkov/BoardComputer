@@ -125,7 +125,7 @@ class TestPreRun(TestParent):
         component = ffi.cast("void*", component)
         m.NEXTION_set_component_select_status(component, status_selected)
         m.USART_flush()
-        m.NEXTION_clear_active_component()
+        m.NEXTION_clear_selected_component()
 
         parse_nextion(m, read_usart(m), nextion_data)
         assert int(nextion_data["pic"]["tst"]) == selectionvalue
@@ -148,7 +148,7 @@ class TestPreRun(TestParent):
             m.NEXTION_update_select_decay()
         m.USART_flush()
 
-        m.NEXTION_clear_active_component()
+        m.NEXTION_clear_selected_component()
         parse_nextion(m, read_usart(m), nextion_data)
         assert int(nextion_data["pic"]["tst"]) == defaultvalue
 
@@ -408,6 +408,14 @@ class TestPreRun(TestParent):
 
 class TestConfig(TestParent):
     CONFIG_SIZE = ffi.sizeof("CONFIG_Config")
+    var_dict = {
+        "SYSTEM_FACTORY_RESET" : 1,
+        "SYSTEM_ALWAYS_ON" : 1,
+        "SYSTEM_BEEP_ON_CLICK" : 1,
+        "SYSTEM_DISPLAYBRIGHTNESS" : 1,
+        "SENSORS_SIGNAL_PER_100KM" : 2,
+        "SENSORS_INJECTORS_CCM" : 2,
+    }
     def test_save_and_load(self):
         TEST_PATTERN = 0xCE
         config_sample = ffi.new("uint8_t[]", init=[TEST_PATTERN]*TestConfig.CONFIG_SIZE)
@@ -417,6 +425,7 @@ class TestConfig(TestParent):
         assert(ffi.unpack(config_sample,TestConfig.CONFIG_SIZE) == ffi.unpack(loaded_config,TestConfig.CONFIG_SIZE))
 
     @pytest.mark.parametrize("entry,expected_min,expected_max",[
+        (m.CONFIG_ENTRY_SYSTEM_FACTORY_RESET, 0, 1),
         (m.CONFIG_ENTRY_SYSTEM_ALWAYS_ON, 0, 1),
         (m.CONFIG_ENTRY_SYSTEM_BEEP_ON_CLICK, 0, 1),
         (m.CONFIG_ENTRY_SYSTEM_DISPLAYBRIGHTNESS, 0, 100),
@@ -446,13 +455,7 @@ class TestConfig(TestParent):
 
     def test_modify_entry_modifies_local_config(self):
         TESTVAL = 0x7f7f7f7f7f7f7f7f
-        var_dict = {
-            "SYSTEM_ALWAYS_ON" : 1,
-            "SYSTEM_BEEP_ON_CLICK" : 1,
-            "SYSTEM_DISPLAYBRIGHTNESS" : 1,
-            "SENSORS_SIGNAL_PER_100KM" : 2,
-            "SENSORS_INJECTORS_CCM" : 2,
-        }
+
         def test_config_variable(var_name,var_size):
             expected = TESTVAL & (256**var_size-1)
 
@@ -470,21 +473,14 @@ class TestConfig(TestParent):
             unpacked_raw_rconfig = ffi.unpack(ffi.cast("uint8_t*",test_config_right),TestConfig.CONFIG_SIZE)
             assert unpacked_raw_lconfig == unpacked_raw_rconfig
 
-        for var_name, var_size in var_dict.items():
+        for var_name, var_size in self.var_dict.items():
             test_config_variable(var_name, var_size)
 
     def test_modify_entry_modifies_persistent_config(self):
         TESTVAL = 0x7f7f7f7f7f7f7f7f
-        var_dict = {
-            "SYSTEM_ALWAYS_ON" : 1,
-            "SYSTEM_BEEP_ON_CLICK" : 1,
-            "SYSTEM_DISPLAYBRIGHTNESS" : 1,
-            "SENSORS_SIGNAL_PER_100KM" : 2,
-            "SENSORS_INJECTORS_CCM" : 2,
-        }
+
         def test_config_variable(var_name,var_size):
             expected = TESTVAL & (256**var_size-1)
-
 
             testval = ffi.cast("CONFIG_maxdata_t*",ffi.new("uint64_t*", TESTVAL))
             test_config_left = ffi.new("CONFIG_Config*")
@@ -504,18 +500,12 @@ class TestConfig(TestParent):
             unpacked_raw_rconfig = ffi.unpack(ffi.cast("uint8_t*",test_config_right),TestConfig.CONFIG_SIZE)
             assert unpacked_raw_lconfig == unpacked_raw_rconfig
 
-        for var_name, var_size in var_dict.items():
+        for var_name, var_size in self.var_dict.items():
             test_config_variable(var_name, var_size)
 
     def test_read_config_entry_local(self):
         TESTVAL = 0x7f7f7f7f7f7f7f7f
-        var_dict = {
-            "SYSTEM_ALWAYS_ON" : 1,
-            "SYSTEM_BEEP_ON_CLICK" : 1,
-            "SYSTEM_DISPLAYBRIGHTNESS" : 1,
-            "SENSORS_SIGNAL_PER_100KM" : 2,
-            "SENSORS_INJECTORS_CCM" : 2,
-        }
+
         def test_config_variable(var_name,var_size):
             expected = TESTVAL & (256**var_size-1)
 
@@ -529,18 +519,12 @@ class TestConfig(TestParent):
             assert lcpy["read_bytes"] == var_size
             assert int(ffi.cast("CONFIG_maxdata_t", testval[0])) == expected
 
-        for var_name, var_size in var_dict.items():
+        for var_name, var_size in self.var_dict.items():
             test_config_variable(var_name, var_size)
 
     def test_read_config_entry_persistent(self):
         TESTVAL = 0x7f7f7f7f7f7f7f7f
-        var_dict = {
-            "SYSTEM_ALWAYS_ON" : 1,
-            "SYSTEM_BEEP_ON_CLICK" : 1,
-            "SYSTEM_DISPLAYBRIGHTNESS" : 1,
-            "SENSORS_SIGNAL_PER_100KM" : 2,
-            "SENSORS_INJECTORS_CCM" : 2,
-        }
+
         def test_config_variable(var_name,var_size):
             expected = TESTVAL & (256**var_size-1)
 
@@ -556,25 +540,19 @@ class TestConfig(TestParent):
             assert lcpy["read_bytes"] == var_size
             assert int(ffi.cast("CONFIG_maxdata_t", testval[0])) == expected
 
-        for var_name, var_size in var_dict.items():
+        for var_name, var_size in self.var_dict.items():
             test_config_variable(var_name, var_size)
 
 
     def test_read_config_entry_local(self):
         TESTVAL = 0x7f7f7f7f7f7f7f7f
-        var_dict = {
-            "SYSTEM_ALWAYS_ON" : 1,
-            "SYSTEM_BEEP_ON_CLICK" : 1,
-            "SYSTEM_DISPLAYBRIGHTNESS" : 1,
-            "SENSORS_SIGNAL_PER_100KM" : 2,
-            "SENSORS_INJECTORS_CCM" : 2,
-        }
+
         def test_config_variable(var_name,var_size):
             expected = TESTVAL & (256**var_size-1)
 
             testval = ffi.cast("CONFIG_maxdata_t*",ffi.new("uint64_t*"))
             test_config = ffi.new("CONFIG_Config*")
-            #execute code changing config value by variable 
+            #execute code changing config value by variable
             exec(f"test_config.{var_name} = {expected}")
             lcpy = locals().copy()
             #execute code reading variable from that config
@@ -582,5 +560,5 @@ class TestConfig(TestParent):
             assert lcpy["read_bytes"] == var_size
             assert int(ffi.cast("CONFIG_maxdata_t", testval[0])) == expected
 
-        for var_name, var_size in var_dict.items():
+        for var_name, var_size in self.var_dict.items():
             test_config_variable(var_name, var_size)

@@ -11,7 +11,7 @@
 #else
 #include "UI/numpad.h"
 #include "UI/board.h"
-#include "UI/boardconfig.h"
+#include "UI/config.h"
 #include "programdata.h"
 #endif
 

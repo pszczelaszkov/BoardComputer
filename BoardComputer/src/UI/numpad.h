@@ -7,12 +7,13 @@
 #ifndef UINUMPAD
 #define UINUMPAD
 
-#include "../nextion.h"
-#include "../input.h"
+#include <config.h>
+#include "nextion.h"
+#include "input.h"
 
 #define UINUMPAD_DISPLAYLENGTH 6
 
-TESTUSE void UINUMPAD_switch(int16_t* returnvalue);
+TESTUSE void UINUMPAD_switch(CONFIG_maxdata_t* returnvalue);
 void UINUMPAD_setup();
 TESTUSE void UINUMPAD_update();
 TESTUSE void UINUMPAD_reset();

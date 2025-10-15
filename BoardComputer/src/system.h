@@ -9,6 +9,7 @@
 #define SYSTEM_H_
 #include <inttypes.h>
 #include "utils.h"
+#include "config.h"
 
 #define EVENT_TIMER_ISR ISR(TIMER2_COMPA_vect)
 TESTUSE typedef uint8_t SYSTEM_cycle_timestamp_t;
@@ -34,6 +35,7 @@ Cycle is one second long, unit is RTC timer step.
 SYSTEM_cycle_timestamp_t SYSTEM_get_cycle_timestamp();
 
 TESTUSE void SYSTEM_raisealert(SYSTEM_ALERT_t alert);
+TESTUSE extern CONFIG_Config SYSTEM_config;
 TESTUSE extern volatile SYSTEM_STATUS_t SYSTEM_status;
 TESTUSE extern volatile uint8_t SYSTEM_run;
 TESTUSE extern volatile uint8_t SYSTEM_exec;

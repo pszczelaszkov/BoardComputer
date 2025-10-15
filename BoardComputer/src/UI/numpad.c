@@ -26,8 +26,8 @@ static const uint8_t cursor = UINUMPAD_DISPLAYLENGTH - 1;
 static char objname[NEXTION_OBJNAME_LEN+1];
 static char stringvalue[UINUMPAD_DISPLAYLENGTH+1];
 static uint8_t current_length;
-static uint8_t input_order_it = 0;
-static int16_t* returnvalue_ptr;
+static uint8_t inputcomponent_it = 0;
+static CONFIG_maxdata_t* returnvalue_ptr;
 
 /*
     For optimization purpose numpad holds memory for one component which works as placeholder.
@@ -82,7 +82,7 @@ static void send()
 }
 
 /*The only safe way to trigger numpad*/
-void UINUMPAD_switch(int16_t* returnvalue)
+void UINUMPAD_switch(CONFIG_maxdata_t* returnvalue)
 {
     returnvalue_ptr = returnvalue;
     if(returnvalue_ptr)
@@ -92,28 +92,32 @@ void UINUMPAD_switch(int16_t* returnvalue)
 void UINUMPAD_handle_userinput(INPUT_Event* input_event)
 {
     INPUT_Key_t key = input_event->key;
-    /*
-        Active component needs to be cleared before changes to placeholder component will be made.
-    */
-    NEXTION_clear_active_component();
+    InputComponentID_t componentID = input_event->componentID;
 
     if(input_event->keystatus == INPUT_KEYSTATUS_CLICK)
-    {
+    {   
         /*
-            Input component could be delivered from outside i.e touch event.
-            When input is from physical buttons internal iterator is used.
+        Input component could be delivered from outside i.e touch event.
+        When input is from physical buttons internal iterator is used.
         */
-        InputComponentID_t componentID = input_event->componentID;
         if(INPUTCOMPONENT_NONE == componentID)
         {
-            componentID = (InputComponentID_t)input_order_it;
+            componentID = (InputComponentID_t)inputcomponent_it;
         }
-
+        if(key == INPUT_KEY_DOWN)
+        {    
+            /*
+                Active component needs to be cleared when next component selection will happen and
+                before changes to placeholder component will be made.
+            */
+            NEXTION_clear_selected_component();
+        }
         switch(componentID)
         {
             case INPUTCOMPONENT_NUMPADSEND:
                 if(INPUT_KEY_ENTER == key){
                     send();
+                    return;
                 }
                 memcpy(&objname,"snd",sizeof(objname));
             break;
@@ -146,10 +150,10 @@ void UINUMPAD_handle_userinput(INPUT_Event* input_event)
         }
         if(key == INPUT_KEY_DOWN)
         {
-            input_order_it++;
-            if(INPUTCOMPONENT_LAST == input_order_it)
+            inputcomponent_it++;
+            if(INPUTCOMPONENT_LAST == inputcomponent_it)
             {
-                input_order_it = 1;
+                inputcomponent_it = 1;
             }
         }
         /*
@@ -167,14 +171,15 @@ void UINUMPAD_reset()
     memset(stringvalue,' ',max_length);
     current_length = 0;
     returnvalue_ptr = NULL;
-    input_order_it = 0;
+    inputcomponent_it = 0;
 }
 
 void UINUMPAD_setup()
 {
     char buffer[UINUMPAD_DISPLAYLENGTH+1];
+    memset(stringvalue,' ',max_length);
     int16_t returnvalue_value = *returnvalue_ptr;
-    input_order_it = 0;
+    inputcomponent_it = 0;
 
     uint8_t buffer_length;
     if(0 > returnvalue_value)

@@ -15,15 +15,13 @@
 #define NEXTION_OBJNAME_LEN 3
 #define BRIGHTBLUE 0x4DF
 #define BRIGHTBROWN 0xBC8D
+#define BACKGROUNDGRAY 0x3207
 #define PASTELORANGE 0xFD88
 #define SAFETYYELLOW 0xEE80
 #define CRIMSONRED 0xD800
 
 #define WHITE 0XFFFF
 #define DEFAULTCOLOR WHITE
-
-static const char str_val[NEXTION_OBJNAME_LEN] = "val";
-static const char str_txt[NEXTION_OBJNAME_LEN] = "txt";
 
 #define NEXTION_INSTRUCTION_BUFFER_BLOCK(PAYLOAD_LENGTH)\
 	const uint8_t instruction_length = NEXTION_OBJNAME_LEN + 5;\
@@ -53,7 +51,7 @@ TESTUSE typedef enum NEXTION_HIGHLIGHTTYPE
 	NEXTION_HIGHLIGHTTYPE_IMAGE2,
 	NEXTION_HIGHLIGHTTYPE_CROPPEDIMAGE,
 	NEXTION_HIGHLIGHTTYPE_BACKCOLOR,
-	NEXTION_HIGHLIGHTTYPE_FRONTCOLOR
+	NEXTION_HIGHLIGHTTYPE_FONTCOLOR
 }NEXTION_Highlighttype_t;
 
 
@@ -75,13 +73,12 @@ TESTUSE extern uint8_t NEXTION_brightness;
 TESTUSE extern NEXTION_Component NEXTION_common_bckcomponent;
 TESTUSE extern char NEXTION_eot[];
 extern uint8_t NEXTION_selection_counter;
-extern Callback_32 NEXTION_handler_requested_data;
+TESTUSE extern Callback_32 NEXTION_incomingdata_handler;
 
 void NEXTION_handler_ready();
 void NEXTION_handler_sendme(uint8_t pageid);
 uint8_t NEXTION_send(char data[], uint8_t flush);
 int8_t NEXTION_update();
-uint8_t NEXTION_add_brightness(uint8_t value, uint8_t autoreload);
 TESTUSE int8_t NEXTION_switch_page(NEXTION_PageID_t pageID, uint8_t push_to_history);
 
 //Place quotes at the beginning and the end of payload buffer for text variables.
@@ -93,7 +90,7 @@ inline void NEXTION_quote_payloadbuffer(char* payload,uint8_t payload_length)
 
 TESTUSE void NEXTION_set_brightness(uint8_t brightness);
 TESTUSE void NEXTION_set_component_select_status(NEXTION_Component* component, NEXTION_Component_select_status_t status);
-TESTUSE void NEXTION_clear_active_component();
+TESTUSE void NEXTION_clear_selected_component();
 TESTUSE void NEXTION_set_previous_page();
 void NEXTION_request_brightness();
 void NEXTION_reset();

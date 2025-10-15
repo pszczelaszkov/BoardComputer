@@ -2,7 +2,7 @@
 #include<stddef.h>
 #include"persistent_memory.h"
 #include"program_memory.h"
-
+#include"string.h"
 
 typedef enum ENTRY_VALIDATOR
 {
@@ -52,9 +52,10 @@ const int32_t CONFIG_maxvalue = 32768;
 const int32_t CONFIG_minvalue = -32767;
 
 static const Entryinfo entryinfo[CONFIG_ENTRY_LAST] PROGMEM = {
+    CONFIG_ENTRY(SYSTEM_FACTORY_RESET, ENTRY_VALIDATOR_BOOLEAN),
     CONFIG_ENTRY(SYSTEM_ALWAYS_ON, ENTRY_VALIDATOR_BOOLEAN),
-    CONFIG_ENTRY(SYSTEM_DISPLAYBRIGHTNESS, ENTRY_VALIDATOR_PERCENT),
     CONFIG_ENTRY(SYSTEM_BEEP_ON_CLICK, ENTRY_VALIDATOR_BOOLEAN),
+    CONFIG_ENTRY(SYSTEM_DISPLAYBRIGHTNESS, ENTRY_VALIDATOR_PERCENT),
     CONFIG_ENTRY(SENSORS_SIGNAL_PER_100KM, ENTRY_VALIDATOR_POSITIVE_4DIGIT),
     CONFIG_ENTRY(SENSORS_INJECTORS_CCM, ENTRY_VALIDATOR_POSITIVE_4DIGIT),
 };
@@ -178,4 +179,13 @@ uint8_t CONFIG_read_entry(CONFIG_Config* config, CONFIG_Entry entry, CONFIG_maxd
     }
 
     return size;
+}
+
+uint8_t CONFIG_factory_default_reset()
+{
+    CONFIG_maxdata_t default_value = 0;
+    for(uint8_t i = 0; i < CONFIG_ENTRY_LAST; i++)
+    {
+       CONFIG_modify_entry(NULL,i,&default_value);
+    }
 }

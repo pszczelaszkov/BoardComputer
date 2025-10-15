@@ -10,12 +10,13 @@
 #ifndef CONFIG_H_
 #define CONFIG_H_
 
-TESTUSE typedef int64_t CONFIG_maxdata_t;
+TESTUSE typedef int32_t CONFIG_maxdata_t;
 TESTUSE extern const int32_t CONFIG_maxvalue;
 TESTUSE extern const int32_t CONFIG_minvalue;
 
 TESTUSE typedef struct CONFIG_Config
 {
+    uint8_t SYSTEM_FACTORY_RESET;
     uint8_t SYSTEM_ALWAYS_ON;
     uint8_t SYSTEM_BEEP_ON_CLICK;
     uint8_t SYSTEM_DISPLAYBRIGHTNESS;
@@ -30,9 +31,10 @@ TESTUSE typedef struct CONFIG_Config
 */
 TESTUSE typedef enum CONFIG_ENTRY
 {
+    CONFIG_ENTRY_SYSTEM_FACTORY_RESET,
     CONFIG_ENTRY_SYSTEM_ALWAYS_ON,
-    CONFIG_ENTRY_SYSTEM_DISPLAYBRIGHTNESS,
     CONFIG_ENTRY_SYSTEM_BEEP_ON_CLICK,
+    CONFIG_ENTRY_SYSTEM_DISPLAYBRIGHTNESS,
     CONFIG_ENTRY_SENSORS_SIGNAL_PER_100KM,
     CONFIG_ENTRY_SENSORS_INJECTORS_CCM,
     CONFIG_ENTRY_LAST
@@ -89,4 +91,8 @@ TESTUSE void CONFIG_loadconfig(CONFIG_Config* config);
 */
 TESTUSE void CONFIG_saveconfig(CONFIG_Config* config);
 
+/*
+    Resets config in persistent memory to default values. 
+*/
+uint8_t CONFIG_factory_default_reset();
 #endif

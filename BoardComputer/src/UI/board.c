@@ -476,7 +476,7 @@ static void update_visual_alert()
 					color = alert->color;
 			}
 			NEXTION_instruction_compose(alert->objname,"pco",instruction);
-			uitoa(color,payload);
+			u16toa(color,payload);
 			NEXTION_send(buffer,USART_HOLD);
 		}
 	}
