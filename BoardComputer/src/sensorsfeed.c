@@ -22,8 +22,6 @@ static PROGRAMDATA_LUT_t ADC_luts[SENSORSFEED_ADC_CHANNELS] = { [0 ... SENSORSFE
 enum SENSORSFEED_EGT_STATUS SENSORSFEED_EGT_status;
 
 FP16_t SENSORSFEED_feed[SENSORSFEED_FEED_SIZE];
-int16_t SENSORSFEED_speed_ticks_100m = 1;
-int16_t SENSORSFEED_injector_ccm = 1;
 
 uint16_t SENSORSFEED_fuelmodifier;
 uint16_t SENSORSFEED_speedmodifier;
@@ -137,7 +135,7 @@ void SENSORSFEED_initialize()
 	//Last step is to obtain it in form of 16 bit fixed point value.
 	//Now to get liters we just need to multiplicate counted ticks by modifier and byte shift 16 times.
 	uint16_t fixed_base = SENSORSFEED_HIGH_PRECISION_BASE/0xffff;//16bit fixed point base.
-	uint16_t liter_ticks = (COUNTERSFEED_TICKSPERSECOND*1000/60)/SENSORSFEED_injector_ccm;//ticks for 1000cch
+	uint16_t liter_ticks = (COUNTERSFEED_TICKSPERSECOND*1000/60)/SYSTEM_config.SENSORS_INJECTORS_CCM;//ticks for 1000cch
 	uint32_t fraction_representation = SENSORSFEED_HIGH_PRECISION_BASE/liter_ticks;//Represent as 1/value form
 	SENSORSFEED_fuelmodifier = fraction_representation/fixed_base;//Get 16bit fixed point value
 
@@ -149,7 +147,7 @@ void SENSORSFEED_initialize()
 	//Result is in fp 8+8.
 	//As an addition speed_max is limiter to protect from overflow during further processing.
 	uint32_t base_fp16 = 360U << 8;//reduced from 3600sec
-	SENSORSFEED_speedmodifier = base_fp16/SENSORSFEED_speed_ticks_100m;
+	SENSORSFEED_speedmodifier = base_fp16/SYSTEM_config.SENSORS_SIGNAL_PER_100M;
 	speed_max = 0xffff/SENSORSFEED_speedmodifier;
 
 	//ADC init

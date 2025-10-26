@@ -27,6 +27,7 @@ x86_test: clean
 	gcc $(TESTFLAGS) -I$(IDIR) -I$(X86_TEST_IDIR) -c $(TDIR)system.c -o bin/system_.o
 	gcc $(TESTFLAGS) -I$(IDIR) -I$(X86_TEST_IDIR) -c $(TDIR)config.c -o bin/config_.o
 	gcc $(TESTFLAGS) -I$(IDIR) -I$(X86_TEST_IDIR) -c $(X86_TEST_IDIR)persistent_memory.c -o bin/persistent_memory_.o
+	gcc $(TESTFLAGS) -I$(IDIR) -I$(X86_TEST_IDIR) -c $(X86_TEST_IDIR)system_interface.c -o bin/system_interface_.o
 	gcc $(TESTFLAGS) -I$(IDIR) -I$(X86_TEST_IDIR) -c $(TDIR)main.c -I/usr/include/python${PYTHON_VER} -o bin/main_.o
 	gcc -shared bin/*_.o -lpython${PYTHON_VER} -o bin/testmodule.so
 
@@ -47,6 +48,7 @@ HW_1:
 	avr-gcc $(AVRFLAGS) -I$(IDIR) -I$(HW_1_AVR_IDIR) -c src/config.c -o bin/config.o
 	avr-gcc $(AVRFLAGS) -I$(IDIR) -I$(HW_1_AVR_IDIR) -c src/programdata.c -o bin/programdata.o
 	avr-gcc $(AVRFLAGS) -I$(IDIR) -I$(HW_1_AVR_IDIR) -c $(HW_1_AVR_IDIR)persistent_memory.c -o bin/persistent_memory.o
+	avr-gcc $(AVRFLAGS) -I$(IDIR) -I$(HW_1_AVR_IDIR) -c $(HW_1_AVR_IDIR)system_interface.c -o bin/system_interface_.o
 	avr-gcc -mmcu=atmega324pb bin/*.o -o bin/BoardComputer.elf
 	avr-objcopy -j .text -j .data -O ihex bin/BoardComputer.elf bin/BoardComputer.hex
 	avr-size --mcu=atmega324pa -C bin/BoardComputer.elf

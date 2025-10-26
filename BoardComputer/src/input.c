@@ -62,7 +62,13 @@ void INPUT_userinput(INPUT_Keystatus_t keystatus, INPUT_Key_t key, INPUT_Compone
 	else//if keystatus released
 	{
 		if(INPUT_keystatus[key] > INPUT_KEYSTATUS_RELEASED && INPUT_keystatus[key] < INPUT_KEYSTATUS_HOLD)
-			keystatus = INPUT_KEYSTATUS_CLICK;
+		{
+				keystatus = INPUT_KEYSTATUS_CLICK;
+				if(SYSTEM_config.SYSTEM_BEEP_ON_CLICK)
+				{
+					SYSTEM_trigger_short_beep();
+				}
+		}
 	}
 
 	INPUT_keystatus[key] = keystatus;

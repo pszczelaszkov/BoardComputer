@@ -79,8 +79,6 @@ TESTUSE typedef int32_t FP16_t;
 #define SENSORSFEED_FEED_SIZE SENSORSFEED_FEEDID_LAST
 TESTUSE extern FP16_t SENSORSFEED_feed[];
 
-TESTUSE extern int16_t SENSORSFEED_speed_ticks_100m;
-TESTUSE extern int16_t SENSORSFEED_injector_ccm;
 TESTUSE extern uint16_t SENSORSFEED_fuelmodifier;
 extern uint16_t SENSORSFEED_speedmodifier;
 extern uint8_t SENSORSFEED_injtmodifier;

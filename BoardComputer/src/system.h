@@ -33,7 +33,8 @@ Returns current cycle timestamp.
 Cycle is one second long, unit is RTC timer step.
 */
 SYSTEM_cycle_timestamp_t SYSTEM_get_cycle_timestamp();
-
+int8_t SYSTEM_is_board_enabled();
+void SYSTEM_trigger_short_beep();
 TESTUSE void SYSTEM_raisealert(SYSTEM_ALERT_t alert);
 TESTUSE extern CONFIG_Config SYSTEM_config;
 TESTUSE extern volatile SYSTEM_STATUS_t SYSTEM_status;

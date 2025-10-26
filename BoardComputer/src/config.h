@@ -20,7 +20,7 @@ TESTUSE typedef struct CONFIG_Config
     uint8_t SYSTEM_ALWAYS_ON;
     uint8_t SYSTEM_BEEP_ON_CLICK;
     uint8_t SYSTEM_DISPLAYBRIGHTNESS;
-    int16_t SENSORS_SIGNAL_PER_100KM;
+    int16_t SENSORS_SIGNAL_PER_100M;
     int16_t SENSORS_INJECTORS_CCM;
     uint16_t CONFIG_VERSION;
 }CONFIG_Config;
@@ -35,7 +35,7 @@ TESTUSE typedef enum CONFIG_ENTRY
     CONFIG_ENTRY_SYSTEM_ALWAYS_ON,
     CONFIG_ENTRY_SYSTEM_BEEP_ON_CLICK,
     CONFIG_ENTRY_SYSTEM_DISPLAYBRIGHTNESS,
-    CONFIG_ENTRY_SENSORS_SIGNAL_PER_100KM,
+    CONFIG_ENTRY_SENSORS_SIGNAL_PER_100M,
     CONFIG_ENTRY_SENSORS_INJECTORS_CCM,
     CONFIG_ENTRY_LAST
 }CONFIG_Entry;
@@ -94,5 +94,12 @@ TESTUSE void CONFIG_saveconfig(CONFIG_Config* config);
 /*
     Resets config in persistent memory to default values. 
 */
-uint8_t CONFIG_factory_default_reset();
+TESTUSE uint8_t CONFIG_factory_default_reset();
+
+/*
+    Sanitize config, replacing offending values with minimal possible.
+    Returns number of offending values.
+*/
+TESTUSE uint8_t CONFIG_sanitize_config(CONFIG_Config* config);
+
 #endif

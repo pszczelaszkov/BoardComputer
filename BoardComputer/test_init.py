@@ -10,11 +10,6 @@ def cast_void(ffi, variable):
     return ffi.cast("void*", ffi.addressof(variable))
 
 class testInit(unittest.TestCase):
-    def test_sensorsfeed(self):
-        # Cant be 0(0 division issue at init)
-        self.assertTrue(m.SENSORSFEED_injector_ccm)
-        self.assertTrue(m.SENSORSFEED_speed_ticks_100m)
-
     def test_countersfeed(self):
         self.assertTrue(m.COUNTERSFEED_TICKSPERSECOND)
 
@@ -273,25 +268,3 @@ class TestBasicTimer:
 
         m.TIMER_format(ffi.cast("void*",watch),ffi.cast("void*",timer_formated),format_flag)
         assert ffi.unpack(timer_formated.c_str,11) == expected_formated_str
-
-class TestBasicConfig:
-    def test_entries_correct_value_range(self):
-        truth_table = []
-        truth_table.insert(m.CONFIG_ENTRY_SYSTEM_FACTORY_RESET,(0, 1))
-        truth_table.insert(m.CONFIG_ENTRY_SYSTEM_ALWAYS_ON,(0, 1))
-        truth_table.insert(m.CONFIG_ENTRY_SYSTEM_DISPLAYBRIGHTNESS,(0, 100))
-        truth_table.insert(m.CONFIG_ENTRY_SYSTEM_BEEP_ON_CLICK,(0, 1))
-        truth_table.insert(m.CONFIG_ENTRY_SENSORS_SIGNAL_PER_100KM,(0, 9999))
-        truth_table.insert(m.CONFIG_ENTRY_SENSORS_INJECTORS_CCM,(0, 9999))
-
-        minvalue = ffi.new("int32_t*")
-        maxvalue = ffi.new("int32_t*")
-
-        result = []
-        i = 0
-        for v in truth_table:
-            m.CONFIG_get_entry_min_max_values(i,minvalue,maxvalue)
-            i = i+1
-            result.append((int(minvalue[0]),int(maxvalue[0])))
-
-        assert truth_table == result

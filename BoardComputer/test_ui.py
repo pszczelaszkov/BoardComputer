@@ -11,6 +11,7 @@ class TestBoardUI:
     @classmethod
     def setup_class(cls):
         m.SYSTEM_run = False
+        m.CONFIG_factory_default_reset()
         m.test()
 
     @pytest.fixture(autouse=True)
@@ -390,6 +391,7 @@ class TestNumpadUI:
     def setup_class(cls):
         cls.nullptr = ffi.NULL
         m.SYSTEM_run = False
+        m.CONFIG_factory_default_reset()
         m.test()
 
     @pytest.fixture(autouse=True)
@@ -554,6 +556,12 @@ class TestConfigUI:
     INPUTCOMPONENT_BCK = 10
     INPUTCOMPONENT_PAD = 11
 
+    @classmethod
+    def setup_class(cls):
+        m.SYSTEM_run = False
+        m.CONFIG_factory_default_reset()
+        m.test()
+
     @pytest.fixture(autouse=True)
     def clear(self):
         m.NEXTION_clear_selected_component()
@@ -566,7 +574,7 @@ class TestConfigUI:
         output = read_nextion_output(m,ffi)
         assert int(output["ptr.val"]) == 0 # Set pointer to variable
         assert int(output["rfp.en"]) == 1 # Enable refresh pointer resolving
-        assert int(output["vlh.val"]) == 1 # Value Lower Half expected 1
+        assert int(output["vlh.val"]) == 1 # Value Lower Half expected SYSTEM_FACTORY_RESET value
         m.SYSTEM_config.SYSTEM_FACTORY_RESET = 0
     
     def test_nextion_select_with_down_key(self):
@@ -605,7 +613,7 @@ class TestConfigUI:
             output = read_nextion_output(m, ffi)
             assert int(output["ptr.val"]) == i # Set pointer to variable
             assert int(output["rfp.en"]) == 1 # Enable refresh pointer resolving
-            assert int(output["vlh.val"]) == 0 # Set value of value lower half, in this case 0
+            assert "vlh.val" in output # Set value of value lower half
         
         #BACKWARD
         inputevent.componentID = self.INPUTCOMPONENT_PRV
@@ -614,7 +622,7 @@ class TestConfigUI:
             output = read_nextion_output(m, ffi)
             assert int(output["ptr.val"]) == i # Set pointer to variable
             assert int(output["rfp.en"]) == 1 # Enable refresh pointer resolving
-            assert int(output["vlh.val"]) == 0 # Set value of value lower half, in this case 0
+            assert "vlh.val" in output # Set value of value lower half
 
     def test_nextion_inc_value(self):
         m.SYSTEM_config.SYSTEM_FACTORY_RESET = 0
@@ -825,9 +833,9 @@ class TestConfigUI:
         touch_event.componentID = self.INPUTCOMPONENT_BCK
         m.UICONFIG_handle_userinput(cast_void(touch_event))
 
-        for i in range(m.CONFIG_ENTRY_LAST):
-            m.CONFIG_read_entry(ffi.NULL, i , TESTDATA)
-            assert 0 == TESTDATA[0]
+
+        m.CONFIG_read_entry(ffi.NULL, m.CONFIG_ENTRY_SYSTEM_FACTORY_RESET, TESTDATA)
+        assert 0 == TESTDATA[0]
 
         # Check if device restart is triggered
         assert False == m.SYSTEM_run

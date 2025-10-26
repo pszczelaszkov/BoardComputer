@@ -69,7 +69,6 @@ TESTUSE typedef struct NEXTION_Executable_Component
 	Callback execute;
 }NEXTION_Executable_Component;
 
-TESTUSE extern uint8_t NEXTION_brightness;
 TESTUSE extern NEXTION_Component NEXTION_common_bckcomponent;
 TESTUSE extern char NEXTION_eot[];
 extern uint8_t NEXTION_selection_counter;
@@ -92,7 +91,6 @@ TESTUSE void NEXTION_set_brightness(uint8_t brightness);
 TESTUSE void NEXTION_set_component_select_status(NEXTION_Component* component, NEXTION_Component_select_status_t status);
 TESTUSE void NEXTION_clear_selected_component();
 TESTUSE void NEXTION_set_previous_page();
-void NEXTION_request_brightness();
 void NEXTION_reset();
 void NEXTION_instruction_compose(const char* objname, const char* varname, char* instruction);
 

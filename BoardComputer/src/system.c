@@ -12,7 +12,8 @@ volatile uint8_t SYSTEM_run = 1;
 volatile uint8_t SYSTEM_exec;
 volatile uint8_t SYSTEM_event_timer;//Represent fraction of second in values from 0 to 7.
 const SYSTEM_cycle_timestamp_t SYSTEM_fullcycle_rtc_steps = 128;
-
+const uint8_t BEEP_DURATION = 4;
+uint8_t shortbeep_counter;
 typedef struct Alert
 {
     uint8_t priority;
@@ -54,7 +55,12 @@ void SYSTEM_raisealert(SYSTEM_ALERT_t alert)
 
 void SYSTEM_initialize()
 {
-    SYSTEM_status = SYSTEM_STATUS_OPERATIONAL;//workaround!
+    CONFIG_loadconfig(&SYSTEM_config);
+    if(SYSTEM_config.SYSTEM_ALWAYS_ON)
+    {
+        SYSTEM_status = SYSTEM_STATUS_OPERATIONAL;
+    }
+    CLEAR(PORTD,BIT7);
     #ifdef __AVR__
     //Event Timer
     OCR2A = 15;// 1/8 seconds
@@ -66,22 +72,59 @@ void SYSTEM_initialize()
     #endif
 }
 
+void SYSTEM_trigger_short_beep()
+{
+    shortbeep_counter = BEEP_DURATION;
+}
+
 void SYSTEM_update()
 {
-    if(active_alert.pattern && SYSTEM_status == SYSTEM_STATUS_OPERATIONAL)
-    { 
-        if(active_alert.pattern & 0x01)
-            SET(PORTD,BIT7);
+    //Enable switch detection
+    if(!SYSTEM_config.SYSTEM_ALWAYS_ON)
+    {        
+        if(SYSTEM_is_board_enabled)
+        {
+            SYSTEM_status = SYSTEM_STATUS_OPERATIONAL;
+        }
         else
-            CLEAR(PORTD,BIT7);
-
-        active_alert.pattern >>= 1;
-        //clear
-        if(!active_alert.pattern)
-            active_alert.priority = 0;
+        {
+            SYSTEM_status = SYSTEM_STATUS_IDLE;
+        }
     }
-    else
-        CLEAR(PORTD,BIT7);
+
+    //Alarm and beep
+    if(SYSTEM_STATUS_OPERATIONAL == SYSTEM_status)
+    {    
+        uint8_t beep_or_not_to_beep = 0;
+        //Alert Control
+        if(active_alert.pattern)
+        { 
+            if(active_alert.pattern & 0x01)
+                beep_or_not_to_beep = 1;
+
+            active_alert.pattern >>= 1;
+            //Clear alert
+            if(!active_alert.pattern)
+                active_alert.priority = 0;
+        }
+        //We can also beep when short beep is triggered.
+        if(shortbeep_counter)
+        {
+            shortbeep_counter--;
+            beep_or_not_to_beep = 1;
+        }
+        
+        if(beep_or_not_to_beep)
+        {
+            //Here we beep.
+            SET(PORTD,BIT7);
+        }
+        else
+        {
+            //or not beep.
+            CLEAR(PORTD,BIT7);
+        }
+    }
 }
 
 EVENT_TIMER_ISR

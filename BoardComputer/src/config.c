@@ -16,10 +16,14 @@ typedef enum ENTRY_VALIDATOR
     ENTRY_VALIDATOR_ENUM_7,
     ENTRY_VALIDATOR_ENUM_8,
     ENTRY_VALIDATOR_ENUM_9,
-    ENTRY_VALIDATOR_POSITIVE, /* Check if maxvalue >= value > 0 */
-    ENTRY_VALIDATOR_NEGATIVE, /* Check if minvalue <= value < 0 */
-    ENTRY_VALIDATOR_POSITIVE_4DIGIT, /* Check if 9999 >= value > 0 */
-    ENTRY_VALIDATOR_NEGATIVE_4DIGIT, /* Check if -9999 <= value < 0 */
+    ENTRY_VALIDATOR_POSITIVE_EXCL_0, /* Check if maxvalue >= value > 0 */
+    ENTRY_VALIDATOR_POSITIVE_INCL_0, /* Check if maxvalue >= value >=0 */
+    ENTRY_VALIDATOR_NEGATIVE_EXCL_0, /* Check if minvalue <= value < 0 */
+    ENTRY_VALIDATOR_NEGATIVE_INCL_0, /* Check if minvalue <= value <=0 */
+    ENTRY_VALIDATOR_POSITIVE_4DIGIT_EXCL_0, /* Check if 9999 >= value > 0 */
+    ENTRY_VALIDATOR_POSITIVE_4DIGIT_INCL_0, /* Check if 9999 >= value >=0 */
+    ENTRY_VALIDATOR_NEGATIVE_4DIGIT_EXCL_0, /* Check if -9999 <= value < 0 */
+    ENTRY_VALIDATOR_NEGATIVE_4DIGIT_INCL_0, /* Check if -9999 <= value <= 0 */
     ENTRY_VALIDATOR_PERCENT, /* Check if 0 <= value <= 100 */
 }ENTRY_VALIDATOR;
 
@@ -56,8 +60,8 @@ static const Entryinfo entryinfo[CONFIG_ENTRY_LAST] PROGMEM = {
     CONFIG_ENTRY(SYSTEM_ALWAYS_ON, ENTRY_VALIDATOR_BOOLEAN),
     CONFIG_ENTRY(SYSTEM_BEEP_ON_CLICK, ENTRY_VALIDATOR_BOOLEAN),
     CONFIG_ENTRY(SYSTEM_DISPLAYBRIGHTNESS, ENTRY_VALIDATOR_PERCENT),
-    CONFIG_ENTRY(SENSORS_SIGNAL_PER_100KM, ENTRY_VALIDATOR_POSITIVE_4DIGIT),
-    CONFIG_ENTRY(SENSORS_INJECTORS_CCM, ENTRY_VALIDATOR_POSITIVE_4DIGIT),
+    CONFIG_ENTRY(SENSORS_SIGNAL_PER_100M, ENTRY_VALIDATOR_POSITIVE_4DIGIT_EXCL_0),
+    CONFIG_ENTRY(SENSORS_INJECTORS_CCM, ENTRY_VALIDATOR_POSITIVE_4DIGIT_EXCL_0),
 };
 
 static const uint32_t ADDRESS_IN_PERSISTENT_MEMORY = 0x0;
@@ -85,16 +89,24 @@ void CONFIG_get_entry_min_max_values(CONFIG_Entry entry, CONFIG_maxdata_t* min, 
             case ENTRY_VALIDATOR_PERCENT:
                 *max = 100;
             break;
-            case ENTRY_VALIDATOR_POSITIVE:
+            case ENTRY_VALIDATOR_POSITIVE_EXCL_0:
+                *min = 1;
+            case ENTRY_VALIDATOR_POSITIVE_INCL_0:
                 *max = CONFIG_maxvalue;
             break;
-            case ENTRY_VALIDATOR_NEGATIVE:
+            case ENTRY_VALIDATOR_NEGATIVE_EXCL_0:
+                *max = -1;
+            case ENTRY_VALIDATOR_NEGATIVE_INCL_0:
                 *min = CONFIG_minvalue;
             break;
-            case ENTRY_VALIDATOR_POSITIVE_4DIGIT:
+            case ENTRY_VALIDATOR_POSITIVE_4DIGIT_EXCL_0:
+                *min = 1;
+            case ENTRY_VALIDATOR_POSITIVE_4DIGIT_INCL_0:
                 *max = 9999;
             break;
-            case ENTRY_VALIDATOR_NEGATIVE_4DIGIT:
+            case ENTRY_VALIDATOR_NEGATIVE_4DIGIT_EXCL_0:
+                *max = -1;
+            case ENTRY_VALIDATOR_NEGATIVE_4DIGIT_INCL_0:
                 *min = -9999;
             break;
         }
@@ -105,7 +117,7 @@ CONFIG_ENTRY_VALIDATOR_RESULT CONFIG_validate_entry(CONFIG_Entry entry, CONFIG_m
 {
     CONFIG_ENTRY_VALIDATOR_RESULT result = {
         .verdict = CONFIG_ENTRY_VERDICT_PASS,
-        .value = 0
+        .value = value
     };
 
     CONFIG_maxdata_t min = 0;
@@ -168,7 +180,7 @@ uint8_t CONFIG_read_entry(CONFIG_Config* config, CONFIG_Entry entry, CONFIG_maxd
     PROGRAM_MEMORY_read(&entryinfo[entry],&info,sizeof(Entryinfo));
     uint8_t size = 1 << info.size;
     uint8_t offset = info.memory_offset;
-
+    *value = 0;
     if(config)
     {
         memcpy(value, &((uint8_t*)config)[offset], size);
@@ -186,6 +198,40 @@ uint8_t CONFIG_factory_default_reset()
     CONFIG_maxdata_t default_value = 0;
     for(uint8_t i = 0; i < CONFIG_ENTRY_LAST; i++)
     {
-       CONFIG_modify_entry(NULL,i,&default_value);
+        if(CONFIG_ENTRY_SENSORS_INJECTORS_CCM == i 
+            || CONFIG_ENTRY_SENSORS_SIGNAL_PER_100M == i 
+            || CONFIG_ENTRY_SYSTEM_ALWAYS_ON == i)
+        {
+            default_value = 1;
+        }
+        else if(CONFIG_ENTRY_SYSTEM_DISPLAYBRIGHTNESS == i)
+        {
+            default_value = 100;
+        }
+        else
+        {
+            default_value = 0;
+        }
+        CONFIG_modify_entry(NULL,i,&default_value);
     }
+}
+
+uint8_t CONFIG_sanitize_config(CONFIG_Config* config)
+{
+    uint8_t offending_values = 0;
+    CONFIG_maxdata_t value;
+    if(config)
+    {
+        for(uint8_t i = 0; i < CONFIG_ENTRY_LAST; i++)
+        {
+            CONFIG_read_entry(config, i, &value);
+            CONFIG_ENTRY_VALIDATOR_RESULT result = CONFIG_validate_entry(i, value);
+            if(CONFIG_ENTRY_VERDICT_PASS != result.verdict)
+            {
+                offending_values++;
+                CONFIG_modify_entry(config, i, &result.value);
+            }
+        }
+    }
+    return offending_values;
 }

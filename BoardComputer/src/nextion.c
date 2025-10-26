@@ -27,7 +27,6 @@ static const char str_bck[NEXTION_OBJNAME_LEN] = "bck";
 
 Callback_32 NEXTION_incomingdata_handler;
 uint8_t NEXTION_selection_counter;
-uint8_t NEXTION_brightness;
 volatile uint8_t watchdog_counter = WATCHDOG_THRESHOLD;
 char NEXTION_eot[] = {0xff,0xff,0xff,0x00};
 
@@ -90,15 +89,10 @@ TESTUSE static void TESTADDPREFIX(update_select_decay)()
 	}
 }
 
-static void handler_brightness(int32_t data)
-{
-	NEXTION_brightness = data;
-}
-
 static void init_setup()
 {	
 	SENSORSFEED_update();
-	NEXTION_request_brightness();
+
 }
 
 static void init_update()
@@ -282,18 +276,11 @@ int8_t NEXTION_switch_page(NEXTION_PageID_t pageID, uint8_t push_to_history)
 	return NEXTION_send(buffer,USART_HOLD);
 }
 
-void NEXTION_request_brightness()
-{
-	if(NEXTION_send("get dim",USART_HOLD))
-		NEXTION_incomingdata_handler = handler_brightness;
-}
-
 void NEXTION_set_brightness(uint8_t brightness)
 {
 	char buffer[] = "dim=   ";
 	itoa(brightness,&buffer[4],10);
-	if(NEXTION_send(buffer,USART_HOLD))
-		NEXTION_brightness = brightness;
+	NEXTION_send(buffer,USART_HOLD);
 }
 
 void NEXTION_set_previous_page()
@@ -313,6 +300,7 @@ int8_t NEXTION_update()
 		break;
 		case DISPLAYSTATUS_CONNECTED:
 			NEXTION_switch_page(NEXTION_PAGEID_INIT,0);
+			NEXTION_set_brightness(SYSTEM_config.SYSTEM_DISPLAYBRIGHTNESS);
 			displaystatus = DISPLAYSTATUS_OPERATIONAL;
 			watchdog_counter = WATCHDOG_THRESHOLD;
 		break;

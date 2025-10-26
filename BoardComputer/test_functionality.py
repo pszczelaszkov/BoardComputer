@@ -1,12 +1,14 @@
 import cffi
 import random
 import pytest
+import config
 from helpers import (
     write_usart,
     read_usart,
     load,
     max6675_response,
     parse_nextion,
+    read_nextion_output,
     ModuleWrapper,
     generate_signal,
     exec_cycle,
@@ -29,6 +31,8 @@ class TestParent:
     @classmethod
     def setup_class(cls):
         m.SYSTEM_run = False
+        #Set system to always on to ignore board checking enable status, so we can set manualy.
+        m.CONFIG_factory_default_reset()
         m.test()
         session.create_snapshot()
 
@@ -45,7 +49,8 @@ class TestPreRun(TestParent):
     @pytest.mark.parametrize("testvalue", [100, 0])
     def test_nextion_set_brightness(self, testvalue):
         m.NEXTION_set_brightness(testvalue)
-        assert m.NEXTION_brightness == testvalue
+        output = read_nextion_output(m, ffi)
+        assert int(output["dim"]) == testvalue
 
     @pytest.mark.parametrize(
         "watchtype,formatedresult,ticks",
@@ -408,14 +413,7 @@ class TestPreRun(TestParent):
 
 class TestConfig(TestParent):
     CONFIG_SIZE = ffi.sizeof("CONFIG_Config")
-    var_dict = {
-        "SYSTEM_FACTORY_RESET" : 1,
-        "SYSTEM_ALWAYS_ON" : 1,
-        "SYSTEM_BEEP_ON_CLICK" : 1,
-        "SYSTEM_DISPLAYBRIGHTNESS" : 1,
-        "SENSORS_SIGNAL_PER_100KM" : 2,
-        "SENSORS_INJECTORS_CCM" : 2,
-    }
+
     def test_save_and_load(self):
         TEST_PATTERN = 0xCE
         config_sample = ffi.new("uint8_t[]", init=[TEST_PATTERN]*TestConfig.CONFIG_SIZE)
@@ -425,12 +423,10 @@ class TestConfig(TestParent):
         assert(ffi.unpack(config_sample,TestConfig.CONFIG_SIZE) == ffi.unpack(loaded_config,TestConfig.CONFIG_SIZE))
 
     @pytest.mark.parametrize("entry,expected_min,expected_max",[
-        (m.CONFIG_ENTRY_SYSTEM_FACTORY_RESET, 0, 1),
-        (m.CONFIG_ENTRY_SYSTEM_ALWAYS_ON, 0, 1),
-        (m.CONFIG_ENTRY_SYSTEM_BEEP_ON_CLICK, 0, 1),
-        (m.CONFIG_ENTRY_SYSTEM_DISPLAYBRIGHTNESS, 0, 100),
-        (m.CONFIG_ENTRY_SENSORS_SIGNAL_PER_100KM, 0, 9999),
-        (m.CONFIG_ENTRY_SENSORS_INJECTORS_CCM, 0, 9999),
+        (i,*config.ENTRY_VALIDATORS[
+            config.config[i]["validator"]
+            ])
+         for i in range(m.CONFIG_ENTRY_LAST)
     ])
     def test_entries_has_correct_validation_min_max(self, entry, expected_min, expected_max):
         too_small_value = expected_min - 1
@@ -453,36 +449,56 @@ class TestConfig(TestParent):
         validator_result = m.CONFIG_validate_entry(m.CONFIG_ENTRY_LAST, 0)
         assert validator_result.verdict == m.CONFIG_ENTRY_VERDICT_INVALID_ENTRY
 
-    def test_modify_entry_modifies_local_config(self):
-        TESTVAL = 0x7f7f7f7f7f7f7f7f
-
+    @pytest.mark.parametrize("testval",[
+        (0),
+        (-1),
+        (125),
+        (-125),
+        (-32000),
+        (32000),
+        (0x7f7f7f7f)
+    ])
+    def test_modify_entry_modifies_local_config(self,testval):
         def test_config_variable(var_name,var_size):
-            expected = TESTVAL & (256**var_size-1)
-
-            testval = ffi.cast("CONFIG_maxdata_t*",ffi.new("uint64_t*", TESTVAL))
+            #New config per each config entry
+            c_testval = ffi.new("CONFIG_maxdata_t*", testval)
             test_config_left = ffi.new("CONFIG_Config*")
             test_config_right = cast_void(ffi,ffi.new("CONFIG_Config*"))
 
             lcpy = locals().copy()
             #execute code changing left value by variable and right side by modifying function
-            exec(f"test_config_left.{var_name} = {expected};modified_bytes = m.CONFIG_modify_entry(test_config_right, m.CONFIG_ENTRY_{var_name}, testval)", globals(), lcpy)
+            overflow_detected = False
+            try:
+                exec(f"test_config_left.{var_name} = {testval}")
+            except OverflowError:
+                overflow_detected = True
+            
+            exec(f"modified_bytes = m.CONFIG_modify_entry(test_config_right, m.CONFIG_ENTRY_{var_name}, c_testval)", globals(), lcpy)
             assert lcpy["modified_bytes"] == var_size
+            if not overflow_detected:
+                '''
+                    Compare if those 2 configs represents the same content only when var overflow was not detected,
+                    when overflow was detected signess may be lost anyway.
+                '''
+                unpacked_raw_lconfig = ffi.unpack(ffi.cast("uint8_t*",test_config_left), TestConfig.CONFIG_SIZE)
+                unpacked_raw_rconfig = ffi.unpack(ffi.cast("uint8_t*",test_config_right), TestConfig.CONFIG_SIZE)
+                assert unpacked_raw_lconfig == unpacked_raw_rconfig
 
-            #compare if those 2 configs represents the same content
-            unpacked_raw_lconfig = ffi.unpack(ffi.cast("uint8_t*",test_config_left),TestConfig.CONFIG_SIZE)
-            unpacked_raw_rconfig = ffi.unpack(ffi.cast("uint8_t*",test_config_right),TestConfig.CONFIG_SIZE)
-            assert unpacked_raw_lconfig == unpacked_raw_rconfig
+        for entry in config.config:
+            test_config_variable(f'{entry["category"]}_{entry["name"]}', entry["size"])
 
-        for var_name, var_size in self.var_dict.items():
-            test_config_variable(var_name, var_size)
-
-    def test_modify_entry_modifies_persistent_config(self):
-        TESTVAL = 0x7f7f7f7f7f7f7f7f
-
+    @pytest.mark.parametrize("testval",[
+        (0),
+        (-1),
+        (125),
+        (-125),
+        (-32000),
+        (32000),
+        (0x7f7f7f7f)
+    ])
+    def test_modify_entry_modifies_persistent_config(self,testval):
         def test_config_variable(var_name,var_size):
-            expected = TESTVAL & (256**var_size-1)
-
-            testval = ffi.cast("CONFIG_maxdata_t*",ffi.new("uint64_t*", TESTVAL))
+            c_testval = ffi.new("CONFIG_maxdata_t*", testval)
             test_config_left = ffi.new("CONFIG_Config*")
             test_config_right = ffi.new("CONFIG_Config*")
             #write clean config
@@ -490,75 +506,127 @@ class TestConfig(TestParent):
 
             lcpy = locals().copy()
             #execute code changing left value by variable and right side by modifying function
-            exec(f"test_config_left.{var_name} = {expected};modified_bytes = m.CONFIG_modify_entry(ffi.NULL, m.CONFIG_ENTRY_{var_name}, testval)", globals(), lcpy)
+            overflow_detected = False
+            try:
+                exec(f"test_config_left.{var_name} = {testval}")
+            except OverflowError:
+                overflow_detected = True
+            exec(f"modified_bytes = m.CONFIG_modify_entry(ffi.NULL, m.CONFIG_ENTRY_{var_name}, c_testval)", globals(), lcpy)
             assert lcpy["modified_bytes"] == var_size
-            #read modified config
-            m.PERSISTENT_MEMORY_read(0, cast_void(ffi,test_config_right), TestConfig.CONFIG_SIZE)
 
-            #compare if those 2 configs represents the same content
-            unpacked_raw_lconfig = ffi.unpack(ffi.cast("uint8_t*",test_config_left),TestConfig.CONFIG_SIZE)
-            unpacked_raw_rconfig = ffi.unpack(ffi.cast("uint8_t*",test_config_right),TestConfig.CONFIG_SIZE)
-            assert unpacked_raw_lconfig == unpacked_raw_rconfig
+            if not overflow_detected:
+                '''
+                    Compare if those 2 configs represents the same content only when var overflow was not detected,
+                    when overflow was detected signess may be lost anyway.
+                '''
+                #read modified config
+                m.PERSISTENT_MEMORY_read(0, cast_void(ffi,test_config_right), TestConfig.CONFIG_SIZE)
 
-        for var_name, var_size in self.var_dict.items():
-            test_config_variable(var_name, var_size)
+                #compare if those 2 configs represents the same content
+                unpacked_raw_lconfig = ffi.unpack(ffi.cast("uint8_t*",test_config_left),TestConfig.CONFIG_SIZE)
+                unpacked_raw_rconfig = ffi.unpack(ffi.cast("uint8_t*",test_config_right),TestConfig.CONFIG_SIZE)
+                assert unpacked_raw_lconfig == unpacked_raw_rconfig
 
-    def test_read_config_entry_local(self):
-        TESTVAL = 0x7f7f7f7f7f7f7f7f
-
+        for entry in config.config:
+            test_config_variable(f'{entry["category"]}_{entry["name"]}', entry["size"])
+    
+    @pytest.mark.parametrize("testval",[
+        (0),
+        (-1),
+        (125),
+        (-125),
+        (-32000),
+        (32000),
+        (0x7f7f7f7f)
+    ])
+    def test_read_config_entry_local(self,testval):
         def test_config_variable(var_name,var_size):
-            expected = TESTVAL & (256**var_size-1)
 
-
-            testval = ffi.cast("CONFIG_maxdata_t*",ffi.new("uint64_t*"))
+            c_testval = ffi.new("CONFIG_maxdata_t*")
             test_config = ffi.new("CONFIG_Config*")
 
             lcpy = locals().copy()
+            overflow_detected = False
+            try:
+                exec(f"test_config.{var_name} = {testval}")
+            except OverflowError:
+                overflow_detected = True
             #execute code changing left value by variable and right side by modifying function
-            exec(f"test_config.{var_name} = {expected};read_bytes = m.CONFIG_read_entry(cast_void(ffi,test_config), m.CONFIG_ENTRY_{var_name}, testval)", globals(), lcpy)
+            exec(f"read_bytes = m.CONFIG_read_entry(cast_void(ffi,test_config), m.CONFIG_ENTRY_{var_name}, c_testval)", globals(), lcpy)
             assert lcpy["read_bytes"] == var_size
-            assert int(ffi.cast("CONFIG_maxdata_t", testval[0])) == expected
+            
+            if not overflow_detected:
+                assert (c_testval[0] & testval) == c_testval[0] # Trickery to compare omiting sign interpretation
 
-        for var_name, var_size in self.var_dict.items():
-            test_config_variable(var_name, var_size)
+        for entry in config.config:
+            test_config_variable(f'{entry["category"]}_{entry["name"]}', entry["size"])
 
-    def test_read_config_entry_persistent(self):
-        TESTVAL = 0x7f7f7f7f7f7f7f7f
-
+    @pytest.mark.parametrize("testval",[
+        (0),
+        (-1),
+        (125),
+        (-125),
+        (-32000),
+        (32000),
+        (0x7f7f7f7f)
+    ])
+    def test_read_config_entry_persistent(self,testval):
         def test_config_variable(var_name,var_size):
-            expected = TESTVAL & (256**var_size-1)
 
-            testval = ffi.cast("CONFIG_maxdata_t*",ffi.new("uint64_t*"))
+            c_testval = ffi.new("CONFIG_maxdata_t*")
             test_config = ffi.new("CONFIG_Config*")
-            #execute code changing config value by variable 
-            exec(f"test_config.{var_name} = {expected}")
+
+            lcpy = locals().copy()
+            overflow_detected = False
+            try:
+                exec(f"test_config.{var_name} = {testval}")
+            except OverflowError:
+                overflow_detected = True
             #put config into persistent memory
             m.PERSISTENT_MEMORY_write(0, cast_void(ffi,test_config), TestConfig.CONFIG_SIZE)
             lcpy = locals().copy()
             #execute code reading variable from persistent memory(config == null)
-            exec(f"read_bytes = m.CONFIG_read_entry(ffi.NULL, m.CONFIG_ENTRY_{var_name}, testval)", globals(), lcpy)
+            exec(f"read_bytes = m.CONFIG_read_entry(ffi.NULL, m.CONFIG_ENTRY_{var_name}, c_testval)", globals(), lcpy)
             assert lcpy["read_bytes"] == var_size
-            assert int(ffi.cast("CONFIG_maxdata_t", testval[0])) == expected
+            if not overflow_detected:
+                assert (c_testval[0] & testval) == c_testval[0] # Trickery to compare omiting sign interpretation
 
-        for var_name, var_size in self.var_dict.items():
-            test_config_variable(var_name, var_size)
+        for entry in config.config:
+            test_config_variable(f'{entry["category"]}_{entry["name"]}', entry["size"])
 
+    @pytest.mark.parametrize(
+        "entry,defaultvalue",
+        [
+            (i, config.config[i]["default"]) for i in range(m.CONFIG_ENTRY_LAST)
+        ]
+    )
+    def test_factory_reset(self,entry,defaultvalue):
+        readval = ffi.cast("CONFIG_maxdata_t*",ffi.new("CONFIG_maxdata_t*"))
+        m.CONFIG_factory_default_reset()
+        m.CONFIG_read_entry(ffi.NULL, entry, readval)
+        assert defaultvalue == readval[0]
 
-    def test_read_config_entry_local(self):
-        TESTVAL = 0x7f7f7f7f7f7f7f7f
+    @pytest.mark.parametrize("entry,minval,maxval",[
+        (i,*config.ENTRY_VALIDATORS[
+            config.config[i]["validator"]
+            ])
+         for i in range(m.CONFIG_ENTRY_LAST)
+    ])
+    def test_sanitize_config(self,entry,minval,maxval):
+        too_small_value = ffi.new("CONFIG_maxdata_t*",minval-1)
+        too_big_value = ffi.new("CONFIG_maxdata_t*",maxval+1)
+        readval = ffi.new("CONFIG_maxdata_t*")
 
-        def test_config_variable(var_name,var_size):
-            expected = TESTVAL & (256**var_size-1)
+        SYSTEM_config_ptr = ffi.addressof(m.SYSTEM_config)
+        #Check value sanitized when too small
+        m.CONFIG_modify_entry(SYSTEM_config_ptr, entry, too_small_value)
+        assert 1 == m.CONFIG_sanitize_config(SYSTEM_config_ptr)
+        m.CONFIG_read_entry(SYSTEM_config_ptr, entry, readval)
+        assert readval[0] in (minval,maxval) # Due to signedness of variable it may overflow so check any max val
 
-            testval = ffi.cast("CONFIG_maxdata_t*",ffi.new("uint64_t*"))
-            test_config = ffi.new("CONFIG_Config*")
-            #execute code changing config value by variable
-            exec(f"test_config.{var_name} = {expected}")
-            lcpy = locals().copy()
-            #execute code reading variable from that config
-            exec(f"read_bytes = m.CONFIG_read_entry(cast_void(ffi,test_config), m.CONFIG_ENTRY_{var_name}, testval)", globals(), lcpy)
-            assert lcpy["read_bytes"] == var_size
-            assert int(ffi.cast("CONFIG_maxdata_t", testval[0])) == expected
+        #Check value sanitized when too big
+        m.CONFIG_modify_entry(SYSTEM_config_ptr, entry, too_big_value)
+        assert 1 == m.CONFIG_sanitize_config(SYSTEM_config_ptr)
+        m.CONFIG_read_entry(SYSTEM_config_ptr, entry, readval)
+        assert readval[0] in (minval,maxval) # Due to signedness of variable it may overflow so check any max val
 
-        for var_name, var_size in self.var_dict.items():
-            test_config_variable(var_name, var_size)

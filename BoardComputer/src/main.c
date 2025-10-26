@@ -60,7 +60,7 @@ void core()
 		case SYSTEM_STATUS_OPERATIONAL:
 			USART_update();
 			INPUT_update();
-			SENSORSFEED_update();	
+			SENSORSFEED_update();
 		case SYSTEM_STATUS_IDLE:
 			SYSTEM_update();
 			TIMER_update();
@@ -85,9 +85,6 @@ ENTRY_ROUTINE
 	USART_initialize();
 	#ifdef __DEBUG__
 	NEXTION_handler_ready();
-	#endif
-	#ifndef __AVR__
-		if(SYSTEM_run)
 	#endif
 
     while(SYSTEM_run)
