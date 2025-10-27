@@ -3,6 +3,7 @@
 #include"persistent_memory.h"
 #include"program_memory.h"
 #include"string.h"
+#include"system.h"
 
 typedef enum ENTRY_VALIDATOR
 {
@@ -51,7 +52,6 @@ typedef struct ENTRYINFO
         .validator = _validator \
     }
 
-const uint16_t CONFIG_VERSION = 0x1;
 const int32_t CONFIG_maxvalue = 32768;
 const int32_t CONFIG_minvalue = -32767;
 
@@ -59,7 +59,7 @@ static const Entryinfo entryinfo[CONFIG_ENTRY_LAST] PROGMEM = {
     CONFIG_ENTRY(SYSTEM_FACTORY_RESET, ENTRY_VALIDATOR_BOOLEAN),
     CONFIG_ENTRY(SYSTEM_ALWAYS_ON, ENTRY_VALIDATOR_BOOLEAN),
     CONFIG_ENTRY(SYSTEM_BEEP_ON_CLICK, ENTRY_VALIDATOR_BOOLEAN),
-    CONFIG_ENTRY(SYSTEM_DISPLAYBRIGHTNESS, ENTRY_VALIDATOR_PERCENT),
+    CONFIG_ENTRY(SYSTEM_BRIGHTNESS, ENTRY_VALIDATOR_PERCENT),
     CONFIG_ENTRY(SENSORS_SIGNAL_PER_100M, ENTRY_VALIDATOR_POSITIVE_4DIGIT_EXCL_0),
     CONFIG_ENTRY(SENSORS_INJECTORS_CCM, ENTRY_VALIDATOR_POSITIVE_4DIGIT_EXCL_0),
 };
@@ -204,7 +204,7 @@ uint8_t CONFIG_factory_default_reset()
         {
             default_value = 1;
         }
-        else if(CONFIG_ENTRY_SYSTEM_DISPLAYBRIGHTNESS == i)
+        else if(CONFIG_ENTRY_SYSTEM_BRIGHTNESS == i)
         {
             default_value = 100;
         }
@@ -214,6 +214,10 @@ uint8_t CONFIG_factory_default_reset()
         }
         CONFIG_modify_entry(NULL,i,&default_value);
     }
+    //Write version
+    uint16_t version = SYSTEM_VERSION;
+    PERSISTENT_MEMORY_write(ADDRESS_IN_PERSISTENT_MEMORY+offsetof(CONFIG_Config, CONFIG_VERSION), &version, sizeof(version));
+    SYSTEM_raisealert(SYSTEM_ALERT_CONFIG_RESET);
 }
 
 uint8_t CONFIG_sanitize_config(CONFIG_Config* config)
@@ -233,5 +237,8 @@ uint8_t CONFIG_sanitize_config(CONFIG_Config* config)
             }
         }
     }
+    if(0 < offending_values)
+        SYSTEM_raisealert(SYSTEM_ALERT_CONFIG_INCORRECT);
+
     return offending_values;
 }

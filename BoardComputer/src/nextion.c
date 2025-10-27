@@ -1,7 +1,3 @@
-#define F_CPU 8000000
-#ifdef __AVR__
-	#include <util/delay.h>
-#endif
 #include "nextion.h"
 #include "USART.h"
 #include "sensorsfeed.h"
@@ -10,19 +6,21 @@
 #include "UI/board.h"
 #include "UI/config.h"
 #include "UI/numpad.h"
+#include "UI/init.h"
 #include "input.h"
 
 #define PAGEHISTORY_MAXDEPTH 5
 #define WATCHDOG_THRESHOLD 8
 
-static void init_setup();
-static void init_update();
 static NEXTION_Component* selected_component;
 static NEXTION_PageID_t pagehistory[PAGEHISTORY_MAXDEPTH];
 static NEXTION_PageID_t active_pageID;
 static uint8_t pagehistory_depth;
 
 static Callback page_callback;
+static const uint16_t MINIMAL_COMPAT_UIVERSION = 0x01;
+static const uint16_t UI_VERSION = 0x01;
+
 static const char str_bck[NEXTION_OBJNAME_LEN] = "bck";
 
 Callback_32 NEXTION_incomingdata_handler;
@@ -46,8 +44,8 @@ static struct Page
 {
 	[NEXTION_PAGEID_INIT]= 
 	{
-		.callback_setup = init_setup,
-		.callback_update = init_update,
+		.callback_setup = UIINIT_setup,
+		.callback_update = UIINIT_update,
 	},
 	[NEXTION_PAGEID_BOARD]=
 	{
@@ -87,18 +85,6 @@ TESTUSE static void TESTADDPREFIX(update_select_decay)()
 		}
 		NEXTION_selection_counter--;
 	}
-}
-
-static void init_setup()
-{	
-	SENSORSFEED_update();
-
-}
-
-static void init_update()
-{
-	_delay_ms(1000);
-	NEXTION_switch_page(NEXTION_PAGEID_BOARD,0);
 }
 
 /*
@@ -175,8 +161,12 @@ void NEXTION_instruction_compose(const char* objname, const char* varname, char*
 	instruction[size-1] = '=';
 }
 
-void NEXTION_handler_ready()
+void NEXTION_handler_ready(uint16_t display_version)
 {
+	if(MINIMAL_COMPAT_UIVERSION > display_version || UI_VERSION < display_version)
+    {
+		SYSTEM_raisealert(SYSTEM_ALERT_UI_INCOMPATIBLE);
+    }
 	displaystatus = DISPLAYSTATUS_CONNECTED;
 }
 
@@ -279,8 +269,18 @@ int8_t NEXTION_switch_page(NEXTION_PageID_t pageID, uint8_t push_to_history)
 void NEXTION_set_brightness(uint8_t brightness)
 {
 	char buffer[] = "dim=   ";
-	itoa(brightness,&buffer[4],10);
+	u16toa(brightness,&buffer[4]);
 	NEXTION_send(buffer,USART_HOLD);
+}
+
+void NEXTION_send_activealert()
+{
+	char buffer[] = "alt=   ";
+	if(DISPLAYSTATUS_DISCONNECTED != displaystatus)
+	{
+		u16toa(SYSTEM_get_active_alert().alert,&buffer[4]);
+		NEXTION_send(buffer,USART_HOLD);
+	}
 }
 
 void NEXTION_set_previous_page()
@@ -300,7 +300,7 @@ int8_t NEXTION_update()
 		break;
 		case DISPLAYSTATUS_CONNECTED:
 			NEXTION_switch_page(NEXTION_PAGEID_INIT,0);
-			NEXTION_set_brightness(SYSTEM_config.SYSTEM_DISPLAYBRIGHTNESS);
+			NEXTION_set_brightness(SYSTEM_config.SYSTEM_BRIGHTNESS);
 			displaystatus = DISPLAYSTATUS_OPERATIONAL;
 			watchdog_counter = WATCHDOG_THRESHOLD;
 		break;

@@ -32,22 +32,18 @@ void maintain_display_connection(uint8_t update_result)
 		if(display_reconnect_counter)
 		{
 			display_reconnect_counter = 0;
-			SYSTEM_raisealert(SYSTEM_ALERT_NOTIFICATION);
 		}
 	}
 	else
 	{
 		switch(display_reconnect_counter)
 		{
-			case 0:
-				//Raise only once, not possible to overload to 0
-				SYSTEM_raisealert(SYSTEM_ALERT_CRITICAL);
-			break;
-			case 8:
+			case 8://after 2 seconds try to restart nextion
 				NEXTION_reset();
 			break;
-			case 32://4s reset cycle
+			case 32://after 4s reset cycle and raise alert
 				display_reconnect_counter = 0;
+				SYSTEM_raisealert(SYSTEM_ALERT_NEXTION_TIMEOUT);
 		}
 		display_reconnect_counter++;
 	}
@@ -66,7 +62,7 @@ void core()
 			TIMER_update();
 			maintain_display_connection(NEXTION_update());
 			USART_flush();
-	}			
+	}
 }
 
 ENTRY_ROUTINE
@@ -84,7 +80,7 @@ ENTRY_ROUTINE
 	INPUT_initialize();
 	USART_initialize();
 	#ifdef __DEBUG__
-	NEXTION_handler_ready();
+	NEXTION_handler_ready(1);
 	#endif
 
     while(SYSTEM_run)

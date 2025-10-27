@@ -74,7 +74,7 @@ TESTUSE extern char NEXTION_eot[];
 extern uint8_t NEXTION_selection_counter;
 TESTUSE extern Callback_32 NEXTION_incomingdata_handler;
 
-void NEXTION_handler_ready();
+void NEXTION_handler_ready(uint16_t display_version);
 void NEXTION_handler_sendme(uint8_t pageid);
 uint8_t NEXTION_send(char data[], uint8_t flush);
 int8_t NEXTION_update();
@@ -88,6 +88,7 @@ inline void NEXTION_quote_payloadbuffer(char* payload,uint8_t payload_length)
 }
 
 TESTUSE void NEXTION_set_brightness(uint8_t brightness);
+TESTUSE void NEXTION_send_activealert();
 TESTUSE void NEXTION_set_component_select_status(NEXTION_Component* component, NEXTION_Component_select_status_t status);
 TESTUSE void NEXTION_clear_selected_component();
 TESTUSE void NEXTION_set_previous_page();

@@ -159,7 +159,7 @@ void message_register(uint8_t message_size)
 				}
 			break;
 			case NEXTIONMESSAGETYPE_DEVICEREADY:
-				NEXTION_handler_ready();
+				NEXTION_handler_ready(*(uint16_t*)&USART_RX_buffer[1]);
 			break;
 		}
 	}

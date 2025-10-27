@@ -1,44 +1,68 @@
 #include "system.h"
 #include "countersfeed.h"
+#include "nextion.h"
 
 #ifdef __AVR__
 #include <avr/io.h>
 #endif
 
 #define RTC_REGISTER TCNT2
+
 CONFIG_Config SYSTEM_config;
-volatile SYSTEM_STATUS_t SYSTEM_status;
+volatile SYSTEM_STATUS SYSTEM_status;
 volatile uint8_t SYSTEM_run = 1;
 volatile uint8_t SYSTEM_exec;
 volatile uint8_t SYSTEM_event_timer;//Represent fraction of second in values from 0 to 7.
+
+const uint16_t SYSTEM_VERSION = 0x01;
 const SYSTEM_cycle_timestamp_t SYSTEM_fullcycle_rtc_steps = 128;
-const uint8_t BEEP_DURATION = 4;
-uint8_t shortbeep_counter;
-typedef struct Alert
-{
-    uint8_t priority;
-    uint16_t pattern;
-}Alert;
+static const uint8_t BEEP_DURATION = 4;
+static const uint16_t MINIMAL_COMPAT_SYSTEMVERSION = 0x01;
+static uint8_t shortbeep_counter;
+static SYSTEM_ALERT_SEVERITY resolve_alert_severity(SYSTEM_ALERT alert);
+static ALERT_PATTERN resolve_severity_pattern(SYSTEM_ALERT_SEVERITY severity);
 
-static Alert alert_register[] =
+static SYSTEM_Alert_t active_alert;
+
+static ALERT_PATTERN resolve_severity_pattern(SYSTEM_ALERT_SEVERITY severity)
 {
-    [SYSTEM_ALERT_NOTIFICATION] =
+    ALERT_PATTERN pattern;
+    switch(severity)
     {
-        .pattern = 0xf
-    },
-    [SYSTEM_ALERT_WARNING] = 
-    {
-        .priority = 1,
-        .pattern = 0xAA
-    },
-    [SYSTEM_ALERT_CRITICAL] =
-    {
-        .priority = 0xf,
-        .pattern = 0xf0f
+        case SYSTEM_ALERT_SEVERITY_NOTIFICATION:
+            pattern = 0xf;
+        break;
+        case SYSTEM_ALERT_SEVERITY_WARNING:
+            pattern = 0xAA;
+        break;
+        case SYSTEM_ALERT_SEVERITY_CRITICAL:
+            pattern = 0xf0f;
+        break;
     }
-};
+    return pattern;
+}
 
-static Alert active_alert;
+SYSTEM_ALERT_SEVERITY SYSTEM_resolve_alert_severity(SYSTEM_ALERT alert)
+{
+    SYSTEM_ALERT_SEVERITY severity;
+    if(SYSTEM_ALERT_NOTIFICATIONS_END < alert)
+    {
+        if(SYSTEM_ALERT_WARNINGS_END < alert)
+        {
+            severity = SYSTEM_ALERT_SEVERITY_CRITICAL;
+        }
+        else
+        {
+            severity = SYSTEM_ALERT_SEVERITY_WARNING;
+        }
+    }
+    else
+    {
+        severity = SYSTEM_ALERT_SEVERITY_NOTIFICATION;
+    }
+
+    return severity;
+}
 
 SYSTEM_cycle_timestamp_t SYSTEM_get_cycle_timestamp()
 {
@@ -46,16 +70,50 @@ SYSTEM_cycle_timestamp_t SYSTEM_get_cycle_timestamp()
     return result;
 }
 
-void SYSTEM_raisealert(SYSTEM_ALERT_t alert)
+SYSTEM_Alert_t SYSTEM_get_active_alert()
 {
-    Alert new_alert = alert_register[alert];
-    if(!active_alert.priority || active_alert.priority < new_alert.priority)
-        active_alert = new_alert;
+    return active_alert;
+}
+
+void SYSTEM_raisealert(SYSTEM_ALERT alert)
+{
+    SYSTEM_ALERT_SEVERITY severity = SYSTEM_resolve_alert_severity(alert);
+    if(active_alert.severity <= severity)
+    {
+        active_alert.alert = alert;
+        active_alert.severity = severity;
+        active_alert.pattern = resolve_severity_pattern(severity);
+        NEXTION_send_activealert();
+    }
+}
+
+void SYSTEM_resetalert()
+{
+    active_alert.severity = 0;
+    active_alert.pattern = 0;
+    active_alert.alert = SYSTEM_ALERT_NO_ALERT;
 }
 
 void SYSTEM_initialize()
 {
     CONFIG_loadconfig(&SYSTEM_config);
+    /*
+        Check Config version compatibility.
+        Config version must be between Minimal compatible and current system version.
+    */
+    uint8_t config_version = SYSTEM_config.CONFIG_VERSION;
+    if(MINIMAL_COMPAT_SYSTEMVERSION > config_version || SYSTEM_VERSION < config_version)
+    {
+        //Version mismatch, format config and reload it.
+        CONFIG_factory_default_reset();
+        CONFIG_loadconfig(&SYSTEM_config);
+    }
+    if(0 < CONFIG_sanitize_config(&SYSTEM_config))
+    {
+        /*If config contains errors, save corrected and raise warning.*/
+        CONFIG_saveconfig(&SYSTEM_config);
+    }
+
     if(SYSTEM_config.SYSTEM_ALWAYS_ON)
     {
         SYSTEM_status = SYSTEM_STATUS_OPERATIONAL;
@@ -105,7 +163,7 @@ void SYSTEM_update()
             active_alert.pattern >>= 1;
             //Clear alert
             if(!active_alert.pattern)
-                active_alert.priority = 0;
+                SYSTEM_resetalert();
         }
         //We can also beep when short beep is triggered.
         if(shortbeep_counter)

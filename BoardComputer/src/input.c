@@ -3,50 +3,6 @@
 #include "UI/numpad.h"
 #include "bitwise.h"
 
-//Map all possible input components
-/*INPUT_Component INPUT_components[] = {
-	{
-		.componentID = INPUT_COMPONENT_CONFIGWHH,
-		.nextcomponentID = INPUT_COMPONENT_CONFIGWMM,
-		.nextion_component = (NEXTION_Component*)&UIBOARDCONFIG_executable_components[UIBOARDCONFIG_COMPONENT_WHH]
-	},
-	{
-		.componentID = INPUT_COMPONENT_CONFIGWMM,
-		.nextcomponentID = INPUT_COMPONENT_CONFIGWSS,
-		.nextion_component = (NEXTION_Component*)&UIBOARDCONFIG_executable_components[UIBOARDCONFIG_COMPONENT_WMM]
-	},
-	{
-		.componentID = INPUT_COMPONENT_CONFIGWSS,
-		.nextcomponentID = INPUT_COMPONENT_CONFIGDBS,
-		.nextion_component = (NEXTION_Component*)&UIBOARDCONFIG_executable_components[UIBOARDCONFIG_COMPONENT_WSS]
-	},
-	{
-		.componentID = INPUT_COMPONENT_CONFIGIPM,
-		.nextcomponentID = INPUT_COMPONENT_CONFIGCCM,
-		.nextion_component = (NEXTION_Component*)&UIBOARDCONFIG_executable_components[UIBOARDCONFIG_COMPONENT_IPM],
-		.on_click=UIBOARDCONFIG_modify_ipm
-	},
-	{
-		.componentID = INPUT_COMPONENT_CONFIGCCM,
-		.nextcomponentID = INPUT_COMPONENT_CONFIGWHH,
-		.nextion_component = (NEXTION_Component*)&UIBOARDCONFIG_executable_components[UIBOARDCONFIG_COMPONENT_CCM]
-	},
-	{
-		.componentID = INPUT_COMPONENT_CONFIGDBS,
-		.nextcomponentID = INPUT_COMPONENT_CONFIGBCK,
-		.nextion_component = (NEXTION_Component*)&UIBOARDCONFIG_executable_components[UIBOARDCONFIG_COMPONENT_DBS],
-		.on_click = NEXTION_request_brightness,
-		.on_hold = UIBOARDCONFIG_modify_dbs
-	},
-	{
-		.componentID = INPUT_COMPONENT_CONFIGBCK,
-		.nextcomponentID = INPUT_COMPONENT_CONFIGIPM,
-		.nextion_component = &NEXTION_common_bckcomponent,
-		.on_click = NEXTION_set_previous_page,
-	},
-};*/
-
-//static const uint8_t components_count = sizeof(INPUT_components)/sizeof(INPUT_Component);
 static uint8_t pending_componentID;
 INPUT_Keystatus_t INPUT_keystatus[INPUT_KEY_LAST];
 INPUT_Userinput_Handler INPUT_userinput_handler = NULL;
@@ -63,11 +19,11 @@ void INPUT_userinput(INPUT_Keystatus_t keystatus, INPUT_Key_t key, INPUT_Compone
 	{
 		if(INPUT_keystatus[key] > INPUT_KEYSTATUS_RELEASED && INPUT_keystatus[key] < INPUT_KEYSTATUS_HOLD)
 		{
-				keystatus = INPUT_KEYSTATUS_CLICK;
-				if(SYSTEM_config.SYSTEM_BEEP_ON_CLICK)
-				{
-					SYSTEM_trigger_short_beep();
-				}
+			keystatus = INPUT_KEYSTATUS_CLICK;
+			if(SYSTEM_config.SYSTEM_BEEP_ON_CLICK)
+			{
+				SYSTEM_trigger_short_beep();
+			}
 		}
 	}
 

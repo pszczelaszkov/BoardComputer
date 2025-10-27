@@ -203,14 +203,15 @@ class TestPreRun(TestParent):
     @pytest.mark.parametrize(
         "alert,expected_pattern",
         [
-            (m.SYSTEM_ALERT_NOTIFICATION, 0xF),
-            (m.SYSTEM_ALERT_WARNING, 0xAA),
-            (m.SYSTEM_ALERT_CRITICAL, 0xF0F),
+            (m.SYSTEM_ALERT_NOTIFICATIONS_END, 0xF),
+            (m.SYSTEM_ALERT_WARNINGS_END, 0xAA),
+            (m.SYSTEM_ALERT_WARNINGS_END+1, 0xF0F),
         ],
     )
     def test_system_alert(self, alert, expected_pattern):
         PATTERN_LEN = 16
         result_pattern = 0
+        m.SYSTEM_resetalert()
         m.SYSTEM_raisealert(alert)
         for i in range(PATTERN_LEN):
             m.SYSTEM_update()
@@ -221,16 +222,19 @@ class TestPreRun(TestParent):
     @pytest.mark.parametrize(
         "alert",
         [
-            (m.SYSTEM_ALERT_NOTIFICATION),
-            (m.SYSTEM_ALERT_WARNING),
-            (m.SYSTEM_ALERT_CRITICAL),
+            (m.SYSTEM_ALERT_NOTIFICATIONS_END),
+            (m.SYSTEM_ALERT_WARNINGS_END),
+            (m.SYSTEM_ALERT_WARNINGS_END+1),
         ],
     )
-    def test_system_alert_idle(self, alert):
+    def test_SYSTEM_ALERT_SEVERITY_idle(self, alert):
+        #At idle no alarm should be raised
+
         PATTERN_LEN = 16
         expected_pattern = 0x0
         result_pattern = 0
         m.SYSTEM_status = m.SYSTEM_STATUS_IDLE
+        m.SYSTEM_resetalert()
         m.SYSTEM_raisealert(alert)
         for i in range(PATTERN_LEN):
             m.SYSTEM_update()

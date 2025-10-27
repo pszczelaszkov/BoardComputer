@@ -226,12 +226,10 @@ static void raisevisualalert(Visualalertid_t alertid, Visualalertseverity_t seve
 		case VISUALALERT_SEVERITY_NOTIFICATION:
 			pattern = 0xcc;
 			color = BRIGHTBLUE;
-			SYSTEM_raisealert(SYSTEM_ALERT_NOTIFICATION);
 		break;
 		case VISUALALERT_SEVERITY_WARNING:
 			pattern = 0xaa;
 			color = SAFETYYELLOW;
-			SYSTEM_raisealert(SYSTEM_ALERT_WARNING);
 		break;
 	}
 	alert->color = color;
@@ -601,7 +599,7 @@ void UIBOARD_update()
 	{
 		if(!critical_raised)
 		{
-			SYSTEM_raisealert(SYSTEM_ALERT_CRITICAL);
+			SYSTEM_raisealert(SYSTEM_ALERT_SEVERITY_CRITICAL);
 			critical_raised = 1;
 		}
 	}
