@@ -39,6 +39,7 @@ all: prepare_dirs HW_1 flash
 prepare_dirs:
 	@mkdir -p $(BIN_DIR)
 	@mkdir -p $(BIN_DIR)UI
+	@mkdir -p $(BIN_DIR)Interface
 	@mkdir -p $(dir $(BIN_DIR)testmodule.so)
 
 # -------------------------- x86 Test Build -----------------------------------
@@ -77,10 +78,11 @@ HW_1: prepare_dirs $(BIN_DIR)BoardComputer.hex
 
 # List all .o objects for AVR
 AVR_SRCS := $(addprefix src/, $(COMMON_SRCS) $(UI_SRCS)) \
-            $(HW_1_AVR_IDIR)persistent_memory.c \
-            $(HW_1_AVR_IDIR)system_interface.c \
             src/main.c
-AVR_OBJS := $(patsubst src/%.c,$(BIN_DIR)%.o,$(AVR_SRCS))
+AVR_IFACE_SRCS := $(HW_1_AVR_IDIR)persistent_memory.c $(HW_1_AVR_IDIR)system_interface.c
+
+AVR_OBJS := $(patsubst src/%.c,$(BIN_DIR)%.o,$(AVR_SRCS)) \
+             $(patsubst $(HW_1_AVR_IDIR)%.c,$(BIN_DIR)%.o,$(AVR_IFACE_SRCS))
 
 $(BIN_DIR)BoardComputer.hex: $(AVR_OBJS)
 	$(call PRINTF,"Linking $@")
@@ -110,4 +112,5 @@ clean:
 	$(call PRINTF,"Cleaning build files")
 	rm -f $(BIN_DIR)*.o $(BIN_DIR)*.elf $(BIN_DIR)*.hex $(BIN_DIR)*.so
 	rm -rf $(BIN_DIR)UI
+	rm -rf $(BIN_DIR)Interface
 	rm -rf $(TDIR)
