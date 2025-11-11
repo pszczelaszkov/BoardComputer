@@ -31,8 +31,8 @@ class TestParent:
     @classmethod
     def setup_class(cls):
         m.SYSTEM_run = False
-        #Set system to always on to ignore board checking enable status, so we can set manualy.
         m.CONFIG_factory_default_reset()
+        m.NEXTION_handler_ready(m.NEXTION_VERSION)
         m.test()
         session.create_snapshot()
 
@@ -42,10 +42,6 @@ class TestParent:
         yield
 
 class TestPreRun(TestParent):
-
-    def test_system_defaultstate(self):
-        assert m.SYSTEM_status == m.SYSTEM_STATUS_OPERATIONAL
-
     @pytest.mark.parametrize("testvalue", [100, 0])
     def test_nextion_set_brightness(self, testvalue):
         m.NEXTION_set_brightness(testvalue)
@@ -401,9 +397,11 @@ class TestPreRun(TestParent):
     def test_USART_passthrough_mode(self):
         write_usart(m, None, b"DRAKJHSUYDGBNCJHGJKSHBDN")
         # Manualy check two opposite registers
+        m.UDR0 = 0
         m.UDRRX = 0xFF
         m.USART2_RX_vect()
         assert m.UDR0 == 0xFF
+        m.UDR2 = 0
         m.UDRRX = 0xFE
         m.USART0_RX_vect()
         assert m.UDR2 == 0xFE
@@ -411,6 +409,7 @@ class TestPreRun(TestParent):
         for i in range(9):
             exec_cycle(m)
         # Check if USART is not copying RX
+        m.UDR2 = 0
         m.UDRRX = 0xFE
         m.USART0_RX_vect()
         assert m.UDR2 != 0xFE
@@ -634,3 +633,121 @@ class TestConfig(TestParent):
         m.CONFIG_read_entry(SYSTEM_config_ptr, entry, readval)
         assert readval[0] in (minval,maxval) # Due to signedness of variable it may overflow so check any max val
 
+class TestPowerCycles(TestParent):
+    @pytest.mark.parametrize("board_enabled,config_always_on,expected_system_status",[
+        (0,0,m.SYSTEM_STATUS_IDLE),
+        (0,1,m.SYSTEM_STATUS_OPERATIONAL),
+        (1,0,m.SYSTEM_STATUS_IDLE),
+        (1,1,m.SYSTEM_STATUS_OPERATIONAL),
+    ])
+    def test_system_initialize_correct_status(self,board_enabled,config_always_on,expected_system_status):
+        m.SYSTEM_config.SYSTEM_ALWAYS_ON = config_always_on
+        m.CONFIG_saveconfig(ffi.addressof(m.SYSTEM_config))
+        m.board_is_enabled = board_enabled
+
+        m.SYSTEM_initialize()
+        assert m.SYSTEM_status == expected_system_status
+        
+        m.board_is_enabled = 1
+        m.SYSTEM_config.SYSTEM_ALWAYS_ON=1
+        m.CONFIG_saveconfig(ffi.addressof(m.SYSTEM_config))
+    
+    def test_system_board_cycle_disable_enable_with_always_on_set(self):
+        m.SYSTEM_config.SYSTEM_ALWAYS_ON = 1
+        m.CONFIG_saveconfig(ffi.addressof(m.SYSTEM_config))
+        # Status must remain operational all time.
+        m.board_is_enabled = 0
+        m.SYSTEM_update()
+        assert m.SYSTEM_status == m.SYSTEM_STATUS_OPERATIONAL
+
+        m.board_is_enabled = 1
+        m.SYSTEM_update()
+        assert m.SYSTEM_status == m.SYSTEM_STATUS_OPERATIONAL
+
+        m.board_is_enabled = 0
+        m.SYSTEM_update()
+        assert m.SYSTEM_status == m.SYSTEM_STATUS_OPERATIONAL
+
+    def test_system_board_cycle_disable_enable_with_always_on_unset(self):
+        m.SYSTEM_config.SYSTEM_ALWAYS_ON = 0
+        m.CONFIG_saveconfig(ffi.addressof(m.SYSTEM_config))
+        # Status must change to Operational and back to idle
+        m.board_is_enabled = 0
+        m.core()
+        assert m.SYSTEM_status == m.SYSTEM_STATUS_IDLE
+
+        m.board_is_enabled = 1
+        m.core()#one for reset display
+        m.core()#second to send restart display under next loop
+        assert m.SYSTEM_status == m.SYSTEM_STATUS_OPERATIONAL
+        #Rest should be sent to display to start new display session
+        output = read_nextion_output(m,ffi)
+        assert "rest" in output
+
+        m.board_is_enabled = 0
+        m.core()
+        assert m.SYSTEM_status == m.SYSTEM_STATUS_IDLE
+
+    def test_display_connection_handshake_correct(self):
+        m.SYSTEM_config.SYSTEM_ALWAYS_ON = 1
+        m.NEXTION_initialize()
+        m.core()
+        output = read_nextion_output(m,ffi)
+        assert "rest" in output
+        #Display should reset and send ready 
+        m.NEXTION_handler_ready(m.NEXTION_VERSION)
+        m.core()
+        output = read_nextion_output(m,ffi)
+        assert int(output["page"]) == m.NEXTION_PAGEID_INIT
+        m.core()
+        output = read_nextion_output(m,ffi)
+        assert 'sendme' in output
+
+    def test_display_connection_handshake_invalid_version(self):
+        m.SYSTEM_config.SYSTEM_ALWAYS_ON = 1
+        m.NEXTION_initialize()
+        m.core()
+        output = read_nextion_output(m,ffi)
+        assert "rest" in output
+        #Display should reset and send ready 
+        m.NEXTION_handler_ready(0)
+        m.core()
+        output = read_nextion_output(m,ffi)
+        assert int(output["page"]) == m.NEXTION_PAGEID_INIT
+        assert int(output["alt"]) == m.SYSTEM_ALERT_UI_INCOMPATIBLE
+        m.core()
+        output = read_nextion_output(m,ffi)
+        assert 'sendme' in output
+
+    def test_display_connection_handshake_timeout(self):
+        m.SYSTEM_config.SYSTEM_ALWAYS_ON = 1
+        m.NEXTION_initialize()
+        m.core()
+        output = read_nextion_output(m,ffi)
+        assert "rest" in output
+        #Display should reset and send ready 
+        for _ in range(16):
+            m.core()
+
+        assert m.SYSTEM_get_active_alert().alert == m.SYSTEM_ALERT_NEXTION_TIMEOUT
+        
+        m.core()
+        output = read_nextion_output(m,ffi)
+        assert "rest" in output
+
+    def test_display_watchdog_reset(self):
+        #Bring display to operational state
+        m.NEXTION_initialize()
+        m.NEXTION_handler_ready(m.NEXTION_VERSION)
+        exec_cycle(m,display_alive=True)
+        #display should be in Operational state by now
+        for _ in range(7):
+            exec_cycle(m,display_alive=False)
+
+        output = read_nextion_output(m,ffi)
+        assert "rest" not in output
+
+        #After 8th cycle without ping, reset should be sent
+        exec_cycle(m,display_alive=False)
+        output = read_nextion_output(m,ffi)
+        assert "rest" in output

@@ -1,10 +1,7 @@
 #include "system.h"
 #include "countersfeed.h"
 #include "nextion.h"
-
-#ifdef __AVR__
-#include <avr/io.h>
-#endif
+#include "system_interface.h"
 
 #define RTC_REGISTER TCNT2
 
@@ -96,6 +93,7 @@ void SYSTEM_resetalert()
 
 void SYSTEM_initialize()
 {
+    SYSTEM_initialize_IO();
     CONFIG_loadconfig(&SYSTEM_config);
     /*
         Check Config version compatibility.
@@ -104,13 +102,17 @@ void SYSTEM_initialize()
     uint8_t config_version = SYSTEM_config.CONFIG_VERSION;
     if(MINIMAL_COMPAT_SYSTEMVERSION > config_version || SYSTEM_VERSION < config_version)
     {
-        //Version mismatch, format config and reload it.
+        /*
+            Version mismatch, format config and reload it.
+        */
         CONFIG_factory_default_reset();
         CONFIG_loadconfig(&SYSTEM_config);
     }
     if(0 < CONFIG_sanitize_config(&SYSTEM_config))
     {
-        /*If config contains errors, save corrected and raise warning.*/
+        /*
+            If config contains errors, save corrected and raise warning.
+        */
         CONFIG_saveconfig(&SYSTEM_config);
     }
 
@@ -118,16 +120,12 @@ void SYSTEM_initialize()
     {
         SYSTEM_status = SYSTEM_STATUS_OPERATIONAL;
     }
-    CLEAR(PORTD,BIT7);
-    #ifdef __AVR__
-    //Event Timer
-    OCR2A = 15;// 1/8 seconds
-    ASSR = (1 << AS2);// async
-    TCCR2A = (1 << WGM21);// Clear on match
-    TCCR2B = (3 << CS21);// 256 prescaler
-    TIMSK2 = (1 << OCIE2A);// Enable IRQ
-    sei();
-    #endif
+    else
+    {
+        SYSTEM_status = SYSTEM_STATUS_IDLE;
+    }
+
+    SYSTEM_start_system_clock();
 }
 
 void SYSTEM_trigger_short_beep()
@@ -137,15 +135,23 @@ void SYSTEM_trigger_short_beep()
 
 void SYSTEM_update()
 {
-    //Enable switch detection
     if(!SYSTEM_config.SYSTEM_ALWAYS_ON)
     {        
-        if(SYSTEM_is_board_enabled)
+        if(SYSTEM_STATUS_IDLE == SYSTEM_status && SYSTEM_is_board_enabled())
         {
+            /*
+                Setting board enabled reinitializes UI
+                From now on UI system should restart display and wait for welcome packet.
+            */
+            NEXTION_initialize();
             SYSTEM_status = SYSTEM_STATUS_OPERATIONAL;
         }
-        else
+        else if(SYSTEM_STATUS_OPERATIONAL == SYSTEM_status && !SYSTEM_is_board_enabled())
         {
+            /*
+                Set system to idle, display should have sleep procedure handlet by itself
+                Display will sleep after no serial activity.
+            */
             SYSTEM_status = SYSTEM_STATUS_IDLE;
         }
     }
@@ -174,13 +180,11 @@ void SYSTEM_update()
         
         if(beep_or_not_to_beep)
         {
-            //Here we beep.
-            SET(PORTD,BIT7);
+            SYSTEM_beeper_on();
         }
         else
         {
-            //or not beep.
-            CLEAR(PORTD,BIT7);
+            SYSTEM_beeper_off();
         }
     }
 }

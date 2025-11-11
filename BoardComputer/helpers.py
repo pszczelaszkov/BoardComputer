@@ -1079,8 +1079,9 @@ def load(filename):
     return module.lib, ffi
 
 
-def exec_cycle(module):
-    module.SYSTEM_exec = True
+def exec_cycle(module,display_alive=True):
+    if display_alive is True:
+        module.NEXTION_handler_sendme(module.NEXTION_get_pageid())
     module.core()
 
 
@@ -1158,10 +1159,13 @@ def read_nextion_output(m, ffi):
     m.USART_TX_clear()
     for message in output[:-1]:
         msg_decoded = message.decode()
-        if "page" in msg_decoded:
+        if 'page' in msg_decoded:
             variable, value = msg_decoded.split(" ")
-        else:
+        elif '=' in msg_decoded:
             variable, value = msg_decoded.split("=")
+        else:
+            variable = msg_decoded
+            value = ""
         result[variable] = value
 
     print(f"NEXTION: {result}")

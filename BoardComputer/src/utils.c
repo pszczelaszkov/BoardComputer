@@ -3,8 +3,6 @@
 #ifndef __AVR__
     volatile uint8_t PINA, PINB, PINC, PIND;
     volatile uint16_t TCNT1, TCNT2;
-    uint8_t DDRA, DDRB, DDRC, DDRD;
-    uint8_t PORTA, PORTB, PORTC, PORTD, DIDR0;
     uint16_t ADC;
     uint8_t ADMUX, ADSC, ADCSRA;
     void _delay_ms(int dummy){}

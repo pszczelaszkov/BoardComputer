@@ -16,23 +16,26 @@ static NEXTION_Component* selected_component;
 static NEXTION_PageID_t pagehistory[PAGEHISTORY_MAXDEPTH];
 static NEXTION_PageID_t active_pageID;
 static uint8_t pagehistory_depth;
+static volatile int8_t display_watchdog_counter;
 
 static Callback page_callback;
 static const uint16_t MINIMAL_COMPAT_UIVERSION = 0x01;
-static const uint16_t UI_VERSION = 0x01;
 
 static const char str_bck[NEXTION_OBJNAME_LEN] = "bck";
 
+const uint16_t NEXTION_VERSION = 0x01;
+
 Callback_32 NEXTION_incomingdata_handler;
 uint8_t NEXTION_selection_counter;
-volatile uint8_t watchdog_counter = WATCHDOG_THRESHOLD;
+
 char NEXTION_eot[] = {0xff,0xff,0xff,0x00};
 
 enum DISPLAYSTATUS
 {
 	DISPLAYSTATUS_DISCONNECTED,
 	DISPLAYSTATUS_CONNECTED,
-	DISPLAYSTATUS_OPERATIONAL
+	DISPLAYSTATUS_OPERATIONAL,
+	DISPLAYSTATUS_WRONGVERSION,
 }displaystatus;
 
 static struct Page
@@ -127,19 +130,12 @@ static NEXTION_PageID_t pagehistory_pop()
 
 /*
 Ping device with request to actual pageid.
-Required for reseting watchdog
 */
-static inline void ping()
-{
-	NEXTION_send("sendme",USART_HOLD);
-}
-
-/*
-Send reset message
-*/
-static inline void reset()
-{
-	NEXTION_send("rest",USART_HOLD);
+static void check_display_alive()
+{	
+	NEXTION_send("sendme",USART_HOLD);		
+	if(1 == display_watchdog_counter)
+		displaystatus = DISPLAYSTATUS_DISCONNECTED;
 }
 
 /*
@@ -163,24 +159,29 @@ void NEXTION_instruction_compose(const char* objname, const char* varname, char*
 
 void NEXTION_handler_ready(uint16_t display_version)
 {
-	if(MINIMAL_COMPAT_UIVERSION > display_version || UI_VERSION < display_version)
+	if(MINIMAL_COMPAT_UIVERSION > display_version || NEXTION_VERSION < display_version)
     {
-		SYSTEM_raisealert(SYSTEM_ALERT_UI_INCOMPATIBLE);
+		displaystatus = DISPLAYSTATUS_WRONGVERSION;
     }
-	displaystatus = DISPLAYSTATUS_CONNECTED;
+	else
+	{
+		displaystatus = DISPLAYSTATUS_CONNECTED;
+	}
 }
 
-void NEXTION_handler_sendme(uint8_t pageid)
+void NEXTION_handler_sendme(NEXTION_PageID_t pageid)
 {
 	if(pageid == active_pageID)
-		watchdog_counter = WATCHDOG_THRESHOLD;
+		display_watchdog_counter = WATCHDOG_THRESHOLD;
 }
 
 uint8_t NEXTION_send(char data[], uint8_t flush)
 {
-	if(USART_send(data,USART_HOLD))
-		return USART_send(NEXTION_eot,USART_FLUSH & flush);
-		
+	if(!DISPLAYSTATUS_DISCONNECTED)
+	{
+		if(USART_send(data,USART_HOLD))
+			return USART_send(NEXTION_eot,USART_FLUSH & flush);
+	}	
 	return 0;
 }
 
@@ -266,6 +267,11 @@ int8_t NEXTION_switch_page(NEXTION_PageID_t pageID, uint8_t push_to_history)
 	return NEXTION_send(buffer,USART_HOLD);
 }
 
+NEXTION_PageID_t NEXTION_get_pageid()
+{
+	return active_pageID;
+}
+
 void NEXTION_set_brightness(uint8_t brightness)
 {
 	char buffer[] = "dim=   ";
@@ -288,38 +294,53 @@ void NEXTION_set_previous_page()
 	NEXTION_switch_page(pagehistory_pop(), 0);
 }
 
-int8_t NEXTION_update()
+void  NEXTION_update()
 {	
 	switch(displaystatus)
 	{
 		case DISPLAYSTATUS_OPERATIONAL:
-			ping();
+			check_display_alive();
 			update_select_decay();
 			if(page_callback)
 				page_callback();
 		break;
+		case DISPLAYSTATUS_WRONGVERSION:
+			SYSTEM_raisealert(SYSTEM_ALERT_UI_INCOMPATIBLE);
 		case DISPLAYSTATUS_CONNECTED:
 			NEXTION_switch_page(NEXTION_PAGEID_INIT,0);
 			NEXTION_set_brightness(SYSTEM_config.SYSTEM_BRIGHTNESS);
 			displaystatus = DISPLAYSTATUS_OPERATIONAL;
-			watchdog_counter = WATCHDOG_THRESHOLD;
+			display_watchdog_counter = WATCHDOG_THRESHOLD;
 		break;
 		case DISPLAYSTATUS_DISCONNECTED:
-			return 0;
+			switch(display_watchdog_counter)
+			{
+				case 0://start with reset
+					NEXTION_reset();
+				break;
+				case -16://after 16 cycles(2 seconds) jump to beginning and raise alert.
+					display_watchdog_counter = 1;
+					SYSTEM_raisealert(SYSTEM_ALERT_NEXTION_TIMEOUT);
+				break;
+			}
+		break;
 	}
+	display_watchdog_counter--;
+}
 
-#ifdef __AVR__
-	if(!watchdog_counter)
-		displaystatus = DISPLAYSTATUS_DISCONNECTED;
-	else
-		watchdog_counter--;
-#endif
-	return 1;
+void NEXTION_initialize()
+{
+	displaystatus = DISPLAYSTATUS_DISCONNECTED;
+	display_watchdog_counter = 0;
 }
 
 void NEXTION_reset()
-{
+{	
+	/*Set disconneted status to prevent further message creation towards display*/
 	displaystatus = DISPLAYSTATUS_DISCONNECTED;
 	NEXTION_clear_selected_component();
-	reset();
+	//RESET command sends message directly to bypass disconnected condition.
+	USART_TX_clear();
+	USART_send("rest",USART_HOLD);
+	USART_send(NEXTION_eot,USART_FLUSH);
 }

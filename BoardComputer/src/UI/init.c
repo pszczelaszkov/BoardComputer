@@ -9,6 +9,7 @@ static int8_t wait_time;
 void UIINIT_setup()
 {
 	SYSTEM_ALERT_SEVERITY severity = SYSTEM_resolve_alert_severity(SYSTEM_get_active_alert().alert);
+	NEXTION_send_activealert();
 	switch(severity)
 	{
 		case SYSTEM_ALERT_SEVERITY_WARNING:

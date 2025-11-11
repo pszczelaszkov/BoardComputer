@@ -37,7 +37,7 @@ TESTUSE int16_t UTILS_atoi(char* stringvalue);
 TESTUSE void u16toa(uint16_t n, char s[]);
 TESTUSE void i16toa(int16_t n, char s[]);
 TESTUSE void i32toa(int32_t n, char s[]);
-void extractfp16(int16_t fixedpoint, int8_t* integral, uint16_t* fractional);
+TESTUSE void extractfp16(int16_t fixedpoint, int8_t* integral, uint16_t* fractional);
 TESTUSE void fp16toa(int16_t fixedpoint, char* dest, uint8_t integrallength, uint8_t fractionlength);
 TESTUSE typedef void (*Callback)();
 TESTUSE typedef void (*Callback_32)(int32_t);

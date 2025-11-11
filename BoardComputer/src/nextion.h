@@ -69,16 +69,27 @@ TESTUSE typedef struct NEXTION_Executable_Component
 	Callback execute;
 }NEXTION_Executable_Component;
 
+TESTUSE extern const uint16_t NEXTION_VERSION;
+
 TESTUSE extern NEXTION_Component NEXTION_common_bckcomponent;
 TESTUSE extern char NEXTION_eot[];
 extern uint8_t NEXTION_selection_counter;
 TESTUSE extern Callback_32 NEXTION_incomingdata_handler;
 
-void NEXTION_handler_ready(uint16_t display_version);
-void NEXTION_handler_sendme(uint8_t pageid);
+TESTUSE void NEXTION_handler_ready(uint16_t display_version);
+TESTUSE void NEXTION_handler_sendme(NEXTION_PageID_t pageid);
 uint8_t NEXTION_send(char data[], uint8_t flush);
-int8_t NEXTION_update();
+void NEXTION_update();
 TESTUSE int8_t NEXTION_switch_page(NEXTION_PageID_t pageID, uint8_t push_to_history);
+TESTUSE NEXTION_PageID_t NEXTION_get_pageid();
+TESTUSE void NEXTION_set_brightness(uint8_t brightness);
+TESTUSE void NEXTION_send_activealert();
+TESTUSE void NEXTION_set_component_select_status(NEXTION_Component* component, NEXTION_Component_select_status_t status);
+TESTUSE void NEXTION_clear_selected_component();
+TESTUSE void NEXTION_set_previous_page();
+TESTUSE void NEXTION_initialize();
+void NEXTION_reset();
+void NEXTION_instruction_compose(const char* objname, const char* varname, char* instruction);
 
 //Place quotes at the beginning and the end of payload buffer for text variables.
 inline void NEXTION_quote_payloadbuffer(char* payload,uint8_t payload_length)
@@ -86,13 +97,4 @@ inline void NEXTION_quote_payloadbuffer(char* payload,uint8_t payload_length)
 	payload[0] = '"';
 	payload[payload_length-1] = '"';
 }
-
-TESTUSE void NEXTION_set_brightness(uint8_t brightness);
-TESTUSE void NEXTION_send_activealert();
-TESTUSE void NEXTION_set_component_select_status(NEXTION_Component* component, NEXTION_Component_select_status_t status);
-TESTUSE void NEXTION_clear_selected_component();
-TESTUSE void NEXTION_set_previous_page();
-void NEXTION_reset();
-void NEXTION_instruction_compose(const char* objname, const char* varname, char* instruction);
-
 #endif /* NEXTION_H_ */

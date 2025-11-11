@@ -20,7 +20,7 @@ extern const uint16_t SYSTEM_VERSION;
 TESTUSE typedef enum SYSTEM_STATUS
 {
     SYSTEM_STATUS_IDLE,
-    SYSTEM_STATUS_OPERATIONAL
+    SYSTEM_STATUS_OPERATIONAL,
 }SYSTEM_STATUS;
 
 TESTUSE typedef enum SYSTEM_ALERT_SEVERITY
@@ -52,7 +52,6 @@ Returns current cycle timestamp.
 Cycle is one second long, unit is RTC timer step.
 */
 extern SYSTEM_cycle_timestamp_t SYSTEM_get_cycle_timestamp();
-extern int8_t SYSTEM_is_board_enabled();
 extern void SYSTEM_trigger_short_beep();
 extern SYSTEM_ALERT_SEVERITY SYSTEM_resolve_alert_severity(SYSTEM_ALERT alert);
 TESTUSE void SYSTEM_raisealert(SYSTEM_ALERT alert);
@@ -63,7 +62,7 @@ TESTUSE extern volatile SYSTEM_STATUS SYSTEM_status;
 TESTUSE extern volatile uint8_t SYSTEM_run;
 TESTUSE extern volatile uint8_t SYSTEM_exec;
 TESTUSE extern volatile uint8_t SYSTEM_event_timer;//Represent fraction of second in values from 0 to 7.
-extern void SYSTEM_initialize();
+TESTUSE extern void SYSTEM_initialize();
 TESTUSE void SYSTEM_update();
 #ifndef __AVR__
 EVENT_TIMER_ISR;
