@@ -93,7 +93,7 @@ void SYSTEM_resetalert()
 
 void SYSTEM_initialize()
 {
-    SYSTEM_initialize_IO();
+    SYSTEMINTERFACE_initialize_IO();
     CONFIG_loadconfig(&SYSTEM_config);
     /*
         Check Config version compatibility.
@@ -125,7 +125,7 @@ void SYSTEM_initialize()
         SYSTEM_status = SYSTEM_STATUS_IDLE;
     }
 
-    SYSTEM_start_system_clock();
+    SYSTEMINTERFACE_start_system_clock();
 }
 
 void SYSTEM_trigger_short_beep()
@@ -137,7 +137,7 @@ void SYSTEM_update()
 {
     if(!SYSTEM_config.SYSTEM_ALWAYS_ON)
     {        
-        if(SYSTEM_STATUS_IDLE == SYSTEM_status && SYSTEM_is_board_enabled())
+        if(SYSTEM_STATUS_IDLE == SYSTEM_status && SYSTEMINTERFACE_is_board_enabled())
         {
             /*
                 Setting board enabled reinitializes UI
@@ -146,7 +146,7 @@ void SYSTEM_update()
             NEXTION_initialize();
             SYSTEM_status = SYSTEM_STATUS_OPERATIONAL;
         }
-        else if(SYSTEM_STATUS_OPERATIONAL == SYSTEM_status && !SYSTEM_is_board_enabled())
+        else if(SYSTEM_STATUS_OPERATIONAL == SYSTEM_status && !SYSTEMINTERFACE_is_board_enabled())
         {
             /*
                 Set system to idle, display should have sleep procedure handlet by itself
@@ -180,17 +180,18 @@ void SYSTEM_update()
         
         if(beep_or_not_to_beep)
         {
-            SYSTEM_beeper_on();
+            SYSTEMINTERFACE_beeper_on();
         }
         else
         {
-            SYSTEM_beeper_off();
+            SYSTEMINTERFACE_beeper_off();
         }
     }
 }
 
 EVENT_TIMER_ISR
-{
+{	
+    SYSTEM_event_timer++;	
     SYSTEM_exec = 1;
     switch(SYSTEM_event_timer)
     {
@@ -201,5 +202,4 @@ EVENT_TIMER_ISR
 			return;
         break;
     }
-	SYSTEM_event_timer++;	
 }

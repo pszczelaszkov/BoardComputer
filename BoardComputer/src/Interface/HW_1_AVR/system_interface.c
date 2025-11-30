@@ -3,12 +3,12 @@
 #include <avr/sleep.h>
 #include "system_interface.h"
 
-int8_t SYSTEM_is_board_enabled()
+int8_t SYSTEMINTERFACE_is_board_enabled()
 {
     return READ(PORTB,BIT1);
 }
 
-void SYSTEM_initialize_IO()
+void SYSTEMINTERFACE_initialize_IO()
 {
     DIDR0 = 0xff;
 	DDRD = 0x00;
@@ -19,7 +19,7 @@ void SYSTEM_initialize_IO()
 	SET(DDRB,BIT7);
 }
 
-void SYSTEM_start_system_clock()
+void SYSTEMINTERFACE_start_system_clock()
 {
     //Event Timer
     OCR2A = 15;// 1/8 seconds
@@ -30,7 +30,7 @@ void SYSTEM_start_system_clock()
     sei();
 }
 
-void SYSTEM_sleep()
+void SYSTEMINTERFACE_sleep()
 {
     sleep_cpu();
 }

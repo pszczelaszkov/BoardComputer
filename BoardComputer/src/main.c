@@ -19,10 +19,21 @@
 #include "system.h"
 #include "config.h"
 #include "persistent_memory.h"
+#include "serial.h"
+#include <stdio.h>
+
+void post_irq_core()
+{
+
+}
+
+void high_prio_core()
+{
+	TIMER_update();
+}
 
 void core()
-{	
-	TIMER_update();// Timer always go first.
+{
 	if(SYSTEM_STATUS_OPERATIONAL == SYSTEM_status)
 	{
 		INPUT_update();
@@ -46,8 +57,12 @@ ENTRY_ROUTINE
     while(SYSTEM_run)
     {
 		while(!SYSTEM_exec)
-			SYSTEM_sleep();
-		SYSTEM_exec = 0;
+		{
+			SYSTEMINTERFACE_sleep();
+			post_irq_core();
+		}
+		high_prio_core();
 		core();
+		SYSTEM_exec = 0;
     }
 }

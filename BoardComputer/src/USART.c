@@ -1,17 +1,15 @@
 #include "USART.h"
 #include "input.h"
-
+#include "serial.h"
 
 #ifndef __AVR__
-uint8_t UDR0,UDR2,UDRRX;
-void USART_test()
+static void test()
 {
-    
-	char eot = 0xff;
+	char eot[] = {0xff,0x0};
 	if(!strncmp(&USART_RX_buffer[1],"PING",4))
 	{
 		USART_send("PONG",0);
-		USART_send(&eot,1);
+		USART_send(eot,1);
 	}
 }
 #endif
@@ -40,8 +38,8 @@ enum RX_STATUS
 	RX_STATUS_SERVICE
 }rx_status;
 
-char USART_RX_buffer[USART_RX_BUFFER_SIZE];
-char USART_TX_buffer[USART_TX_BUFFER_SIZE];
+uint8_t USART_RX_buffer[USART_RX_BUFFER_SIZE];
+uint8_t USART_TX_buffer[USART_TX_BUFFER_SIZE];
 uint8_t USART_TX_message_length;
 //note: indexes work as status flags too I.E: TX index with value of TX_BUFFER_SIZE means "TX is ready to go" 
 uint8_t USART_RX_buffer_index;
@@ -57,18 +55,14 @@ void USART_TX_clear()
 }
 
 void USART_flush()
-{
-	if(!USART_TX_message_length || USART_TX_buffer_index != USART_TX_BUFFER_SIZE)
-		return;
-	
-	if(operation_mode == OPERATION_MODE_NORMAL)
+{	
+	if(OPERATION_MODE_NORMAL == operation_mode && USART_TX_BUFFER_SIZE == USART_TX_buffer_index)
 	{
-		USART_TX_buffer_index = 1;//set index at 2nd byte for further IRQ callback
-		//First byte is send here, rest is handled on IRQ
+		USART_TX_buffer_index = 0;
 		#ifdef __DEBUG__
-			UDR2 = USART_TX_buffer[0];
+			USART_write_service_byte();
 		#else
-			UDR0 = USART_TX_buffer[0];
+			USART_write_nextion_byte();
 		#endif
 	}
 }
@@ -111,25 +105,13 @@ void USART_initialize()
 		return;
     
 	USART_TX_buffer_index = USART_TX_BUFFER_SIZE;
-	#ifdef __AVR__
-    uint8_t baud = USART_BAUDRATE;
-	//service
-    UBRR2H = (uint8_t)(baud>>8);
-    UBRR2L = (uint8_t)baud;
-    UCSR2B = (1<<RXEN)|(1<<TXEN)|(1<<RXCIE)|(1<<TXCIE);
-    UCSR2C = (3<<UCSZ0);//frame format: 8data, 1stop bit
-	//Nextion
-	UBRR0H = (uint8_t)(baud>>8);
-    UBRR0L = (uint8_t)baud;
-    UCSR0B = (1<<RXEN)|(1<<TXEN)|(1<<RXCIE)|(1<<TXCIE);
-    UCSR0C = (3<<UCSZ0);//frame format: 8data, 1stop bit
-	sei();//enable global interrupts
-    #endif
+	SERIAL_init();
 }
+
 void message_register(uint8_t message_size)
 {
 	Callback_32 handler;
-	//Check for "DRAKJHSUYDGBNCJHGJKSHBDN", although more complex rule is not needed. 
+	//Check for "DRAKJHSUYDGBNCJHGJKSHBDN", although more complex rule is not needed.
 	if(message_size == 24 && USART_RX_buffer[1] == 'R')
 	{
 		operation_mode = OPERATION_MODE_PASSTHROUGH;
@@ -141,7 +123,7 @@ void message_register(uint8_t message_size)
 		{	
 			#ifndef __AVR__
 			case NEXTIONMESSAGETYPE_TEST:
-				USART_test();
+				test();
 			break;
 			#endif
 			case NEXTIONMESSAGETYPE_TOUCHINPUT:
@@ -188,16 +170,13 @@ void handle_RX(uint8_t buffer)
 	}
 }
 
-ISR(USART0_RX_vect)
+void USART_read_nextion_byte()
 {
-	#ifdef __AVR__
-	uint8_t buffer = UDR0;
-	#else
-	uint8_t buffer = UDRRX;
-	#endif
+	uint8_t buffer = SERIAL_NEXTION_IN;
+
 	if(operation_mode == OPERATION_MODE_PASSTHROUGH)
 	{
-		UDR2 = buffer;
+		SERIAL_SERVICE_OUT(buffer);
 		return;
 	}
 	if(rx_status <= RX_STATUS_NEXTION)
@@ -207,17 +186,14 @@ ISR(USART0_RX_vect)
 	}
 }
 
-ISR(USART2_RX_vect)
-{	
-	#ifdef __AVR__
-	uint8_t buffer = UDR2;
-	#else
-	uint8_t buffer = UDRRX;
-	#endif
+void USART_read_service_byte()
+{
+	uint8_t buffer = SERIAL_SERVICE_IN;
+
 	if(operation_mode == OPERATION_MODE_PASSTHROUGH)
 	{	
 		passthrough_watchdog_counter = PASSTHROUGHWATCHDOG_THRESHOLD;
-		UDR0 = buffer;
+		SERIAL_NEXTION_OUT(buffer);
 		return;
 	}
 	if(rx_status < RX_STATUS_SERVICE)
@@ -228,7 +204,7 @@ ISR(USART2_RX_vect)
 	handle_RX(buffer);
 }
 
-ISR(USART0_TX_vect)
+void USART_write_nextion_byte()
 {
 	if(USART_TX_message_length == 0)
 		return;
@@ -239,12 +215,10 @@ ISR(USART0_TX_vect)
 		return;
 	}
 	
-    char buffer = USART_TX_buffer[USART_TX_buffer_index];
-	USART_TX_buffer_index++;
-	UDR0 = buffer;
+	SERIAL_NEXTION_OUT(USART_TX_buffer[USART_TX_buffer_index++]);
 }
 
-ISR(USART2_TX_vect)
+void USART_write_service_byte()
 {
 	if(USART_TX_message_length == 0)
 		return;
@@ -255,7 +229,5 @@ ISR(USART2_TX_vect)
 		return;
 	}
 
-    char buffer = USART_TX_buffer[USART_TX_buffer_index];
-	USART_TX_buffer_index++;
-	UDR2 = buffer;
+	SERIAL_SERVICE_OUT(USART_TX_buffer[USART_TX_buffer_index++]);
 }

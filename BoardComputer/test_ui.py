@@ -198,25 +198,24 @@ class TestBoardUI:
         for key, value in inputdata.items():
             m.SENSORSFEED_feed[key] = value
         component.executable_component.execute()
-        assert ffi.unpack(
-            m.USART_TX_buffer, 14
-        ) == f'mdv.txt="{expectedstring}"'.encode("utf-8")
+        output = read_nextion_output(m,ffi)
+        assert output["mdv.txt"] == f'"{expectedstring}"'
+
 
     @pytest.mark.parametrize(
-        "status,expected",
+        "status,expectedstring",
         [
             (m.SENSORSFEED_EGT_STATUS_UNKN, "----"),
             (m.SENSORSFEED_EGT_STATUS_OPEN, "open"),
             (m.SENSORSFEED_EGT_STATUS_VALUE, "1234"),
         ],
     )
-    def test_UIEGT_output(self, status, expected):
+    def test_UIEGT_output(self, status, expectedstring):
         m.SENSORSFEED_feed[m.SENSORSFEED_FEEDID_EGT] = 1234
         m.SENSORSFEED_EGT_status = status
         m.UIBOARD_update_EGT()
-        assert ffi.unpack(m.USART_TX_buffer, 14) == f'egt.txt="{expected}"'.encode(
-            "utf-8"
-        )
+        output = read_nextion_output(m,ffi)
+        assert output["egt.txt"] == f'"{expectedstring}"'
 
     @pytest.mark.parametrize(
         "status,expected",

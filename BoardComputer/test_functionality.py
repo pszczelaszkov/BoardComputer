@@ -397,22 +397,22 @@ class TestPreRun(TestParent):
     def test_USART_passthrough_mode(self):
         write_usart(m, None, b"DRAKJHSUYDGBNCJHGJKSHBDN")
         # Manualy check two opposite registers
-        m.UDR0 = 0
-        m.UDRRX = 0xFF
-        m.USART2_RX_vect()
-        assert m.UDR0 == 0xFF
-        m.UDR2 = 0
-        m.UDRRX = 0xFE
-        m.USART0_RX_vect()
-        assert m.UDR2 == 0xFE
+        m.serial_nextion_out = 0
+        m.serial_service_in = 0xFF
+        m.USART_read_service_byte()
+        assert m.serial_nextion_out== 0xFF
+        m.serial_service_out = 0
+        m.serial_nextion_in = 0xFE
+        m.USART_read_nextion_byte()
+        assert m.serial_service_out == 0xFE
         # Loop for watchdog
         for i in range(9):
             exec_cycle(m)
         # Check if USART is not copying RX
-        m.UDR2 = 0
-        m.UDRRX = 0xFE
-        m.USART0_RX_vect()
-        assert m.UDR2 != 0xFE
+        m.serial_service_out = 0
+        m.serial_nextion_in = 0xFE
+        m.USART_read_nextion_byte()
+        assert m.serial_service_out != 0xFE
 
 class TestConfig(TestParent):
     CONFIG_SIZE = ffi.sizeof("CONFIG_Config")

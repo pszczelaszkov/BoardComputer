@@ -3,22 +3,23 @@
 
 #include <stdint.h>
 #include <bitwise.h>
+#define ENTRY_ROUTINE TESTUSE void test()
 TESTUSE extern uint8_t DDRA, DDRB, DDRC, DDRD;
 TESTUSE extern uint8_t PORTA, PORTB, PORTC, PORTD, DIDR0;
 TESTUSE extern uint8_t board_is_enabled;
 
-int8_t SYSTEM_is_board_enabled();
-void SYSTEM_initialize_IO();
-void SYSTEM_start_system_clock();
-inline void SYSTEM_beeper_on()
+int8_t SYSTEMINTERFACE_is_board_enabled();
+void SYSTEMINTERFACE_initialize_IO();
+void SYSTEMINTERFACE_start_system_clock();
+inline void SYSTEMINTERFACE_beeper_on()
 {
     SET(PORTD,BIT7);
 }
 
-inline void SYSTEM_beeper_off()
+inline void SYSTEMINTERFACE_beeper_off()
 {
     CLEAR(PORTD,BIT7);
 }
 
-void SYSTEM_sleep();
+void SYSTEMINTERFACE_sleep();
 #endif

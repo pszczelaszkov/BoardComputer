@@ -1096,8 +1096,8 @@ def max6675_response(module, test_response):
 def read_usart(module):
     response = bytearray()
     while module.USART_TX_message_length:
-        response.append(module.UDR2)
-        module.USART2_TX_vect()
+        response.append(module.serial_service_out)    
+        module.USART_write_service_byte()
 
     return response
 
@@ -1116,8 +1116,8 @@ def write_usart(module, header, message):
     else:
         message = bytearray(message) + usart_eot
     for byte in message:
-        module.UDRRX = byte
-        module.USART2_RX_vect()
+        module.serial_service_in = byte
+        module.USART_read_service_byte()
 
 
 def parse_nextion(module, stream, nextion_values):
@@ -1152,7 +1152,7 @@ def fptofloat(value, fractionalsize):
 
 def read_nextion_output(m, ffi):
     result = {}
-    output = ffi.unpack(m.USART_TX_buffer, m.USART_TX_message_length).split(
+    output = bytes(ffi.unpack(m.USART_TX_buffer, m.USART_TX_message_length)).split(
         b"\xff\xff\xff"
     )
     print(f"OUTPUT: {output}")
