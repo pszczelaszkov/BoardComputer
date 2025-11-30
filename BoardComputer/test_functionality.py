@@ -44,6 +44,7 @@ class TestParent:
 class TestPreRun(TestParent):
     @pytest.mark.parametrize("testvalue", [100, 0])
     def test_nextion_set_brightness(self, testvalue):
+        m.NEXTION_handler_ready(m.NEXTION_VERSION)
         m.NEXTION_set_brightness(testvalue)
         output = read_nextion_output(m, ffi)
         assert int(output["dim"]) == testvalue

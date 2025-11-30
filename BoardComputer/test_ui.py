@@ -18,6 +18,7 @@ class TestBoardUI:
     def clear(self):
         m.NEXTION_clear_selected_component()
         m.USART_TX_clear()
+        m.NEXTION_handler_ready(m.NEXTION_VERSION)
 
     @pytest.mark.parametrize(
         "component,inputdata,expectedstring",
@@ -398,6 +399,7 @@ class TestNumpadUI:
         m.NEXTION_clear_selected_component()
         m.UINUMPAD_reset()
         m.USART_TX_clear()
+        m.NEXTION_handler_ready(m.NEXTION_VERSION)
 
     @pytest.mark.parametrize(
         "testvalue,expectedvalue",
@@ -414,6 +416,18 @@ class TestNumpadUI:
         stringvalue = ffi.unpack(m.UINUMPAD_getstringvalue(), length).decode("ascii")
         m.NEXTION_set_previous_page()
         assert stringvalue == expectedvalue
+
+    def test_setup_nulltarget_wont_explode(self):
+        length = m.UINUMPAD_DISPLAYLENGTH
+        m.NEXTION_switch_page(m.NEXTION_PAGEID_NUMPAD,0)
+        assert ffi.unpack(m.UINUMPAD_getstringvalue(),length) == b'!'*length
+
+        inputevent = ffi.new("INPUT_Event*")
+        inputevent.componentID = self.INPUTCOMPONENT_NUMPADSEND
+        inputevent.key = m.INPUT_KEY_ENTER
+        inputevent.keystatus = m.INPUT_KEYSTATUS_CLICK
+
+        m.UINUMPAD_handle_userinput(cast_void(inputevent))
 
     @pytest.mark.parametrize(
         "inputseq,expectedvalue",
@@ -566,6 +580,7 @@ class TestConfigUI:
         m.NEXTION_clear_selected_component()
         m.UICONFIG_setup()
         m.USART_TX_clear()
+        m.NEXTION_handler_ready(m.NEXTION_VERSION)
 
     def test_setup(self):
         m.SYSTEM_config.SYSTEM_FACTORY_RESET = 1

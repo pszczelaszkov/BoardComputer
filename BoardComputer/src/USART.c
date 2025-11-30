@@ -47,16 +47,15 @@ uint8_t USART_TX_buffer_index;
 int8_t USART_eot_counter;
 volatile uint8_t passthrough_watchdog_counter;
 
-
 void USART_TX_clear()
 {
-		USART_TX_buffer_index = USART_TX_BUFFER_SIZE;//Mark as finished
-		USART_TX_message_length = 0;
+	USART_TX_buffer_index = USART_TX_BUFFER_SIZE;//Mark as finished
+	USART_TX_message_length = 0;
 }
 
 void USART_flush()
 {	
-	if(OPERATION_MODE_NORMAL == operation_mode && USART_TX_BUFFER_SIZE == USART_TX_buffer_index)
+	if(OPERATION_MODE_NORMAL == operation_mode && 0 < USART_TX_message_length)
 	{
 		USART_TX_buffer_index = 0;
 		#ifdef __DEBUG__
@@ -71,7 +70,7 @@ uint8_t USART_send(char data[],uint8_t flush)
 {
 	if(USART_TX_buffer_index != USART_TX_BUFFER_SIZE)//Check if there is no pending transmission
 		return 0;
-	
+
 	if(operation_mode != OPERATION_MODE_NORMAL)
 		return 0;
 
@@ -206,9 +205,6 @@ void USART_read_service_byte()
 
 void USART_write_nextion_byte()
 {
-	if(USART_TX_message_length == 0)
-		return;
-
     if(USART_TX_buffer_index == USART_TX_message_length)
 	{
 		USART_TX_clear();
@@ -220,9 +216,6 @@ void USART_write_nextion_byte()
 
 void USART_write_service_byte()
 {
-	if(USART_TX_message_length == 0)
-		return;
-
     if(USART_TX_buffer_index == USART_TX_message_length)
 	{
 		USART_TX_clear();

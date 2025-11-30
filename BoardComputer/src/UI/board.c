@@ -567,11 +567,11 @@ void UIBOARD_handle_userinput(INPUT_Event* input_event)
 
 	if(input_event->key == INPUT_KEY_ENTER)
 	{
-		if(input_event->keystatus == INPUT_KEYSTATUS_CLICK)
+		if(NULL != on_click && input_event->keystatus == INPUT_KEYSTATUS_CLICK)
 			on_click();
-		else if(input_event->keystatus == INPUT_KEYSTATUS_HOLD)
+		else if(NULL != on_hold && input_event->keystatus == INPUT_KEYSTATUS_HOLD)
 			on_hold();
-		else if(input_event->keystatus == INPUT_KEYSTATUS_PRESSED)
+		else if(NULL != on_press && input_event->keystatus == INPUT_KEYSTATUS_PRESSED)
 			on_press();
 	}
 }

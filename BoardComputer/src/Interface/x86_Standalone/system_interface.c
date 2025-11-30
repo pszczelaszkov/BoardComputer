@@ -29,7 +29,14 @@ static int sysclk_thread(void* arg)
 		if (fd.revents & POLLIN) {
 			uint64_t cnt;
 			read(timer_fd, &cnt, sizeof(cnt));   // clear timerfd
-			SYSTEM_event_timer++;	
+			if(7 > SYSTEM_event_timer)
+            {
+                SYSTEM_event_timer++;
+            }
+            else
+            {
+                SYSTEM_event_timer=0;
+            }
             SYSTEM_exec = 1;
             SYSTEMINTERFACE_external_wakeup();
 		}

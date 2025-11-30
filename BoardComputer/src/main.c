@@ -20,7 +20,6 @@
 #include "config.h"
 #include "persistent_memory.h"
 #include "serial.h"
-#include <stdio.h>
 
 void post_irq_core()
 {

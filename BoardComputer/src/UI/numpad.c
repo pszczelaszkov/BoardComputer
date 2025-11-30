@@ -76,7 +76,9 @@ static void toggle_sign()
 
 static void send()
 {
-    *returnvalue_ptr = UTILS_atoi(stringvalue);
+    if(returnvalue_ptr)
+        *returnvalue_ptr = UTILS_atoi(stringvalue);
+    
     UINUMPAD_reset();
     NEXTION_set_previous_page();
 }
@@ -178,19 +180,27 @@ void UINUMPAD_setup()
 {
     char buffer[UINUMPAD_DISPLAYLENGTH+1];
     memset(stringvalue,' ',max_length);
-    int16_t returnvalue_value = *returnvalue_ptr;
-    inputcomponent_it = 0;
+    
+    if(returnvalue_ptr)
+    {   
+        int16_t returnvalue_value = *returnvalue_ptr;
+        inputcomponent_it = 0;
 
-    uint8_t buffer_length;
-    if(0 > returnvalue_value)
-    {
-        returnvalue_value*=-1;
-        stringvalue[0] = '-';
+        uint8_t buffer_length;
+        if(0 > returnvalue_value)
+        {
+            returnvalue_value*=-1;
+            stringvalue[0] = '-';
+        }
+        itoa(returnvalue_value,buffer,10);
+        buffer_length = strlen(buffer);
+
+        memcpy(&stringvalue[max_length-buffer_length],buffer,buffer_length);
     }
-    itoa(returnvalue_value,buffer,10);
-    buffer_length = strlen(buffer);
-
-    memcpy(&stringvalue[max_length-buffer_length],buffer,buffer_length);
+    else
+    {
+        memset(stringvalue,'!',max_length);
+    }
 }
 
 void UINUMPAD_update()

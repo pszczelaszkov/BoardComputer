@@ -60,6 +60,7 @@ static struct Page
 	{
 		.callback_setup = UICONFIG_setup,
 		.callback_update = UICONFIG_update,
+		.userinput_handler = UICONFIG_handle_userinput,
 	},
 	[NEXTION_PAGEID_NUMPAD]=
 	{
@@ -177,8 +178,8 @@ void NEXTION_handler_sendme(NEXTION_PageID_t pageid)
 
 uint8_t NEXTION_send(char data[], uint8_t flush)
 {
-	if(!DISPLAYSTATUS_DISCONNECTED)
-	{
+	if(DISPLAYSTATUS_DISCONNECTED != displaystatus)
+	{	
 		if(USART_send(data,USART_HOLD))
 			return USART_send(NEXTION_eot,USART_FLUSH & flush);
 	}	
@@ -259,6 +260,8 @@ int8_t NEXTION_switch_page(NEXTION_PageID_t pageID, uint8_t push_to_history)
 	struct Page newpage = pages[pageID];
 	Callback setup = newpage.callback_setup;
 	NEXTION_incomingdata_handler = NULL;
+	if(NULL != newpage.userinput_handler)
+		INPUT_userinput_handler = newpage.userinput_handler;
 	if(setup)
 		setup();
 	page_callback = newpage.callback_update;
@@ -294,7 +297,7 @@ void NEXTION_set_previous_page()
 	NEXTION_switch_page(pagehistory_pop(), 0);
 }
 
-void  NEXTION_update()
+void NEXTION_update()
 {	
 	switch(displaystatus)
 	{
