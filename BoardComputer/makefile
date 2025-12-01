@@ -136,7 +136,5 @@ flash:
 
 clean:
 	$(call PRINTF,"Cleaning build files")
-	rm -f $(BIN_DIR)*.o $(BIN_DIR)*.elf $(BIN_DIR)*.hex $(BIN_DIR)*.so
-	rm -rf $(BIN_DIR)UI
-	rm -rf $(BIN_DIR)Interface
+	rm -rf $(BIN_DIR)*
 	rm -rf $(TDIR)
