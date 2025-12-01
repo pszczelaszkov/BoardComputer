@@ -201,9 +201,9 @@ void NEXTION_set_component_select_status(NEXTION_Component* component, NEXTION_C
 			case NEXTION_COMPONENTSELECTSTATUS_SELECTED:
 				if(selected_component != component){
 					NEXTION_set_component_select_status(selected_component,NEXTION_COMPONENTSELECTSTATUS_DEFAULT);
-					value = component->value_selected;
 					selected_component = component;
 				}
+				value = component->value_selected;
 				NEXTION_selection_counter = NEXTION_SELECT_DECAY_TICKS;
 			break;
 			case NEXTION_COMPONENTSELECTSTATUS_DEFAULT:

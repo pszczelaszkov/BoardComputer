@@ -132,6 +132,59 @@ class TestPreRun(TestParent):
         parse_nextion(m, read_usart(m), nextion_data)
         assert int(nextion_data["pic"]["tst"]) == selectionvalue
 
+    def test_nextion_repeated_selection_thesame(self):
+        selectionvalue = 100
+        objname_length = m.NEXTION_OBJNAME_LEN
+        status_selected = m.NEXTION_COMPONENTSELECTSTATUS_SELECTED
+
+        name = ffi.new("const char[" + str(objname_length) + "]", b"tst")
+        component = ffi.new("NEXTION_Component*")
+        component.value_selected = selectionvalue
+        component.name = name
+        component.highlighttype = m.NEXTION_HIGHLIGHTTYPE_IMAGE
+        component = ffi.cast("void*", component)
+        m.NEXTION_set_component_select_status(component, status_selected)
+        nextion_data = read_nextion_output(m,ffi)
+        assert int(nextion_data["tst.pic"]) == selectionvalue
+
+        m.NEXTION_set_component_select_status(component, status_selected)
+        nextion_data = read_nextion_output(m,ffi)
+        assert int(nextion_data["tst.pic"]) == selectionvalue
+
+        m.NEXTION_clear_selected_component()
+
+    def test_nextion_repeated_selection_different(self):
+        selectionvalue_first = 100
+        defaultvalue_first = 20
+
+        selectionvalue_second = 101
+        defaultvalue_second = 21
+
+        objname_length = m.NEXTION_OBJNAME_LEN
+        status_selected = m.NEXTION_COMPONENTSELECTSTATUS_SELECTED
+
+        component_first = ffi.new("NEXTION_Component*")
+        component_first.value_selected = selectionvalue_first
+        component_first.value_default = defaultvalue_first
+        component_first.name = ffi.new("const char[" + str(objname_length) + "]", b"ts1")
+        component_first.highlighttype = m.NEXTION_HIGHLIGHTTYPE_IMAGE
+        m.NEXTION_set_component_select_status(cast_void(ffi,component_first), status_selected)
+        nextion_data = read_nextion_output(m,ffi)
+        assert int(nextion_data["ts1.pic"]) == selectionvalue_first
+
+        component_second = ffi.new("NEXTION_Component*")
+        component_second.value_selected = selectionvalue_second
+        component_second.value_default = defaultvalue_second
+        component_second.name = ffi.new("const char[" + str(objname_length) + "]", b"ts2")
+        component_second.highlighttype = m.NEXTION_HIGHLIGHTTYPE_IMAGE
+        m.NEXTION_set_component_select_status(cast_void(ffi,component_second), status_selected)
+        nextion_data = read_nextion_output(m,ffi)
+
+        assert int(nextion_data["ts1.pic"]) == defaultvalue_first
+        assert int(nextion_data["ts2.pic"]) == selectionvalue_second
+
+        m.NEXTION_clear_selected_component()
+
     def test_nextion_selection_decay(self):
         defaultvalue = 50
         objname_length = m.NEXTION_OBJNAME_LEN

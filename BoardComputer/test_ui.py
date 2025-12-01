@@ -311,7 +311,7 @@ class TestBoardUI:
         )
         print(deltapressure)
         print(deltapressure * 100 >> 8)
-        assert int(output["fmd.var"]) == deltapressure * 100 >> 8
+        assert int(output["fmd.val"]) == deltapressure * 100 >> 8
 
     @pytest.mark.parametrize(
         "watchtype,expectedstring",
