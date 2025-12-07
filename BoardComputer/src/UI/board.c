@@ -441,7 +441,7 @@ static void update_sensorgroup_pressure()
 	}
 	NEXTION_send(buffer,USART_HOLD);
 	memset(payload,' ',payload_length);
-	NEXTION_instruction_compose("fmd","var",instruction);
+	NEXTION_instruction_compose("fmd","val",instruction);
 	///
 	int16_t deltapressure = MIN(MAX(0, fuelrailpressure - manifoldpressure - fuelmanifold_threshold),0x100);
 	//Delta has resolution of 1Bar, only fraction part is used
@@ -529,20 +529,38 @@ void UIBOARD_handle_userinput(INPUT_Event* input_event)
 	Callback on_hold = NULL;
 	Callback on_click = NULL;
 	NEXTION_Component* component = NULL;
-	InputComponentID_t componentID = input_event->componentID;
+	INPUT_Key_t key = input_event->key;
+    InputComponentID_t componentID = input_event->componentID;
+    INPUT_Keystatus_t keystatus = input_event->keystatus;
 
-	if(input_event->key == INPUT_KEY_DOWN && input_event->keystatus == INPUT_KEYSTATUS_CLICK){
-		input_order_it++;
-		if(input_order_it >= sizeof(input_order)/sizeof(InputComponentID_t)){
-			input_order_it = 0;
+	if(INPUT_KEYSTATUS_CLICK == keystatus)
+	{
+		if(INPUT_KEY_DOWN == key)
+		{ 
+			if(input_order_it >= sizeof(input_order)/sizeof(InputComponentID_t))
+			{
+				input_order_it = 0;
+			}
+			else
+			{
+				input_order_it++;
+			}
+		}
+
+		if(INPUTCOMPONENT_NONE == componentID)
+		{
+			/* Physical key without assigned component. */
+			componentID = input_order[input_order_it];
+		}
+		else
+		{
+			/* 
+				Touch event brings own assigned component.
+				Move focus to that element.
+			*/
+			input_order_it = componentID;
 		}
 	}
-
-	if(INPUT_COMPONENT_NONE == componentID)
-	{
-		componentID = input_order[input_order_it];
-	}
-	
 	switch(componentID)
 	{
 		case INPUTCOMPONENT_MAINDISPLAY:
@@ -551,7 +569,7 @@ void UIBOARD_handle_userinput(INPUT_Event* input_event)
 		break;
 		case INPUTCOMPONENT_WATCHSEL:
 			component = &UIBOARD_components[UIBOARD_COMPONENT_WATCHSEL];
-			on_hold = TIMER_next_watch;
+			on_click = TIMER_next_watch;
 		break;
 		case INPUTCOMPONENT_WATCH:
 			component = &UIBOARD_components[UIBOARD_COMPONENT_WATCH];
@@ -563,15 +581,16 @@ void UIBOARD_handle_userinput(INPUT_Event* input_event)
 		break;
 	}
 
-	NEXTION_set_component_select_status(component, NEXTION_COMPONENTSELECTSTATUS_SELECTED);
+	if(INPUT_KEYSTATUS_PRESSED == keystatus || INPUT_KEYSTATUS_HOLD == keystatus)
+		NEXTION_set_component_select_status(component, NEXTION_COMPONENTSELECTSTATUS_SELECTED);
 
-	if(input_event->key == INPUT_KEY_ENTER)
+	if(key == INPUT_KEY_ENTER)
 	{
-		if(NULL != on_click && input_event->keystatus == INPUT_KEYSTATUS_CLICK)
+		if(NULL != on_click && keystatus == INPUT_KEYSTATUS_CLICK)
 			on_click();
-		else if(NULL != on_hold && input_event->keystatus == INPUT_KEYSTATUS_HOLD)
+		else if(NULL != on_hold && keystatus == INPUT_KEYSTATUS_HOLD)
 			on_hold();
-		else if(NULL != on_press && input_event->keystatus == INPUT_KEYSTATUS_PRESSED)
+		else if(NULL != on_press && keystatus == INPUT_KEYSTATUS_PRESSED)
 			on_press();
 	}
 }

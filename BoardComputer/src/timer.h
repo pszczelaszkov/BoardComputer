@@ -74,7 +74,6 @@ Convert cycle timestamp to centiseconds.
 */
 TESTUSE uint8_t TIMER_cycle_timestamp_to_cs(SYSTEM_cycle_timestamp_t timestamp);
 
-void TIMER_handle_userinput_stopwatch(INPUT_Event* input_event);
 void TIMER_userinput_handle_watch(INPUT_Event* input_event);
 TESTUSE void TIMER_active_watch_toggle(TIMER_centisecond_t time_offset);
 TESTUSE void TIMER_clear_active_watch();

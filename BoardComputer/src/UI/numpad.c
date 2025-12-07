@@ -60,6 +60,10 @@ static void delete()
         uint8_t stringbeginning = cursor - current_length;
         memmove(&stringvalue[stringbeginning+1],&stringvalue[stringbeginning],current_length);
         current_length--;
+        if(!current_length)
+        {
+            stringvalue[cursor] = '0';
+        }
     }
 }
 
@@ -93,27 +97,46 @@ void UINUMPAD_switch(CONFIG_maxdata_t* returnvalue)
 
 void UINUMPAD_handle_userinput(INPUT_Event* input_event)
 {
+    const InputComponentID_t inputcomponent_it_current = inputcomponent_it;
     INPUT_Key_t key = input_event->key;
     InputComponentID_t componentID = input_event->componentID;
+    INPUT_Keystatus_t keystatus = input_event->keystatus;
 
-    if(input_event->keystatus == INPUT_KEYSTATUS_CLICK)
-    {   
-        /*
-        Input component could be delivered from outside i.e touch event.
-        When input is from physical buttons internal iterator is used.
-        */
+    if(INPUT_KEYSTATUS_CLICK == keystatus)
+    {
+        if(INPUT_KEY_DOWN == key)
+        {
+            inputcomponent_it++;
+            if(INPUTCOMPONENT_LAST == inputcomponent_it)
+            {
+                inputcomponent_it = INPUTCOMPONENT_NUMPAD1;
+            }
+        }
+
         if(INPUTCOMPONENT_NONE == componentID)
         {
-            componentID = (InputComponentID_t)inputcomponent_it;
+            /* Physical key without assigned component. */
+            componentID = inputcomponent_it;
         }
-        if(key == INPUT_KEY_DOWN)
-        {    
+        else
+        {
+            /* 
+                Touch event brings own assigned component.
+                Move focus to that element.
+            */
+            inputcomponent_it = componentID;
+        }
+
+        if(inputcomponent_it_current != componentID)
+        {
             /*
+                InputComponent has been switched.
                 Active component needs to be cleared when next component selection will happen and
                 before changes to placeholder component will be made.
             */
             NEXTION_clear_selected_component();
         }
+
         switch(componentID)
         {
             case INPUTCOMPONENT_NUMPADSEND:
@@ -136,35 +159,19 @@ void UINUMPAD_handle_userinput(INPUT_Event* input_event)
                 memcpy(&objname,"mns",sizeof(objname));
             break;
             default:
-                if(INPUTCOMPONENT_NONE < componentID)
-                {
-                    uint8_t digit = (INPUTCOMPONENT_NUMPAD0 == componentID)? 0 : (uint8_t)componentID;
-                    //Contraption to build "b0n" string, where n is button number
-                    memcpy(&objname,"b0 ",sizeof(objname));
-                    digit = '0' + digit;
-                    objname[2] = (char)digit;
-                    if(INPUT_KEY_ENTER == key){
-                        if(!(INPUTCOMPONENT_NUMPAD0 == componentID && current_length == 0)){
-                            append(digit);
-                        }
+                uint8_t digit = (INPUTCOMPONENT_NUMPAD0 == componentID)? 0 : (uint8_t)componentID;
+                //Contraption to build "b0n" string, where n is button number
+                memcpy(&objname,"b0 ",sizeof(objname));
+                digit = '0' + digit;
+                objname[2] = (char)digit;
+                if(INPUT_KEY_ENTER == key){
+                    if(!(INPUTCOMPONENT_NUMPAD0 == componentID && current_length == 0)){
+                        append(digit);
                     }
                 }
         }
-        if(key == INPUT_KEY_DOWN)
-        {
-            inputcomponent_it++;
-            if(INPUTCOMPONENT_LAST == inputcomponent_it)
-            {
-                inputcomponent_it = 1;
-            }
-        }
-        /*
-            Proceed only when componentID is resolved, in other case trash may be send to Nextion
-        */
-        if(INPUT_COMPONENT_NONE != componentID)
-        {
-            NEXTION_set_component_select_status(&generic_button_component, NEXTION_COMPONENTSELECTSTATUS_SELECTED);
-        }
+
+        NEXTION_set_component_select_status(&generic_button_component, NEXTION_COMPONENTSELECTSTATUS_SELECTED);
     }
 }
 
@@ -185,17 +192,23 @@ void UINUMPAD_setup()
     {   
         int16_t returnvalue_value = *returnvalue_ptr;
         inputcomponent_it = 0;
+        current_length = 0;
 
-        uint8_t buffer_length;
-        if(0 > returnvalue_value)
-        {
-            returnvalue_value*=-1;
-            stringvalue[0] = '-';
+        if(0 != returnvalue_value)
+        {   
+            if(0 > returnvalue_value)
+            {
+                returnvalue_value*=-1;
+                stringvalue[0] = '-';
+            }
+            itoa(returnvalue_value,buffer,10);
+            current_length = strlen(buffer);
+            memcpy(&stringvalue[max_length-current_length],buffer,current_length);
         }
-        itoa(returnvalue_value,buffer,10);
-        buffer_length = strlen(buffer);
-
-        memcpy(&stringvalue[max_length-buffer_length],buffer,buffer_length);
+        else
+        {
+            stringvalue[cursor] = '0';
+        }
     }
     else
     {

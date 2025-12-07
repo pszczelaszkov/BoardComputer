@@ -69,6 +69,7 @@ extern INPUT_Component INPUT_components[];
 void INPUT_switch_maindisplay();
 TESTUSE void INPUT_userinput(INPUT_Keystatus_t keystatus, INPUT_Key_t key, INPUT_ComponentID_t componentID);
 TESTUSE void INPUT_update();
+void INPUT_handle();
 void INPUT_initialize();
 ISR(INT0_vect);
 ISR(INT1_vect);

@@ -23,7 +23,7 @@
 
 void post_irq_core()
 {
-
+	INPUT_handle();
 }
 
 void high_prio_core()
@@ -36,6 +36,7 @@ void core()
 	if(SYSTEM_STATUS_OPERATIONAL == SYSTEM_status)
 	{
 		INPUT_update();
+		INPUT_handle();
 		SENSORSFEED_update();
 		NEXTION_update();
 	}
@@ -64,4 +65,5 @@ ENTRY_ROUTINE
 		core();
 		SYSTEM_exec = 0;
     }
+
 }

@@ -262,12 +262,20 @@ int8_t NEXTION_switch_page(NEXTION_PageID_t pageID, uint8_t push_to_history)
 	NEXTION_incomingdata_handler = NULL;
 	if(NULL != newpage.userinput_handler)
 		INPUT_userinput_handler = newpage.userinput_handler;
-	if(setup)
-		setup();
+
 	page_callback = newpage.callback_update;
 	
 	itoa(pageID, &buffer[5],10);
-	return NEXTION_send(buffer,USART_HOLD);
+	if(NEXTION_send(buffer,USART_HOLD))
+	{
+		if(setup)
+			setup();
+		return 1;
+	}
+	else
+	{
+		return 0;
+	}
 }
 
 NEXTION_PageID_t NEXTION_get_pageid()
@@ -344,6 +352,8 @@ void NEXTION_reset()
 	NEXTION_clear_selected_component();
 	//RESET command sends message directly to bypass disconnected condition.
 	USART_TX_clear();
+	//Wrap in eot to close any leftover command on display side.
+	USART_send(NEXTION_eot,USART_HOLD);
 	USART_send("rest",USART_HOLD);
 	USART_send(NEXTION_eot,USART_FLUSH);
 }

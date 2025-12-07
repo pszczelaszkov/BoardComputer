@@ -657,11 +657,16 @@ class TestConfig(TestParent):
             (i, config.config[i]["default"]) for i in range(m.CONFIG_ENTRY_LAST)
         ]
     )
-    def test_factory_reset(self,entry,defaultvalue):
+    def test_factory_reset_variable(self,entry,defaultvalue):
         readval = ffi.cast("CONFIG_maxdata_t*",ffi.new("CONFIG_maxdata_t*"))
         m.CONFIG_factory_default_reset()
         m.CONFIG_read_entry(ffi.NULL, entry, readval)
         assert defaultvalue == readval[0]
+
+    def test_factory_reset_set_config_version(self):
+        m.CONFIG_factory_default_reset()
+        m.CONFIG_loadconfig(ffi.addressof(m.SYSTEM_config))
+        assert m.SYSTEM_config.CONFIG_VERSION == m.SYSTEM_VERSION
 
     @pytest.mark.parametrize("entry,minval,maxval",[
         (i,*config.ENTRY_VALIDATORS[
@@ -705,7 +710,21 @@ class TestPowerCycles(TestParent):
         m.board_is_enabled = 1
         m.SYSTEM_config.SYSTEM_ALWAYS_ON=1
         m.CONFIG_saveconfig(ffi.addressof(m.SYSTEM_config))
-    
+
+    def test_system_startup_factory_reset_when_version_mismatch(self):
+        m.SYSTEM_resetalert()
+        m.SYSTEM_config.CONFIG_VERSION = 0
+        m.CONFIG_saveconfig(ffi.addressof(m.SYSTEM_config))
+        m.SYSTEM_initialize()
+        assert m.SYSTEM_ALERT_CONFIG_RESET == m.SYSTEM_get_active_alert().alert
+
+    def test_system_startup_omit_factory_reset_when_correct_version(self):
+        m.SYSTEM_resetalert()
+        m.SYSTEM_config.CONFIG_VERSION = m.SYSTEM_VERSION
+        m.CONFIG_saveconfig(ffi.addressof(m.SYSTEM_config))
+        m.SYSTEM_initialize()
+        assert m.SYSTEM_ALERT_CONFIG_RESET != m.SYSTEM_get_active_alert().alert
+
     def test_system_board_cycle_disable_enable_with_always_on_set(self):
         m.SYSTEM_config.SYSTEM_ALWAYS_ON = 1
         m.CONFIG_saveconfig(ffi.addressof(m.SYSTEM_config))

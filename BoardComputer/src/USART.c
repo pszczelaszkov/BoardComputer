@@ -109,7 +109,6 @@ void USART_initialize()
 
 void message_register(uint8_t message_size)
 {
-	Callback_32 handler;
 	//Check for "DRAKJHSUYDGBNCJHGJKSHBDN", although more complex rule is not needed.
 	if(message_size == 24 && USART_RX_buffer[1] == 'R')
 	{
@@ -136,7 +135,7 @@ void message_register(uint8_t message_size)
 			case NEXTIONMESSAGETYPE_INCOMINGDATA:
 				if(NEXTION_incomingdata_handler)
 				{
-					handler(*(uint32_t*)&USART_RX_buffer[1]);
+					NEXTION_incomingdata_handler(*(uint32_t*)&USART_RX_buffer[1]);
 				}
 			break;
 			case NEXTIONMESSAGETYPE_DEVICEREADY:

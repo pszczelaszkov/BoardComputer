@@ -132,8 +132,8 @@ void TIMER_active_watch_toggle(TIMER_centisecond_t time_offset)
 
 void TIMER_clear_active_watch()
 {
-    active_watch->timer.watchstatus = TIMER_TIMERSTATUS_ZERO;
     memset(&active_watch->timer,0x0,sizeof(active_watch->timer));
+    active_watch->timer.watchstatus = TIMER_TIMERSTATUS_ZERO;
     TIMER_format(active_watch, &TIMER_active_watch_formated, FORMATFLAG_HOURS);
 }
 
@@ -173,15 +173,15 @@ uint8_t TIMER_cycle_timestamp_to_cs(SYSTEM_cycle_timestamp_t timestamp)
 
 void TIMER_userinput_handle_watch(INPUT_Event* input_event)
 {
-    if(input_event->key == INPUT_KEY_ENTER)
+    if(INPUT_KEY_ENTER == input_event->key)
     {
-        if(TIMER_active_timertype == TIMER_TIMERTYPE_STOPWATCH)
+        if(TIMER_TIMERTYPE_STOPWATCH== TIMER_active_timertype)
         {
-            if(input_event->keystatus == INPUT_KEYSTATUS_HOLD)
+            if(INPUT_KEYSTATUS_HOLD == input_event->keystatus)
             {
-                TIMER_clear_active_watch;
+                TIMER_clear_active_watch();
             }
-            else if(input_event->keystatus == INPUT_KEYSTATUS_PRESSED)
+            else if(INPUT_KEYSTATUS_CLICK == input_event->keystatus)
             {
 
                 SYSTEM_cycle_timestamp_t current_timestamp = SYSTEM_get_cycle_timestamp();
@@ -191,12 +191,12 @@ void TIMER_userinput_handle_watch(INPUT_Event* input_event)
                 if(delta_timestamp >= current_timestamp)
                     delta_timestamp -= (0xff-SYSTEM_fullcycle_rtc_steps+1);
                 
-                if(active_watch->timer.watchstatus == TIMER_TIMERSTATUS_STOP)
+                if(TIMER_TIMERSTATUS_STOP == active_watch->timer.watchstatus || TIMER_TIMERSTATUS_ZERO == active_watch->timer.watchstatus)
                 {
                     increment(active_watch,TIMER_cycle_timestamp_to_cs(delta_timestamp));
                     start_watch(active_watch);
                 }
-                else if(active_watch->timer.watchstatus == TIMER_TIMERSTATUS_COUNTING)
+                else if(TIMER_TIMERSTATUS_COUNTING == active_watch->timer.watchstatus)
                 {
                     stop_watch(active_watch);                    
                     decrement(active_watch,TIMER_cycle_timestamp_to_cs(delta_timestamp));
@@ -204,11 +204,6 @@ void TIMER_userinput_handle_watch(INPUT_Event* input_event)
             }
         }
     }
-}
-
-void TIMER_handle_userinput_stopwatch(INPUT_Event* input_event)
-{
-
 }
 
 void TIMER_update()

@@ -16,7 +16,7 @@ TESTUSE typedef uint8_t SYSTEM_cycle_timestamp_t;
 TESTUSE typedef uint16_t ALERT_PATTERN;
 
 extern const SYSTEM_cycle_timestamp_t SYSTEM_fullcycle_rtc_steps;//System timestamp at the end of full cycle
-extern const uint16_t SYSTEM_VERSION;
+TESTUSE extern const uint16_t SYSTEM_VERSION;
 TESTUSE typedef enum SYSTEM_STATUS
 {
     SYSTEM_STATUS_IDLE,
@@ -36,9 +36,10 @@ TESTUSE typedef enum SYSTEM_ALERT
     SYSTEM_ALERT_NOTIFICATIONS_END= 32,
     SYSTEM_ALERT_CONFIG_RESET = 33,/* Config was factory reseted */
     SYSTEM_ALERT_CONFIG_INCORRECT = 34/* Config validation found issue */,
+    SYSTEM_ALERT_NEXTION_TIMEOUT = 35,/* Nextion Display does not respond in time*/
     SYSTEM_ALERT_WARNINGS_END = 64,
     SYSTEM_ALERT_UI_INCOMPATIBLE = 65,/* Display and Board UI versions mismatch */
-    SYSTEM_ALERT_NEXTION_TIMEOUT = 66,/* Nextion Display does not respond */
+
 }SYSTEM_ALERT;
 
 TESTUSE typedef struct SYSTEM_Alert

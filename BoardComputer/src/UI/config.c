@@ -7,12 +7,12 @@
 typedef enum INPUTCOMPONENTID
 {
 	INPUTCOMPONENT_NONE = 0,
-    INPUTCOMPONENT_PRV = 6,
-    INPUTCOMPONENT_NXT = 7,
-    INPUTCOMPONENT_DEC = 8,
-    INPUTCOMPONENT_INC = 9,
-    INPUTCOMPONENT_BCK = 10,
-    INPUTCOMPONENT_PAD = 11,
+    INPUTCOMPONENT_PRV = 5,
+    INPUTCOMPONENT_NXT = 6,
+    INPUTCOMPONENT_DEC = 7,
+    INPUTCOMPONENT_INC = 8,
+    INPUTCOMPONENT_BCK = 9,
+    INPUTCOMPONENT_PAD = 10,
     INPUTCOMPONENT_LAST,
 }InputComponentID_t;
 
@@ -36,17 +36,37 @@ static NEXTION_Component generic_button_component =
 static uint8_t send_configpointer_to_nextion();
 static uint8_t send_configvalue_to_nextion();
 static uint8_t check_configvalue_is_valid();
+static void save_configvariable();
 
 static void switch_configvariable(Direction_t direction);
 static void modify_configvariable_value(Direction_t direction);
 static void incomingdata_handler(int32_t data);
 
+static void save_configvariable()
+{
+    if(check_configvalue_is_valid())
+    {
+        CONFIG_modify_entry(&SYSTEM_config, configvariable_it, &configvariable_value);
+    }
+}
+
 static uint8_t send_configpointer_to_nextion()
 {
     NEXTION_INSTRUCTION_BUFFER_BLOCK(3)
+    CONFIG_maxdata_t min, max;
+    CONFIG_get_entry_min_max_values(configvariable_it,&min,&max);
     NEXTION_instruction_compose("ptr","val",instruction);
     u16toa(configvariable_it, payload);
     NEXTION_send(buffer,0);
+
+    NEXTION_instruction_compose("min","val",instruction);
+    u16toa(min, payload);
+    NEXTION_send(buffer,0);
+
+    NEXTION_instruction_compose("max","val",instruction);
+    u16toa(max, payload);
+    NEXTION_send(buffer,0);
+
     NEXTION_send("rfp.en=1",0);
 }
 
@@ -88,10 +108,6 @@ static uint8_t check_configvalue_is_valid()
 
 static void switch_configvariable(Direction_t direction)
 {
-    if(check_configvalue_is_valid())
-    {
-        CONFIG_modify_entry(&SYSTEM_config, configvariable_it, &configvariable_value);
-    }
     switch(direction)
     {
         case DIRECTION_FORWARD:
@@ -139,6 +155,7 @@ static void incomingdata_handler(int32_t data)
 
 void UICONFIG_handle_userinput(INPUT_Event* input_event)
 {
+    const InputComponentID_t inputcomponent_it_current = inputcomponent_it;
     INPUT_Key_t key = input_event->key;
     InputComponentID_t componentID = input_event->componentID;
     INPUT_Keystatus_t keystatus = input_event->keystatus;
@@ -147,11 +164,6 @@ void UICONFIG_handle_userinput(INPUT_Event* input_event)
     {
         if(INPUT_KEY_DOWN == key)
         { 
-            /*
-                Active component needs to be cleared when next component selection will happen and
-                before changes to placeholder component will be made.
-            */
-            NEXTION_clear_selected_component();
             if(INPUTCOMPONENT_LAST == inputcomponent_it || INPUTCOMPONENT_NONE == inputcomponent_it)
             {
                 inputcomponent_it = INPUTCOMPONENT_PRV;
@@ -164,10 +176,15 @@ void UICONFIG_handle_userinput(INPUT_Event* input_event)
 
         if(INPUTCOMPONENT_NONE == componentID)
         {
+            /* Physical key without assigned component. */
             componentID = inputcomponent_it;
         }
         else
         {
+            /* 
+                Touch event brings own assigned component.
+                Move focus to that element.
+            */
             inputcomponent_it = componentID;
         }
 
@@ -177,6 +194,7 @@ void UICONFIG_handle_userinput(INPUT_Event* input_event)
             {
                 case INPUTCOMPONENT_PRV:
                 case INPUTCOMPONENT_NXT:
+                    save_configvariable();
                     switch_configvariable((Direction_t)componentID - INPUTCOMPONENT_PRV);
                 break;
                 case INPUTCOMPONENT_DEC:
@@ -184,15 +202,13 @@ void UICONFIG_handle_userinput(INPUT_Event* input_event)
                     modify_configvariable_value((Direction_t)componentID - INPUTCOMPONENT_DEC);
                 break;
                 case INPUTCOMPONENT_BCK:
+                    save_configvariable();
                     if(1 == SYSTEM_config.SYSTEM_FACTORY_RESET)
                     {
-                        CONFIG_factory_default_reset();
+                        SYSTEM_config.CONFIG_VERSION = 0;
                         SYSTEM_run = 0; // reset device.
                     }
-                    else
-                    {
-                        CONFIG_saveconfig(&SYSTEM_config);
-                    }
+                    CONFIG_saveconfig(&SYSTEM_config);
                     NEXTION_set_previous_page();
                     return;
                 break;
@@ -204,7 +220,17 @@ void UICONFIG_handle_userinput(INPUT_Event* input_event)
             }
         }
 
-        //resolve name
+        if(inputcomponent_it_current != componentID)
+        {
+            /*
+                InputComponent has been switched.
+                Active component needs to be cleared when next component selection will happen and
+                before changes to placeholder component will be made.
+            */
+            NEXTION_clear_selected_component();
+        }
+
+        //Resolve generic input component name.
         switch(componentID)
         {
             case INPUTCOMPONENT_PRV:
@@ -228,6 +254,7 @@ void UICONFIG_handle_userinput(INPUT_Event* input_event)
             default:
         }
 
+        //Always select, at least for refreshing counter.
         NEXTION_set_component_select_status(&generic_button_component, NEXTION_COMPONENTSELECTSTATUS_SELECTED);
     }
 }
@@ -255,8 +282,9 @@ void UICONFIG_setup()
         if(send_configvalue_to_nextion())
             send_configpointer_to_nextion();
 
-        NEXTION_incomingdata_handler = incomingdata_handler;
+
     }
+    NEXTION_incomingdata_handler = incomingdata_handler;
 }
 
 void UICONFIG_update()

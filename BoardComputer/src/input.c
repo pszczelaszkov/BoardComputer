@@ -12,10 +12,7 @@ static volatile INPUT_Event input_event;
 //Called from ISR, keep fit
 void INPUT_userinput(INPUT_Keystatus_t keystatus, INPUT_Key_t key, INPUT_ComponentID_t componentID)
 {	
-	if(keystatus == INPUT_KEYSTATUS_PRESSED)
-	{
-	}
-	else//if keystatus released
+	if(INPUT_KEYSTATUS_RELEASED == keystatus)
 	{
 		if(INPUT_keystatus[key] > INPUT_KEYSTATUS_RELEASED && INPUT_keystatus[key] < INPUT_KEYSTATUS_HOLD)
 		{
@@ -38,29 +35,40 @@ void INPUT_userinput(INPUT_Keystatus_t keystatus, INPUT_Key_t key, INPUT_Compone
 	}
 }
 
+void INPUT_handle()
+{
+	INPUT_Userinput_Handler handler = input_event.next_handler;
+	while(handler)
+	{	
+		handler((INPUT_Event*)&input_event);
+		if(handler == input_event.next_handler)
+		{
+			/*
+				Handler has not been modified, finish input handling.
+			*/
+			input_event.next_handler = NULL;
+		}
+		handler = input_event.next_handler;
+	}
+}
+
 void INPUT_update()
 {
-	INPUT_Userinput_Handler handler = (&input_event)->next_handler;
-
-	while(handler)
-	{
-		handler((INPUT_Event*)&input_event);
-		if(handler == (&input_event)->next_handler)
-		{
-			(&input_event)->next_handler = NULL;
-		}
-		else
-		{
-			handler = (&input_event)->next_handler;
-		}
-		
-	}
-
-	for(uint8_t i = 0; i < INPUT_KEY_LAST; i++)
+	for(INPUT_Key_t key = 0; key < INPUT_KEY_LAST; key++)
 	{	
-		uint8_t status = INPUT_keystatus[i];
+		INPUT_Keystatus_t status = INPUT_keystatus[key];
 		if(status > INPUT_KEYSTATUS_RELEASED && status < INPUT_KEYSTATUS_HOLD){
-			INPUT_keystatus[i]++;
+			INPUT_keystatus[key]++;
+		}
+		else if(INPUT_KEYSTATUS_HOLD == status)
+		{
+			if(!input_event.next_handler)
+			{
+				input_event.timestamp = SYSTEM_get_cycle_timestamp();
+				input_event.key = key;
+				input_event.keystatus = INPUT_KEYSTATUS_HOLD;
+				input_event.next_handler = INPUT_userinput_handler;
+			}
 		}
 	}
 }

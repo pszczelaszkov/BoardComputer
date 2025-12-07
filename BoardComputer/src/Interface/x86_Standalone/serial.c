@@ -1,6 +1,6 @@
-#include"serial.h"
+#include "serial.h"
 #include "USART.h"
-
+#include "system_interface.h"
 
 #include <stdio.h>
 #include <stdint.h>
@@ -41,6 +41,7 @@ static int tx_thread(void *arg)
 
         write(serial_fd, &byte, 1);
         USART_write_nextion_byte();
+        SYSTEMINTERFACE_external_wakeup();
     }
 
     return 0;
@@ -53,6 +54,7 @@ static int rx_thread(void *arg)
         if (read(serial_fd, &byte, 1) == 1) {
             SERIAL_NEXTION_IN = byte;
             USART_read_nextion_byte();
+            SYSTEMINTERFACE_external_wakeup();
         }
     }
 }
