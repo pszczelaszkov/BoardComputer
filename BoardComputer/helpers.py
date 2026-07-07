@@ -1155,7 +1155,6 @@ def read_nextion_output(m, ffi):
     output = bytes(ffi.unpack(m.USART_TX_buffer, m.USART_TX_message_length)).split(
         b"\xff\xff\xff"
     )
-    print(f"OUTPUT: {output}")
     m.USART_TX_clear()
     for message in output[:-1]:
         msg_decoded = message.decode()
@@ -1168,7 +1167,7 @@ def read_nextion_output(m, ffi):
             value = ""
         result[variable] = value
 
-    print(f"NEXTION: {result}")
+    print(f"NEXTION RAW: {output}->PARSED: {result}")
     return result
 
 

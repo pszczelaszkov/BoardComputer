@@ -42,8 +42,8 @@ TESTUSE extern UIBOARD_MDComponent UIBOARD_maindisplay_components[];
 TESTUSE extern UIBOARD_MDComponent* UIBOARD_maindisplay_activecomponent;
 
 void UIBOARD_callback_config();
-void UIBOARD_handle_userinput(INPUT_Event* input_event);
-void UIBOARD_update();
+TESTUSE void UIBOARD_handle_userinput(INPUT_Event* input_event);
+TESTUSE void UIBOARD_update();
 void UIBOARD_setup();
 
 #endif /* UIBOARD_H_ */

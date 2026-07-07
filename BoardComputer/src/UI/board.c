@@ -15,6 +15,7 @@ typedef enum INPUTCOMPONENTID
 
 TESTUSE typedef enum VISUALALERTSEVERITY
 {
+	VISUALALERT_SEVERITY_NONE,
 	VISUALALERT_SEVERITY_NOTIFICATION,
 	VISUALALERT_SEVERITY_WARNING,
 	VISUALALERT_SEVERITY_BADVALUE
@@ -29,22 +30,22 @@ TESTUSE typedef enum VISUALALERTID
 	VISUALALERTID_INTAKE,
 	VISUALALERTID_OUTSIDE,
 	VISUALALERTID_OIL,
+	VISUALALERTID_WATCHDISPLAY,
 	VISUALALERTID_LAST
 }Visualalertid_t;
 
-TESTUSE typedef struct Visualalert
+typedef struct Visualalert
 {
-	const char* objname;
-	uint8_t temppattern;
-	uint8_t pattern;
-	uint16_t color;
+	uint8_t counter;
+	Visualalertseverity_t severity:7;
+	uint8_t alert_sent:1;
 }Visualalert;
 
-static const int16_t fuelmanifold_threshold = 2 << 8;//2 Bar
-static const uint16_t MD_MAX_VALUE = 0x63e7;//99.9
+static const uint8_t MAX_VISUALALERT_SEND_IN_ONE_STEP = 2;//Limit to prevent communication buffer full.
 
-static uint8_t critical_raised;
-TESTSTATICVAR(static uint8_t raise_critical);
+static const uint8_t visualalert_duration = 8*2; //2 seconds
+static const int16_t fuelmanifold_threshold = 2 << 8; //2 Bar
+static const uint16_t MD_MAX_VALUE = 0x63e7; //99.9
 
 static void renderer_md_lph();
 static void renderer_md_lp100();
@@ -52,40 +53,17 @@ static void renderer_md_lp100_avg();
 static void renderer_md_speed_avg();
 static void renderer_md_inj_t();
 static void renderer_md_range();
-TESTUSE static Visualalert TESTADDPREFIX(visualalerts)[];
+static Visualalert visualalerts[];
+
 TESTUSE static void TESTADDPREFIX(update_EGT)();
 TESTUSE static void TESTADDPREFIX(update_watch)();
 TESTUSE static void TESTADDPREFIX(raisevisualalert)(Visualalertid_t alertid, Visualalertseverity_t severity);
+TESTUSE static void TESTADDPREFIX(resetvisualalerts)();
 TESTUSE static void TESTADDPREFIX(update_visual_alert)();
 TESTUSE static void TESTADDPREFIX(update_sensorgroup_bottom)();
 TESTUSE static void TESTADDPREFIX(update_sensorgroup_pressure)();
 
-
-//Object needs to have "pco" variable, as its used to visualize alert.
-static Visualalert visualalerts[] = 
-{
-	[VISUALALERTID_MAINDISPLAY] = {
-		.objname = "mdv"
-	},
-	[VISUALALERTID_EGT] = {
-		.objname = "egt"
-	},
-	[VISUALALERTID_MAP] = {
-		.objname = "map"
-	},
-	[VISUALALERTID_FRP] = {
-		.objname = "frp"
-	},
-	[VISUALALERTID_OIL] = {
-		.objname = "oil"
-	},
-	[VISUALALERTID_INTAKE] = {
-		.objname = "int" 
-	},
-	[VISUALALERTID_OUTSIDE] = {
-		.objname = "out"
-	}
-};
+static Visualalert visualalerts[VISUALALERTID_LAST] = {0};
 
 NEXTION_Component UIBOARD_components[] = {
 	[UIBOARD_COMPONENT_WATCH]=
@@ -207,34 +185,47 @@ UIBOARD_MDComponent UIBOARD_maindisplay_components[] = {
 
 /*
 Raises visual alert for specified alertid.
-Alert lives 8 system cycles.Its safe to double rise.
+Alert duration is defined in visualalert_duration variable.
+Double rise refreshes counter.
 It may raise corresponding system alert.
-@param alertid Selects Visualalert instance.
-@param severity Severity sets predefined periodicity and color.
+
+@param alertid Specifies alert to be raised.
+@param severity Severity sets visual apperance. Severity none disables alert prematurely.
 */
 static void raisevisualalert(Visualalertid_t alertid, Visualalertseverity_t severity)
 {
-	Visualalert* alert = &visualalerts[alertid];
-	uint8_t pattern;
-	uint16_t color;
-	switch(severity)
+	Visualalert* visualalert = &visualalerts[alertid];
+	if(VISUALALERT_SEVERITY_NONE != severity)
 	{
-		case VISUALALERT_SEVERITY_BADVALUE:
-			pattern = 0xff;
-			color = CRIMSONRED;
-		break;
-		case VISUALALERT_SEVERITY_NOTIFICATION:
-			pattern = 0xcc;
-			color = BRIGHTBLUE;
-		break;
-		case VISUALALERT_SEVERITY_WARNING:
-			pattern = 0xaa;
-			color = SAFETYYELLOW;
-		break;
+		/* Raise alert if it has not been raised yet.*/
+		if(VISUALALERT_SEVERITY_NONE == visualalert->severity)
+		{
+			/* Alert has not been risen yet */
+			visualalert->severity = severity;
+			visualalert->counter = visualalert_duration;
+			visualalert->alert_sent = 0;
+		}
+		else
+		{
+			/* Alert is ongoing, refresh only counter */
+			visualalert->counter = visualalert_duration;
+		}
 	}
-	alert->color = color;
-	alert->pattern = pattern;
+	else
+	{
+		/* Prematurely disable alert */
+		visualalert->counter = 0;
+	}
 }
+
+static void resetvisualalerts()
+{
+	for(uint8_t i = 0; i < VISUALALERTID_LAST; i++)
+	{
+		raisevisualalert(i, VISUALALERT_SEVERITY_NONE);
+	}
+}
+
 /*Display liters per hour*/
 static void renderer_md_lph()
 {	NEXTION_INSTRUCTION_BUFFER_BLOCK(6)
@@ -349,7 +340,6 @@ static void update_EGT()
 	NEXTION_send(buffer,USART_HOLD);
 	if(alert)
 	{
-		raise_critical = 1;
 		raisevisualalert(VISUALALERTID_EGT,VISUALALERT_SEVERITY_BADVALUE);
 	}
 }
@@ -373,7 +363,6 @@ static void update_sensorgroup_bottom()
 	{
 		raisevisualalert(VISUALALERTID_OUTSIDE,VISUALALERT_SEVERITY_BADVALUE);
 		memset(&payload[1], '-', num_of_digits);
-		raise_critical = 1;
 	}
 	NEXTION_send(buffer,USART_HOLD);
 	memset(&payload[1],' ',num_of_digits);
@@ -387,7 +376,6 @@ static void update_sensorgroup_bottom()
 	{
 		raisevisualalert(VISUALALERTID_INTAKE,VISUALALERT_SEVERITY_BADVALUE);
 		memset(&payload[1], '-', num_of_digits);
-		raise_critical = 1;
 	}
 	NEXTION_send(buffer,USART_HOLD);
 	memset(&payload[1],' ', num_of_digits);
@@ -401,7 +389,6 @@ static void update_sensorgroup_bottom()
 	{
 		raisevisualalert(VISUALALERTID_OIL,VISUALALERT_SEVERITY_BADVALUE);
 		memset(&payload[1], '-', num_of_digits);
-		raise_critical = 1;
 	}
 	NEXTION_send(buffer,USART_HOLD);
 }
@@ -423,7 +410,6 @@ static void update_sensorgroup_pressure()
 	{
 		raisevisualalert(VISUALALERTID_MAP,VISUALALERT_SEVERITY_BADVALUE);
 		memset(&payload[1], '-', 5);
-		raise_critical = 1;
 	}
 	NEXTION_send(buffer,USART_HOLD);
 	memset(&payload[1],' ',payload_length-2);
@@ -437,7 +423,6 @@ static void update_sensorgroup_pressure()
 	{
 		raisevisualalert(VISUALALERTID_FRP,VISUALALERT_SEVERITY_BADVALUE);
 		memset(&payload[1], '-', 5);
-		raise_critical = 1;
 	}
 	NEXTION_send(buffer,USART_HOLD);
 	memset(payload,' ',payload_length);
@@ -455,27 +440,46 @@ static void update_sensorgroup_pressure()
 
 static void update_visual_alert()
 {
-	NEXTION_INSTRUCTION_BUFFER_BLOCK(5)
-	for(uint8_t i = 0; i < VISUALALERTID_LAST;i++)
+	NEXTION_INSTRUCTION_BUFFER_BLOCK(1)
+	NEXTION_instruction_compose("al0","val",instruction);
+
+	uint8_t alerts_sent = 0;
+	for(uint8_t i = 0; i < VISUALALERTID_LAST; i++)
 	{
-		Visualalert* alert = &visualalerts[i];
-		if(!alert->temppattern)
+		Visualalert* visualalert = &visualalerts[i];
+		/*
+			Modify message with proper numbers
+			alN.val=X
+		*/
+		instruction[2] = '0' + (char)i;
+		if(0 < visualalert->counter)
 		{
-			alert->temppattern = alert->pattern;
-			alert->pattern = 0;
-		}
-		if(alert->temppattern)
-		{
-			uint16_t color = DEFAULTCOLOR;
-			uint8_t patternmatch = alert->temppattern & 0x01;
-			alert->temppattern >>= 1;
-			if(patternmatch)
+			visualalert->counter--;
+			if(!visualalert->alert_sent)
 			{
-					color = alert->color;
+				payload[0] = '0' + (char)visualalert->severity;
+				if(NEXTION_send(buffer,USART_HOLD))
+				{
+					alerts_sent++;
+					visualalert->alert_sent = 1;
+				}
 			}
-			NEXTION_instruction_compose(alert->objname,"pco",instruction);
-			u16toa(color,payload);
-			NEXTION_send(buffer,USART_HOLD);
+		}
+		else
+		{
+			if(VISUALALERT_SEVERITY_NONE != visualalert->severity)
+			{				
+				payload[0] = '0';
+				if(NEXTION_send(buffer,USART_HOLD))
+				{
+					alerts_sent++;
+					visualalert->severity = VISUALALERT_SEVERITY_NONE;
+				}
+			}
+		}
+		if(MAX_VISUALALERT_SEND_IN_ONE_STEP == alerts_sent)
+		{
+			break;
 		}
 	}
 }
@@ -486,10 +490,17 @@ static void update_watch()
 	NEXTION_instruction_compose("wtd","txt",instruction);
 	NEXTION_quote_payloadbuffer(payload,payload_length);
 	if(TIMER_active_timertype == TIMER_TIMERTYPE_WATCH)
+	{
 		memcpy(&payload[3],TIMER_active_watch_formated.c_str,5);
+		if(TIMER_TIMERSTATUS_COUNTING != TIMER_get_watch(TIMER_TIMERTYPE_WATCH)->timer.watchstatus)
+		{
+			raisevisualalert(VISUALALERTID_WATCHDISPLAY, VISUALALERT_SEVERITY_WARNING);
+		}
+	}
 	else
+	{
 		memcpy(&payload[1],&TIMER_active_watch_formated.segments.mm,8);
-
+	}
 	NEXTION_send(buffer,USART_HOLD);
 }
 
@@ -525,6 +536,7 @@ void UIBOARD_handle_userinput(INPUT_Event* input_event)
 		INPUTCOMPONENT_WATCH,
 	};
 
+	
 	Callback on_press = NULL;
 	Callback on_hold = NULL;
 	Callback on_click = NULL;
@@ -600,8 +612,6 @@ void UIBOARD_update()
 	uint8_t timer = SYSTEM_event_timer;
 	switch(timer)
 	{
-		case 0:
-			raise_critical = 0;
 		case 4:
 			update_sensorgroup_bottom();
 			update_EGT();
@@ -614,14 +624,4 @@ void UIBOARD_update()
 	}
 	update_watch();
 	update_visual_alert();
-	if(raise_critical)
-	{
-		if(!critical_raised)
-		{
-			SYSTEM_raisealert(SYSTEM_ALERT_SEVERITY_CRITICAL);
-			critical_raised = 1;
-		}
-	}
-	else
-		critical_raised = 0;
 }

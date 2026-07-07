@@ -8,6 +8,12 @@ def cast_void(variable):
     return ffi.cast("void*", variable)
 
 class TestBoardUI:
+    INPUTCOMPONENT_NONE = 0
+    INPUTCOMPONENT_MAINDISPLAY = 1
+    INPUTCOMPONENT_WATCH = 4
+    INPUTCOMPONENT_WATCHSEL = 5
+    INPUTCOMPONENT_CONFIG = 6
+
     @classmethod
     def setup_class(cls):
         m.SYSTEM_run = False
@@ -17,9 +23,16 @@ class TestBoardUI:
     @pytest.fixture(autouse=True)
     def clear(self):
         m.NEXTION_clear_selected_component()
-        m.USART_TX_clear()
         m.SYSTEM_resetalert()
+        m.UIBOARD_resetvisualalerts()
+        '''
+            Update visual alerts count to ensure all alerts are cleared
+            There is limit set to amount of visual alert operation at once.
+        '''
+        for i in range(m.VISUALALERTID_LAST):
+            m.UIBOARD_update_visual_alert()
         m.NEXTION_handler_ready(m.NEXTION_VERSION)
+        m.USART_TX_clear()
 
     @pytest.mark.parametrize(
         "component,inputdata,expectedstring",
@@ -222,16 +235,21 @@ class TestBoardUI:
     @pytest.mark.parametrize(
         "status,expected",
         [
-            (m.SENSORSFEED_EGT_STATUS_UNKN, True),
-            (m.SENSORSFEED_EGT_STATUS_OPEN, True),
+            (m.SENSORSFEED_EGT_STATUS_UNKN, m.VISUALALERT_SEVERITY_BADVALUE),
+            (m.SENSORSFEED_EGT_STATUS_OPEN, m.VISUALALERT_SEVERITY_BADVALUE),
             (m.SENSORSFEED_EGT_STATUS_VALUE, False),
         ],
     )
-    def test_UIEGT_raisealert(self, status, expected):
+    def test_UIEGT_raisealert_badvalue(self, status, expected):
         m.SENSORSFEED_EGT_status = status
         m.UIBOARD_update_EGT()
-        assert m.UIBOARD_getraise_critical() == expected
-        m.UIBOARD_setraise_critical(False)
+        m.UIBOARD_update_visual_alert()
+        output = read_nextion_output(m,ffi)
+        #EGT alarm is at 1 position
+        if False != expected:
+            assert int(output["al1.val"]) == expected
+        else:
+            assert "al1.val" not in output
 
     @pytest.mark.parametrize(
         "oiltemp,intaketemp,outtemp",
@@ -328,49 +346,70 @@ class TestBoardUI:
         m.UIBOARD_update_watch()
         assert read_nextion_output(m, ffi)["wtd.txt"] == f'"{expectedstring}"'
 
+    '''
+    Test setting up watch was triggered on hold 
+    '''
+    def test_uiboard_trigger_setup_watch(self):
+        watch = m.TIMER_get_watch(m.TIMER_TIMERTYPE_WATCH)
+        m.TIMER_set_watch(m.TIMER_TIMERTYPE_WATCH)
+        touch_event = ffi.new("INPUT_Event*")
+        touch_event.key = m.INPUT_KEY_ENTER
+        touch_event.keystatus = m.INPUT_KEYSTATUS_HOLD
+        touch_event.componentID = self.INPUTCOMPONENT_WATCH
+
+        m.NEXTION_switch_page(m.NEXTION_PAGEID_BOARD,0)
+        assert watch.timer.watchstatus == m.TIMER_TIMERSTATUS_COUNTING
+        m.UIBOARD_handle_userinput(cast_void(touch_event))
+        m.UIBOARD_update()
+        #Watch is stopped and blinking as notification alert is raised
+        assert m.TIMER_TIMERSTATUS_STOP == watch.timer.watchstatus
+        assert m.VISUALALERT_SEVERITY_WARNING == int(read_nextion_output(m, ffi)[f"al{m.VISUALALERTID_WATCHDISPLAY}.val"])
+
+
+    '''
+        Trigger each alert sequentialy and wait for it's decay
+    '''
     @pytest.mark.parametrize(
-        "alert_severity,pattern,color",
+        "alert_severity",
         [
-            (m.VISUALALERT_SEVERITY_NOTIFICATION, 0xCC, m.BRIGHTBLUE),
-            (m.VISUALALERT_SEVERITY_BADVALUE, 0xFF, m.CRIMSONRED),
-            (m.VISUALALERT_SEVERITY_WARNING, 0xAA, m.SAFETYYELLOW),
+            (m.VISUALALERT_SEVERITY_NOTIFICATION),
+            (m.VISUALALERT_SEVERITY_WARNING),
+            (m.VISUALALERT_SEVERITY_BADVALUE),
         ],
     )
-    def test_uiboard_visualalert_raise_and_decay_all(
-        self, alert_severity, pattern, color
+    def test_uiboard_visualalert_raise_and_decay_single(
+        self, alert_severity
     ):
         for i in range(m.VISUALALERTID_LAST):
             m.UIBOARD_raisevisualalert(i, alert_severity)
-        for i in range(m.VISUALALERTID_LAST):
-            assert m.UIBOARD_visualalerts[i].color == color
-            assert m.UIBOARD_visualalerts[i].pattern == pattern
-        for _ in range(8):
             m.UIBOARD_update_visual_alert()
+            result = read_nextion_output(m, ffi)
+            assert int(result["al" + str(i) + ".val"]) == alert_severity
+            # It should decay after 2 seconds 8 ticks * 2
+            for _ in range(8*2):
+                m.UIBOARD_update_visual_alert()
 
-        assert not m.UIBOARD_visualalerts[i].pattern
+            result = read_nextion_output(m, ffi)
+            assert int(result["al" + str(i) + ".val"]) == 0
 
     @pytest.mark.parametrize(
-        "alert_severity,expected_pattern",
+        "alert_severity",
         [
-            (m.VISUALALERT_SEVERITY_NOTIFICATION, 0xCC),
-            (m.VISUALALERT_SEVERITY_BADVALUE, 0xFF),
-            (m.VISUALALERT_SEVERITY_WARNING, 0xAA),
+            (m.VISUALALERT_SEVERITY_NOTIFICATION),
+            (m.VISUALALERT_SEVERITY_BADVALUE),
+            (m.VISUALALERT_SEVERITY_WARNING),
         ],
     )
-    def test_uiboard_visualalert_patternshift_single(
-        self, alert_severity, expected_pattern
-    ):
-        m.UIBOARD_raisevisualalert(0, alert_severity)
-        result_pattern = 0
-        for i in range(8):
+    def test_uiboard_visualalert_raise_in_bunch(self, alert_severity):
+        MAX_ALARMS_AT_ONCE = 2
+        # Test if 2 visualalerts at max are raised on one cycle.
+        for i in range(m.VISUALALERTID_LAST):
+            m.UIBOARD_raisevisualalert(i, alert_severity)
+        for i in range(m.VISUALALERTID_LAST//2):
             m.UIBOARD_update_visual_alert()
-            value = int(read_nextion_output(m, ffi).popitem()[1])
-
-            if value != m.DEFAULTCOLOR:
-                result_pattern = result_pattern | (1 << i)
-
-        assert result_pattern == expected_pattern
-
+            result_dict = read_nextion_output(m, ffi)
+            alert_count = len([key for key in result_dict if key.startswith("al") and key.endswith(".val")])
+            assert 0 < alert_count and alert_count <= MAX_ALARMS_AT_ONCE
 
 class TestNumpadUI:
 
