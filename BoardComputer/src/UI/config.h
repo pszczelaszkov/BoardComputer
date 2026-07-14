@@ -10,11 +10,6 @@
 #ifndef UICONFIG_H
 #define UICONFIG_H
 
-TESTUSE void UICONFIG_handle_userinput(INPUT_Event* input_event);
-
-TESTUSE void UICONFIG_setup();
-
-void UICONFIG_update();
-
+TESTUSE void UICONFIG_page_control(NEXTION_page_control_t pagecontrol, void* data);
 
 #endif

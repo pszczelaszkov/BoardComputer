@@ -359,8 +359,8 @@ class TestBoardUI:
 
         m.NEXTION_switch_page(m.NEXTION_PAGEID_BOARD,0)
         assert watch.timer.watchstatus == m.TIMER_TIMERSTATUS_COUNTING
-        m.UIBOARD_handle_userinput(cast_void(touch_event))
-        m.UIBOARD_update()
+        m.UIBOARD_page_control(m.NEXTION_PAGECONTROL_USERINPUT, cast_void(touch_event))
+        m.UIBOARD_page_control(m.NEXTION_PAGECONTROL_UPDATE, ffi.NULL)
         #Watch is stopped and blinking as notification alert is raised
         assert m.TIMER_TIMERSTATUS_STOP == watch.timer.watchstatus
         assert m.VISUALALERT_SEVERITY_WARNING == int(read_nextion_output(m, ffi)[f"al{m.VISUALALERTID_WATCHDISPLAY}.val"])
@@ -468,7 +468,7 @@ class TestNumpadUI:
         inputevent.key = m.INPUT_KEY_ENTER
         inputevent.keystatus = m.INPUT_KEYSTATUS_CLICK
 
-        m.UINUMPAD_handle_userinput(cast_void(inputevent))
+        m.UINUMPAD_page_control(m.NEXTION_PAGECONTROL_USERINPUT,cast_void(inputevent))
 
     @pytest.mark.parametrize(
         "inputseq,expectedvalue",
@@ -495,7 +495,7 @@ class TestNumpadUI:
             inputevent.componentID = input_componentID
             inputevent.key = m.INPUT_KEY_ENTER
             inputevent.keystatus = m.INPUT_KEYSTATUS_CLICK
-            m.UINUMPAD_handle_userinput(cast_void(inputevent))
+            m.UINUMPAD_page_control(m.NEXTION_PAGECONTROL_USERINPUT,cast_void(inputevent))
 
         stringvalue = ffi.unpack(m.UINUMPAD_getstringvalue(), length).decode("ascii")
         assert stringvalue == expectedvalue
@@ -510,7 +510,7 @@ class TestNumpadUI:
                 
         m.UINUMPAD_switch(target)
         target[0] = 0x7FFF
-        m.UINUMPAD_handle_userinput(cast_void(inputevent))
+        m.UINUMPAD_page_control(m.NEXTION_PAGECONTROL_USERINPUT,cast_void(inputevent))
 
         target = int(ffi.cast("int16_t", target[0]))
         assert target == inputvalue
@@ -528,7 +528,7 @@ class TestNumpadUI:
         inputevent.key = m.INPUT_KEY_ENTER
         inputevent.keystatus = m.INPUT_KEYSTATUS_CLICK
         ffi.memmove(m.UINUMPAD_getstringvalue(),c_stringvalue,m.UINUMPAD_DISPLAYLENGTH+1)
-        m.UINUMPAD_handle_userinput(cast_void(inputevent))
+        m.UINUMPAD_page_control(m.NEXTION_PAGECONTROL_USERINPUT,cast_void(inputevent))
 
         target = int(ffi.cast("int16_t", target[0]))
         assert target == expectedvalue
@@ -554,7 +554,7 @@ class TestNumpadUI:
             inputevent = ffi.new("INPUT_Event*")
             inputevent.key = m.INPUT_KEY_DOWN
             inputevent.keystatus = m.INPUT_KEYSTATUS_CLICK
-            m.UINUMPAD_handle_userinput(cast_void(inputevent))
+            m.UINUMPAD_page_control(m.NEXTION_PAGECONTROL_USERINPUT,cast_void(inputevent))
             output = read_nextion_output(m, ffi)
             expected_values = truth_table[selected]
             assert len(expected_values) == len(output)
@@ -566,7 +566,7 @@ class TestNumpadUI:
         expectedstring = '"-99999"'
         c_stringvalue = ffi.new("char[7]",stringvalue)
         ffi.memmove(m.UINUMPAD_getstringvalue(), c_stringvalue, m.UINUMPAD_DISPLAYLENGTH+1)
-        m.UINUMPAD_update()
+        m.UINUMPAD_page_control(m.NEXTION_PAGECONTROL_UPDATE, ffi.NULL)
         output = read_nextion_output(m, ffi)
         assert output["dsp.txt"] == expectedstring
 
@@ -580,7 +580,7 @@ class TestNumpadUI:
         touch_event.key = m.INPUT_KEY_ENTER
         touch_event.keystatus = keystatus
         touch_event.componentID = 5
-        m.UINUMPAD_handle_userinput(cast_void(touch_event))
+        m.UINUMPAD_page_control(m.NEXTION_PAGECONTROL_USERINPUT,cast_void(touch_event))
         assert 0 == len(read_nextion_output(m, ffi))
 
 class TestConfigUI:
@@ -604,21 +604,19 @@ class TestConfigUI:
         m.CONFIG_factory_default_reset()
         m.CONFIG_loadconfig(ffi.addressof(m.SYSTEM_config))
         m.SYSTEM_resetalert()
-        m.UICONFIG_setup()
+        m.UICONFIG_page_control(m.NEXTION_PAGECONTROL_SETUP, ffi.NULL)
         m.USART_TX_clear()
         m.SYSTEM_config.SYSTEM_FACTORY_RESET = 0
 
     def test_setup(self):
         m.SYSTEM_config.SYSTEM_FACTORY_RESET = 1
-        m.NEXTION_incomingdata_handler = ffi.NULL
-        m.UICONFIG_setup()
+        m.UICONFIG_page_control(m.NEXTION_PAGECONTROL_SETUP, ffi.NULL)
         output = read_nextion_output(m,ffi)
         assert int(output["ptr.val"]) == 0 # Set pointer to variable
         assert int(output["rfp.en"]) == 1 # Enable refresh pointer resolving
         assert int(output["vlh.val"]) == 1 # Value Lower Half expected SYSTEM_FACTORY_RESET value
         assert "min.val" in output # Set min value of slider
         assert "max.val" in output # Set max value of slider
-        assert m.NEXTION_incomingdata_handler != ffi.NULL
     
     def test_nextion_select_with_down_key(self):
         truth_table = [
@@ -634,7 +632,7 @@ class TestConfigUI:
             inputevent = ffi.new("INPUT_Event*")
             inputevent.key = m.INPUT_KEY_DOWN
             inputevent.keystatus = m.INPUT_KEYSTATUS_CLICK
-            m.UICONFIG_handle_userinput(cast_void(inputevent))
+            m.UICONFIG_page_control(m.NEXTION_PAGECONTROL_USERINPUT ,cast_void(inputevent))
             output = read_nextion_output(m, ffi)
             expected_values = truth_table[selected]
             assert len(expected_values) == len(output)
@@ -652,7 +650,7 @@ class TestConfigUI:
         #FORWARD
         inputevent.componentID = self.INPUTCOMPONENT_NXT
         for i in [n for n in range(1,CONFIGVARIABLES_COUNT)] + [0]:
-            m.UICONFIG_handle_userinput(cast_void(inputevent))
+            m.UICONFIG_page_control(m.NEXTION_PAGECONTROL_USERINPUT ,cast_void(inputevent))
             output = read_nextion_output(m, ffi)
             assert int(output["ptr.val"]) == i # Set pointer to variable
             assert int(output["rfp.en"]) == 1 # Enable refresh pointer resolving
@@ -663,7 +661,7 @@ class TestConfigUI:
         #BACKWARD
         inputevent.componentID = self.INPUTCOMPONENT_PRV
         for i in ([MAX_ENTRY] + [n for n in range(0,CONFIGVARIABLES_COUNT)])[::-1]:
-            m.UICONFIG_handle_userinput(cast_void(inputevent))
+            m.UICONFIG_page_control(m.NEXTION_PAGECONTROL_USERINPUT ,cast_void(inputevent))
             output = read_nextion_output(m, ffi)
             assert int(output["ptr.val"]) == i # Set pointer to variable
             assert int(output["rfp.en"]) == 1 # Enable refresh pointer resolving
@@ -677,12 +675,12 @@ class TestConfigUI:
         touch_event.key = m.INPUT_KEY_ENTER
         touch_event.keystatus = m.INPUT_KEYSTATUS_CLICK
         touch_event.componentID = self.INPUTCOMPONENT_INC
-        m.UICONFIG_handle_userinput(cast_void(touch_event))
+        m.UICONFIG_page_control(m.NEXTION_PAGECONTROL_USERINPUT ,cast_void(touch_event))
 
         output = read_nextion_output(m, ffi)
         assert int(output["vlh.val"]) == 1
 
-        m.UICONFIG_handle_userinput(cast_void(touch_event))
+        m.UICONFIG_page_control(m.NEXTION_PAGECONTROL_USERINPUT ,cast_void(touch_event))
         output = read_nextion_output(m, ffi)
         assert int(output["vlh.val"]) == 1
         assert 0 == m.SYSTEM_config.SYSTEM_FACTORY_RESET
@@ -693,12 +691,12 @@ class TestConfigUI:
         touch_event.key = m.INPUT_KEY_ENTER
         touch_event.keystatus = m.INPUT_KEYSTATUS_CLICK
         touch_event.componentID = self.INPUTCOMPONENT_DEC
-        m.UICONFIG_handle_userinput(cast_void(touch_event))
+        m.UICONFIG_page_control(m.NEXTION_PAGECONTROL_USERINPUT ,cast_void(touch_event))
 
         output = read_nextion_output(m, ffi)
         assert int(output["vlh.val"]) == 0
 
-        m.UICONFIG_handle_userinput(cast_void(touch_event))
+        m.UICONFIG_page_control(m.NEXTION_PAGECONTROL_USERINPUT ,cast_void(touch_event))
         output = read_nextion_output(m, ffi)
         assert int(output["vlh.val"]) == 0
 
@@ -710,7 +708,7 @@ class TestConfigUI:
         touch_event.key = m.INPUT_KEY_ENTER
         touch_event.keystatus = m.INPUT_KEYSTATUS_CLICK
         touch_event.componentID = self.INPUTCOMPONENT_INC
-        m.UICONFIG_handle_userinput(cast_void(touch_event))
+        m.UICONFIG_page_control(m.NEXTION_PAGECONTROL_USERINPUT ,cast_void(touch_event))
 
         output = read_nextion_output(m, ffi)
         assert int(output["vlh.val"]) == 1
@@ -718,18 +716,19 @@ class TestConfigUI:
         touch_event.key = m.INPUT_KEY_ENTER
         touch_event.keystatus = m.INPUT_KEYSTATUS_CLICK
         touch_event.componentID = self.INPUTCOMPONENT_NXT
-        m.UICONFIG_handle_userinput(cast_void(touch_event))
+        m.UICONFIG_page_control(m.NEXTION_PAGECONTROL_USERINPUT ,cast_void(touch_event))
 
         assert 1 == m.SYSTEM_config.SYSTEM_FACTORY_RESET
 
     def test_apply_correct_slider_value_after_selecting_next_variable(self):
         m.SYSTEM_config.SYSTEM_FACTORY_RESET = 0
-        m.NEXTION_incomingdata_handler(1)
+        incoming_data = ffi.new("int32_t*", 1)
+        m.UICONFIG_page_control(m.NEXTION_PAGECONTROL_HMIRESPONSE, incoming_data)
         touch_event = ffi.new("INPUT_Event*")
         touch_event.key = m.INPUT_KEY_ENTER
         touch_event.keystatus = m.INPUT_KEYSTATUS_CLICK
         touch_event.componentID = self.INPUTCOMPONENT_NXT
-        m.UICONFIG_handle_userinput(cast_void(touch_event))
+        m.UICONFIG_page_control(m.NEXTION_PAGECONTROL_USERINPUT ,cast_void(touch_event))
         assert 1 == m.SYSTEM_config.SYSTEM_FACTORY_RESET
 
     @pytest.mark.parametrize("badvalue, expectedresult",[
@@ -738,19 +737,19 @@ class TestConfigUI:
     ])
     def test_dont_apply_bad_slider_valuesmall_after_selecting_next_variable(self, badvalue, expectedresult):
         m.SYSTEM_config.SYSTEM_FACTORY_RESET = 0
-        m.NEXTION_incomingdata_handler(badvalue)
+        incoming_data = ffi.new("int32_t*", badvalue)
+        m.UICONFIG_page_control(m.NEXTION_PAGECONTROL_HMIRESPONSE, incoming_data)
         touch_event = ffi.new("INPUT_Event*")
         touch_event.key = m.INPUT_KEY_ENTER
         touch_event.keystatus = m.INPUT_KEYSTATUS_CLICK
         touch_event.componentID = self.INPUTCOMPONENT_NXT
-        m.UICONFIG_handle_userinput(cast_void(touch_event))
+        m.UICONFIG_page_control(m.NEXTION_PAGECONTROL_USERINPUT ,cast_void(touch_event))
         assert 0 == m.SYSTEM_config.SYSTEM_FACTORY_RESET
         
         output = read_nextion_output(m, ffi)
         assert int(output["res.val"]) == expectedresult
 
     def test_apply_correct_numpad_value(self):
-        m.NEXTION_incomingdata_handler = ffi.NULL
         #Set config page with API, so page history will work correctly
         m.SYSTEM_config.SYSTEM_FACTORY_RESET = 0
         m.NEXTION_switch_page(m.NEXTION_PAGEID_BOARDCONFIG,0)
@@ -758,19 +757,17 @@ class TestConfigUI:
         touch_event.key = m.INPUT_KEY_ENTER
         touch_event.keystatus = m.INPUT_KEYSTATUS_CLICK
         touch_event.componentID = self.INPUTCOMPONENT_PAD
-        m.UICONFIG_handle_userinput(cast_void(touch_event))
+        m.UICONFIG_page_control(m.NEXTION_PAGECONTROL_USERINPUT ,cast_void(touch_event))
         output = read_nextion_output(m, ffi)
         assert int(output["page"]) == m.NEXTION_PAGEID_NUMPAD
         #Page switched to pad
         touch_event.componentID = TestNumpadUI.INPUTCOMPONENT_NUMPAD1
-        m.UINUMPAD_handle_userinput(cast_void(touch_event))
+        m.UINUMPAD_page_control(m.NEXTION_PAGECONTROL_USERINPUT,cast_void(touch_event))
         touch_event.componentID = TestNumpadUI.INPUTCOMPONENT_NUMPADSEND
-        m.UINUMPAD_handle_userinput(cast_void(touch_event))
+        m.UINUMPAD_page_control(m.NEXTION_PAGECONTROL_USERINPUT,cast_void(touch_event))
         output = read_nextion_output(m, ffi)
         #Page should be back to config
         assert int(output["page"]) == m.NEXTION_PAGEID_BOARDCONFIG
-        #Make sure handler was set
-        assert m.NEXTION_incomingdata_handler != ffi.NULL
         #Config variables should be refreshed
         assert int(output["ptr.val"]) == 0
         assert int(output["rfp.en"]) == 1 # Enable refresh pointer resolving
@@ -785,14 +782,14 @@ class TestConfigUI:
         touch_event.key = m.INPUT_KEY_ENTER
         touch_event.keystatus = m.INPUT_KEYSTATUS_CLICK
         touch_event.componentID = self.INPUTCOMPONENT_PAD
-        m.UICONFIG_handle_userinput(cast_void(touch_event))
+        m.UICONFIG_page_control(m.NEXTION_PAGECONTROL_USERINPUT ,cast_void(touch_event))
         output = read_nextion_output(m, ffi)
         assert int(output["page"]) == m.NEXTION_PAGEID_NUMPAD
         #Page switched to pad
         touch_event.componentID = TestNumpadUI.INPUTCOMPONENT_NUMPAD2
-        m.UINUMPAD_handle_userinput(cast_void(touch_event))
+        m.UINUMPAD_page_control(m.NEXTION_PAGECONTROL_USERINPUT,cast_void(touch_event))
         touch_event.componentID = TestNumpadUI.INPUTCOMPONENT_NUMPADSEND
-        m.UINUMPAD_handle_userinput(cast_void(touch_event))
+        m.UINUMPAD_page_control(m.NEXTION_PAGECONTROL_USERINPUT,cast_void(touch_event))
         output = read_nextion_output(m, ffi)
         #Page should be back to config
         assert int(output["page"]) == m.NEXTION_PAGEID_BOARDCONFIG
@@ -810,17 +807,17 @@ class TestConfigUI:
         touch_event.key = m.INPUT_KEY_ENTER
         touch_event.keystatus = m.INPUT_KEYSTATUS_CLICK
         touch_event.componentID = self.INPUTCOMPONENT_PAD
-        m.UICONFIG_handle_userinput(cast_void(touch_event))
+        m.UICONFIG_page_control(m.NEXTION_PAGECONTROL_USERINPUT ,cast_void(touch_event))
         output = read_nextion_output(m, ffi)
         assert int(output["page"]) == m.NEXTION_PAGEID_NUMPAD
         #Page switched to pad
         touch_event.componentID = TestNumpadUI.INPUTCOMPONENT_NUMPAD1
-        m.UINUMPAD_handle_userinput(cast_void(touch_event))
+        m.UINUMPAD_page_control(m.NEXTION_PAGECONTROL_USERINPUT,cast_void(touch_event))
         touch_event.componentID = TestNumpadUI.INPUTCOMPONENT_NUMPADMINUS
-        m.UINUMPAD_handle_userinput(cast_void(touch_event))
+        m.UINUMPAD_page_control(m.NEXTION_PAGECONTROL_USERINPUT,cast_void(touch_event))
         m.USART_TX_clear() #Clear not needed variables(For test purpose)
         touch_event.componentID = TestNumpadUI.INPUTCOMPONENT_NUMPADSEND
-        m.UINUMPAD_handle_userinput(cast_void(touch_event))
+        m.UINUMPAD_page_control(m.NEXTION_PAGECONTROL_USERINPUT,cast_void(touch_event))
         output = read_nextion_output(m, ffi)
         #Page should be back to config
         assert int(output["page"]) == m.NEXTION_PAGEID_BOARDCONFIG
@@ -841,7 +838,7 @@ class TestConfigUI:
         touch_event.key = m.INPUT_KEY_ENTER
         touch_event.keystatus = m.INPUT_KEYSTATUS_CLICK
         touch_event.componentID = self.INPUTCOMPONENT_BCK
-        m.UICONFIG_handle_userinput(cast_void(touch_event))
+        m.UICONFIG_page_control(m.NEXTION_PAGECONTROL_USERINPUT ,cast_void(touch_event))
 
         output = read_nextion_output(m, ffi)
         #Page should be back to Board
@@ -859,13 +856,13 @@ class TestConfigUI:
 
         #bring pad
         touch_event.componentID = self.INPUTCOMPONENT_PAD
-        m.UICONFIG_handle_userinput(cast_void(touch_event))
+        m.UICONFIG_page_control(m.NEXTION_PAGECONTROL_USERINPUT ,cast_void(touch_event))
         #send value to close pad
         touch_event.componentID = TestNumpadUI.INPUTCOMPONENT_NUMPADSEND
-        m.UINUMPAD_handle_userinput(cast_void(touch_event))
+        m.UINUMPAD_page_control(m.NEXTION_PAGECONTROL_USERINPUT,cast_void(touch_event))
         #go back from config
         touch_event.componentID = self.INPUTCOMPONENT_BCK
-        m.UICONFIG_handle_userinput(cast_void(touch_event))
+        m.UICONFIG_page_control(m.NEXTION_PAGECONTROL_USERINPUT ,cast_void(touch_event))
 
         output = read_nextion_output(m, ffi)
         #Page should be back to Board
@@ -883,12 +880,12 @@ class TestConfigUI:
         touch_event.keystatus = m.INPUT_KEYSTATUS_CLICK
         touch_event.componentID = self.INPUTCOMPONENT_INC
         #Factory reset is always first, increase value by 1 to True.
-        m.UICONFIG_handle_userinput(cast_void(touch_event))
+        m.UICONFIG_page_control(m.NEXTION_PAGECONTROL_USERINPUT ,cast_void(touch_event))
 
         touch_event.keystatus = m.INPUT_KEYSTATUS_CLICK
         touch_event.componentID = self.INPUTCOMPONENT_BCK
         #Go back by button
-        m.UICONFIG_handle_userinput(cast_void(touch_event))
+        m.UICONFIG_page_control(m.NEXTION_PAGECONTROL_USERINPUT ,cast_void(touch_event))
 
         m.CONFIG_loadconfig(ffi.addressof(m.SYSTEM_config))
         #Check if config version has been reseted
@@ -907,7 +904,7 @@ class TestConfigUI:
         touch_event.key = m.INPUT_KEY_ENTER
         touch_event.keystatus = m.INPUT_KEYSTATUS_CLICK
         touch_event.componentID = self.INPUTCOMPONENT_BCK
-        m.UICONFIG_handle_userinput(cast_void(touch_event))
+        m.UICONFIG_page_control(m.NEXTION_PAGECONTROL_USERINPUT ,cast_void(touch_event))
 
         for i in range(m.CONFIG_ENTRY_LAST):
             m.CONFIG_read_entry(ffi.NULL, i , TESTDATA)

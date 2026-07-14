@@ -87,6 +87,48 @@ static void send()
     NEXTION_set_previous_page();
 }
 
+inline static void setup()
+{
+    char buffer[UINUMPAD_DISPLAYLENGTH+1];
+    memset(stringvalue,' ',max_length);
+    
+    if(returnvalue_ptr)
+    {   
+        int16_t returnvalue_value = *returnvalue_ptr;
+        inputcomponent_it = 0;
+        current_length = 0;
+
+        if(0 != returnvalue_value)
+        {   
+            if(0 > returnvalue_value)
+            {
+                returnvalue_value*=-1;
+                stringvalue[0] = '-';
+            }
+            itoa(returnvalue_value,buffer,10);
+            current_length = strlen(buffer);
+            memcpy(&stringvalue[max_length-current_length],buffer,current_length);
+        }
+        else
+        {
+            stringvalue[cursor] = '0';
+        }
+    }
+    else
+    {
+        memset(stringvalue,'!',max_length);
+    }
+}
+
+inline static void update()
+{
+    NEXTION_INSTRUCTION_BUFFER_BLOCK(max_length+2)
+    NEXTION_instruction_compose("dsp","txt",instruction);
+	NEXTION_quote_payloadbuffer(payload,payload_length);
+    memcpy(payload+1, stringvalue, max_length);
+    NEXTION_send(buffer, USART_HOLD);
+}
+
 /*The only safe way to trigger numpad*/
 void UINUMPAD_switch(CONFIG_maxdata_t* returnvalue)
 {
@@ -95,7 +137,7 @@ void UINUMPAD_switch(CONFIG_maxdata_t* returnvalue)
         NEXTION_switch_page(NEXTION_PAGEID_NUMPAD, 1);
 }
 
-void UINUMPAD_handle_userinput(INPUT_Event* input_event)
+inline static void handle_userinput(INPUT_Event* input_event)
 {
     const InputComponentID_t inputcomponent_it_current = inputcomponent_it;
     INPUT_Key_t key = input_event->key;
@@ -183,48 +225,22 @@ void UINUMPAD_reset()
     inputcomponent_it = 0;
 }
 
-void UINUMPAD_setup()
-{
-    char buffer[UINUMPAD_DISPLAYLENGTH+1];
-    memset(stringvalue,' ',max_length);
-    
-    if(returnvalue_ptr)
-    {   
-        int16_t returnvalue_value = *returnvalue_ptr;
-        inputcomponent_it = 0;
-        current_length = 0;
-
-        if(0 != returnvalue_value)
-        {   
-            if(0 > returnvalue_value)
-            {
-                returnvalue_value*=-1;
-                stringvalue[0] = '-';
-            }
-            itoa(returnvalue_value,buffer,10);
-            current_length = strlen(buffer);
-            memcpy(&stringvalue[max_length-current_length],buffer,current_length);
-        }
-        else
-        {
-            stringvalue[cursor] = '0';
-        }
-    }
-    else
-    {
-        memset(stringvalue,'!',max_length);
-    }
-}
-
-void UINUMPAD_update()
-{
-    NEXTION_INSTRUCTION_BUFFER_BLOCK(max_length+2)
-    NEXTION_instruction_compose("dsp","txt",instruction);
-	NEXTION_quote_payloadbuffer(payload,payload_length);
-    memcpy(payload+1, stringvalue, max_length);
-    NEXTION_send(buffer, USART_HOLD);
-}
-
-#ifndef __AVR__
 char* UINUMPAD_getstringvalue() {return stringvalue;}
-#endif
+
+void UINUMPAD_page_control(NEXTION_page_control_t pagecontrol, void* data)
+{
+	switch(pagecontrol)
+	{
+		case NEXTION_PAGECONTROL_SETUP:
+			setup();
+		break;
+		case NEXTION_PAGECONTROL_UPDATE:
+			update();
+		break;
+		case NEXTION_PAGECONTROL_USERINPUT:
+			handle_userinput(data);
+		default:
+		break;
+	}
+}
+

@@ -147,13 +147,15 @@ static void modify_configvariable_value(Direction_t direction)
     }
     send_configvalue_to_nextion();
 }
+
 /*Handler of incoming data, I.e slider value*/
-static void incomingdata_handler(int32_t data)
+inline static void incomingdata_handler(int32_t data)
 {
     configvariable_value = data;
 }
 
-void UICONFIG_handle_userinput(INPUT_Event* input_event)
+
+inline static void handle_userinput(INPUT_Event* input_event)
 {
     const InputComponentID_t inputcomponent_it_current = inputcomponent_it;
     INPUT_Key_t key = input_event->key;
@@ -259,7 +261,7 @@ void UICONFIG_handle_userinput(INPUT_Event* input_event)
     }
 }
 
-void UICONFIG_setup()
+inline static void setup()
 {
     /*
         If pad was last component used on config page, and config is active again
@@ -284,9 +286,22 @@ void UICONFIG_setup()
 
 
     }
-    NEXTION_incomingdata_handler = incomingdata_handler;
 }
 
-void UICONFIG_update()
+void UICONFIG_page_control(NEXTION_page_control_t pagecontrol, void* data)
 {
+	switch(pagecontrol)
+	{
+		case NEXTION_PAGECONTROL_SETUP:
+            setup();
+		break;
+		case NEXTION_PAGECONTROL_USERINPUT:
+            handle_userinput(data);
+        break;
+        case NEXTION_PAGECONTROL_HMIRESPONSE:
+            incomingdata_handler(*(int32_t*)data);
+        break;
+		default:
+		break;
+	}
 }

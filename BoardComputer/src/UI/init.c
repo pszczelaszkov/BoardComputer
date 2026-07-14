@@ -6,7 +6,7 @@ const int8_t WAIT_FOREVER = -1;
 const int8_t WAIT_1S = 8;
 static int8_t wait_time;
 
-void UIINIT_setup()
+inline static void setup()
 {
 	SYSTEM_ALERT_SEVERITY severity = SYSTEM_resolve_alert_severity(SYSTEM_get_active_alert().alert);
 	NEXTION_send_activealert();
@@ -23,7 +23,7 @@ void UIINIT_setup()
 	}
 }
 
-void UIINIT_update()
+inline static void update()
 {
 	if(WAIT_FOREVER != wait_time)
 	{
@@ -35,5 +35,20 @@ void UIINIT_update()
 		{
 			NEXTION_switch_page(NEXTION_PAGEID_BOARD,0);
 		}
+	}
+}
+
+void UIINIT_page_control(NEXTION_page_control_t pagecontrol, void* data)
+{
+	switch(pagecontrol)
+	{
+		case NEXTION_PAGECONTROL_SETUP:
+			setup();
+		break;
+		case NEXTION_PAGECONTROL_UPDATE:
+			update();
+		break;
+		default:
+		break;
 	}
 }

@@ -32,6 +32,15 @@
 	buffer[instruction_length + payload_length] = 0x0;\
 	memset(payload,' ',payload_length);
 
+TESTUSE typedef enum NEXTION_PAGECONTROL
+{
+	NEXTION_PAGECONTROL_SETUP,/* When switched to page */
+	NEXTION_PAGECONTROL_EXIT,/* When switched from page */
+	NEXTION_PAGECONTROL_UPDATE,/* When page is updated (8 times per second) */
+	NEXTION_PAGECONTROL_USERINPUT,/* When user input is received (key/HMI) */
+	NEXTION_PAGECONTROL_HMIRESPONSE/* When additional no standard HMI response is received */
+}NEXTION_page_control_t;
+
 TESTUSE typedef enum NEXTION_PAGEID
 {
 	NEXTION_PAGEID_INIT = 0,
@@ -39,6 +48,9 @@ TESTUSE typedef enum NEXTION_PAGEID
 	NEXTION_PAGEID_BOARDCONFIG = 2,
 	NEXTION_PAGEID_NUMPAD = 3
 }NEXTION_PageID_t;
+
+typedef void (*NEXTION_page_control_callback)(NEXTION_page_control_t, void*);
+
 TESTUSE typedef enum NEXTION_COMPONENTSELECTSTATUS
 {
 	NEXTION_COMPONENTSELECTSTATUS_DEFAULT,
@@ -74,8 +86,8 @@ TESTUSE extern const uint16_t NEXTION_VERSION;
 TESTUSE extern NEXTION_Component NEXTION_common_bckcomponent;
 TESTUSE extern char NEXTION_eot[];
 extern uint8_t NEXTION_selection_counter;
-TESTUSE extern Callback_32 NEXTION_incomingdata_handler;
 
+TESTUSE void NEXTION_incomingdata_handler(void* data);
 TESTUSE void NEXTION_handler_ready(uint16_t display_version);
 TESTUSE void NEXTION_handler_sendme(NEXTION_PageID_t pageid);
 uint8_t NEXTION_send(char data[], uint8_t flush);

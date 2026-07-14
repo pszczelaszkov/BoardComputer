@@ -513,20 +513,13 @@ static void switch_maindisplay()
 {
 	UIBOARD_maindisplay_activecomponent = UIBOARD_maindisplay_activecomponent->nextComponent;
 }
-/*---STATIC END---*/
 
-
-void UIBOARD_setup()
+inline static void setup()
 {
 	SENSORSFEED_update();
 }
 
-void UIBOARD_callback_config()
-{
-	NEXTION_switch_page(NEXTION_PAGEID_BOARDCONFIG, 1);
-}
-
-void UIBOARD_handle_userinput(INPUT_Event* input_event)
+inline static void handle_userinput(INPUT_Event* input_event)
 {
 	static uint8_t input_order_it = 0;
 	static const InputComponentID_t input_order[] = {
@@ -607,7 +600,7 @@ void UIBOARD_handle_userinput(INPUT_Event* input_event)
 	}
 }
 
-void UIBOARD_update()
+inline static void update()
 {	
 	uint8_t timer = SYSTEM_event_timer;
 	switch(timer)
@@ -624,4 +617,27 @@ void UIBOARD_update()
 	}
 	update_watch();
 	update_visual_alert();
+}
+/*---STATIC END---*/
+
+void UIBOARD_callback_config()
+{
+	NEXTION_switch_page(NEXTION_PAGEID_BOARDCONFIG, 1);
+}
+
+void UIBOARD_page_control(NEXTION_page_control_t pagecontrol, void* data)
+{
+	switch(pagecontrol)
+	{
+		case NEXTION_PAGECONTROL_SETUP:
+			setup();
+		break;
+		case NEXTION_PAGECONTROL_UPDATE:
+			update();
+		break;
+		case NEXTION_PAGECONTROL_USERINPUT:
+			handle_userinput(data);
+		default:
+		break;
+	}
 }

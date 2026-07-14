@@ -18,14 +18,13 @@ static NEXTION_PageID_t active_pageID;
 static uint8_t pagehistory_depth;
 static volatile int8_t display_watchdog_counter;
 
-static Callback page_callback;
+static NEXTION_page_control_callback page_control_callback;
 static const uint16_t MINIMAL_COMPAT_UIVERSION = 0x01;
 
 static const char str_bck[NEXTION_OBJNAME_LEN] = "bck";
 
 const uint16_t NEXTION_VERSION = 0x01;
 
-Callback_32 NEXTION_incomingdata_handler;
 uint8_t NEXTION_selection_counter;
 
 char NEXTION_eot[] = {0xff,0xff,0xff,0x00};
@@ -37,39 +36,6 @@ enum DISPLAYSTATUS
 	DISPLAYSTATUS_OPERATIONAL,
 	DISPLAYSTATUS_WRONGVERSION,
 }displaystatus;
-
-static struct Page
-{
-	Callback callback_update;
-	Callback callback_setup;
-	INPUT_Userinput_Handler userinput_handler;
-}pages[] = 
-{
-	[NEXTION_PAGEID_INIT]= 
-	{
-		.callback_setup = UIINIT_setup,
-		.callback_update = UIINIT_update,
-	},
-	[NEXTION_PAGEID_BOARD]=
-	{
-		.callback_setup = UIBOARD_setup,
-		.callback_update = UIBOARD_update,
-		.userinput_handler = UIBOARD_handle_userinput,
-	},
-	[NEXTION_PAGEID_BOARDCONFIG]=
-	{
-		.callback_setup = UICONFIG_setup,
-		.callback_update = UICONFIG_update,
-		.userinput_handler = UICONFIG_handle_userinput,
-	},
-	[NEXTION_PAGEID_NUMPAD]=
-	{
-		.callback_setup = UINUMPAD_setup,
-		.callback_update = UINUMPAD_update,
-		.userinput_handler = UINUMPAD_handle_userinput,
-	}
-
-};
 
 NEXTION_Component NEXTION_common_bckcomponent = {
 		.highlighttype = NEXTION_HIGHLIGHTTYPE_IMAGE,
@@ -140,6 +106,18 @@ static void check_display_alive()
 }
 
 /*
+Handle userinput
+*/
+static void userinput_handler(INPUT_Event* input_event)
+{
+	if(page_control_callback)
+	{
+		page_control_callback(NEXTION_PAGECONTROL_USERINPUT, input_event);
+	}
+	input_event->next_handler = NULL;
+}
+
+/*
 Compose instruction in form of objname.varname= 
 For best compatibility create buffers before with INSTRUCTION_BUFFER_BLOCK.
 @param objname Pointer to objname const string, must have length of NEXTION_OBJNAME_LEN.
@@ -167,6 +145,13 @@ void NEXTION_handler_ready(uint16_t display_version)
 	else
 	{
 		displaystatus = DISPLAYSTATUS_CONNECTED;
+	}
+}
+void NEXTION_incomingdata_handler(void* data)
+{
+	if(page_control_callback)
+	{
+		page_control_callback(NEXTION_PAGECONTROL_HMIRESPONSE, data);
 	}
 }
 
@@ -248,28 +233,45 @@ void NEXTION_set_component_select_status(NEXTION_Component* component, NEXTION_C
 
 int8_t NEXTION_switch_page(NEXTION_PageID_t pageID, uint8_t push_to_history)
 {
-	char buffer[] = "page   ";
 	if(pageID >= 0xff)
 		return 0;
-	
-	NEXTION_clear_selected_component();
-	if(push_to_history)
-		pagehistory_push(active_pageID);
 
-	active_pageID = pageID;
-	struct Page newpage = pages[pageID];
-	Callback setup = newpage.callback_setup;
-	NEXTION_incomingdata_handler = NULL;
-	if(NULL != newpage.userinput_handler)
-		INPUT_userinput_handler = newpage.userinput_handler;
+	char buffer[] = "page   ";
+	NEXTION_page_control_callback new_page_control_callback = NULL;
 
-	page_callback = newpage.callback_update;
-	
-	itoa(pageID, &buffer[5],10);
-	if(NEXTION_send(buffer,USART_HOLD))
+	/*Resolve new callback ptr*/
+	switch(pageID)
 	{
-		if(setup)
-			setup();
+		case NEXTION_PAGEID_INIT:
+			new_page_control_callback = UIINIT_page_control;
+		break;
+		case NEXTION_PAGEID_BOARD:
+			new_page_control_callback = UIBOARD_page_control;
+		break;
+		case NEXTION_PAGEID_BOARDCONFIG:
+			new_page_control_callback = UICONFIG_page_control;
+		break;
+		case NEXTION_PAGEID_NUMPAD:
+			new_page_control_callback = UINUMPAD_page_control;
+		break;
+	}
+
+	NEXTION_clear_selected_component();
+
+	itoa(pageID, &buffer[5],10);//5th position right after "page"
+	if(NEXTION_send(buffer,USART_HOLD))
+	{	
+		/*Continue only if message to HMI was scheduled to send*/
+		if(push_to_history)
+			pagehistory_push(active_pageID);
+		if(page_control_callback)
+			page_control_callback(NEXTION_PAGECONTROL_EXIT, NULL);
+
+		active_pageID = pageID;
+		page_control_callback = new_page_control_callback;
+		if(page_control_callback)
+			page_control_callback(NEXTION_PAGECONTROL_SETUP, NULL);
+
 		return 1;
 	}
 	else
@@ -312,8 +314,8 @@ void NEXTION_update()
 		case DISPLAYSTATUS_OPERATIONAL:
 			check_display_alive();
 			update_select_decay();
-			if(page_callback)
-				page_callback();
+			if(page_control_callback)
+				page_control_callback(NEXTION_PAGECONTROL_UPDATE, NULL);
 		break;
 		case DISPLAYSTATUS_WRONGVERSION:
 			SYSTEM_raisealert(SYSTEM_ALERT_UI_INCOMPATIBLE);
@@ -341,6 +343,7 @@ void NEXTION_update()
 
 void NEXTION_initialize()
 {
+	INPUT_userinput_handler = userinput_handler;
 	displaystatus = DISPLAYSTATUS_DISCONNECTED;
 	display_watchdog_counter = 0;
 }

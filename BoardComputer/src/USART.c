@@ -135,7 +135,7 @@ void message_register(uint8_t message_size)
 			case NEXTIONMESSAGETYPE_INCOMINGDATA:
 				if(NEXTION_incomingdata_handler)
 				{
-					NEXTION_incomingdata_handler(*(uint32_t*)&USART_RX_buffer[1]);
+					NEXTION_incomingdata_handler((void*)&USART_RX_buffer[1]);
 				}
 			break;
 			case NEXTIONMESSAGETYPE_DEVICEREADY:
