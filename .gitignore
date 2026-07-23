@@ -1,37 +1,65 @@
+# Windows
 Thumbs.db
-*.obj
-*.exe
-*.pdb
+
+# Visual Studio
+.vs/
+.vscode/
 *.user
-*.aps
-*.pch
-*.vspscc
-*_i.c
-*_p.c
-*.ncb
 *.suo
+*.ncb
+*.aps
 *.sln.docstates
+*.vspscc
+*.vssscc
+
+# ReSharper
+_ReSharper*/
+
+# Build outputs
+[Bb]in/
+[Dd]ebug*/
+[Rr]elease*/
+obj/
+[Tt]est/
+[Tt]est[Rr]esult*
+
+# Intermediate files
+*.obj
+*.o
+*.ilk
+*.pch
+*.sbr
+*.cache
+*.log
+*.bak
+
+# Binaries & libraries
+*.exe
+*.dll
+*.so
+*.lib
+
+# Debug symbols
+*.pdb
+
+# COM / generated headers
 *.tlb
 *.tlh
-*.bak
-*.cache
-*.ilk
-*.log
-*.pyc
-*.out
-[Bb]in
-[Dd]ebug*/
-[Tt]est/
-*.lib
-*.sbr
-*.so
-*.dll
-*.o
+
+# Generated C files
+*_i.c
+*_p.c
 *_.c
-obj/
-.vscode/
-[Rr]elease*/
-_ReSharper*/
-[Tt]est[Rr]esult*
-*.vssscc
+
+# Python
+*.pyc
+
+# Misc output
+*.out
+
+# Source control artifacts
 $tf*/
+
+# Project-specific
+BoardComputer/utils/*.txt
+BoardComputer/utils/*.png
