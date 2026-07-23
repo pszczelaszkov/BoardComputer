@@ -14,4 +14,13 @@ inline uint8_t PROGRAM_MEMORY_read(const void* address, void* dest, uint16_t siz
     memcpy_P(dest, address, size);
 }
 
+inline int8_t PROGRAM_MEMORY_read_byte(const void* address)
+{
+    return pgm_read_byte(address);
+}
+
+inline int16_t PROGRAM_MEMORY_read_word(const void* address)
+{
+    return pgm_read_word(address);
+}
 #endif

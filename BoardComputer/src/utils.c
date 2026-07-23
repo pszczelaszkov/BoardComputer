@@ -1,31 +1,6 @@
 #include "utils.h"
-
-#ifndef __AVR__
-    volatile uint8_t PINA, PINB, PINC, PIND;
-    volatile uint16_t TCNT1, TCNT2;
-    uint16_t ADC;
-    uint8_t ADMUX, ADSC, ADCSRA;
-    void _delay_ms(int dummy){}
-        /* itoa:  convert n to characters in s */
-    void itoa(int n, char s[],int dummy)
-    {
-        int i, sign;
-
-        if ((sign = n) < 0)  /* record sign */
-            n = -n;          /* make n positive */
-        i = 0;
-        do {       /* generate digits in reverse order */
-            s[i++] = n % 10 + '0';   /* get next digit */
-        } while ((n /= 10) > 0);     /* delete it */
-        if (sign < 0)
-            s[i++] = '-';
-        s[i] = '\0';
-        reverse(s);
-    }
-#endif
-
 /* reverse:  reverse string s in place */
-void reverse(char s[])
+static void reverse(char s[])
 {
     uint8_t i, j;
     char c;
@@ -173,7 +148,7 @@ void rightconcat_short(char* dest, int16_t value, uint8_t spacing)
 {
 	char temp[7];
 	uint8_t length;
-	itoa(value, temp,10);
+	i16toa(value, temp);
 	length = strlen(temp);
 	memcpy(&dest[spacing-length],temp,length);
 }
@@ -191,7 +166,7 @@ void rightnconcat_short(char* dest, int16_t value, uint8_t spacing, uint8_t n)
     uint8_t length;
 	if (n > 6)
 		n = 6;
-	itoa(value, temp,10);
+	i16toa(value, temp);
     length = strlen(temp);
     if(n > length)
         n = length;

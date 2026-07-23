@@ -1,6 +1,9 @@
 #include "system_interface.h"
-uint8_t DDRA, DDRB, DDRC, DDRD;
-uint8_t PORTA, PORTB, PORTC, PORTD, DIDR0;
+volatile uint8_t DDRA, DDRB, DDRC, DDRD;
+volatile uint8_t PORTA, PORTB, PORTC, PORTD, DIDR0;
+volatile uint8_t PINA, PINB, PINC, PIND;
+volatile uint16_t TCNT1, TCNT2;
+
 uint8_t board_is_enabled;
 
 int8_t SYSTEMINTERFACE_is_board_enabled()

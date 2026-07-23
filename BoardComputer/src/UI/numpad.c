@@ -94,7 +94,7 @@ inline static void setup()
     
     if(returnvalue_ptr)
     {   
-        int16_t returnvalue_value = *returnvalue_ptr;
+        int32_t returnvalue_value = *returnvalue_ptr;
         inputcomponent_it = 0;
         current_length = 0;
 
@@ -105,7 +105,7 @@ inline static void setup()
                 returnvalue_value*=-1;
                 stringvalue[0] = '-';
             }
-            itoa(returnvalue_value,buffer,10);
+            i32toa(returnvalue_value,buffer);
             current_length = strlen(buffer);
             memcpy(&stringvalue[max_length-current_length],buffer,current_length);
         }

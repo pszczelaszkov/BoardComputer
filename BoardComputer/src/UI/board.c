@@ -433,7 +433,7 @@ static void update_sensorgroup_pressure()
 	//Multiply by 100 to shift 2 fraction positions into integer part
 	//Then unpack value with a 8 times shift
 	deltapressure = deltapressure * 100 >> 8;
-	itoa(deltapressure, payload, 10);+
+	i16toa(deltapressure, payload);+
 	
 	NEXTION_send(buffer,USART_HOLD);
 }

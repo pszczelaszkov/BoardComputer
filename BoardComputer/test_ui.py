@@ -316,8 +316,8 @@ class TestBoardUI:
     )
     def test_uiboard_sensorgroup_pressure(self, map, frp):
         threshold = 2 << 8
-        m.SENSORSFEED_feed[m.SENSORSFEED_FEEDID_MAP] = map
-        m.SENSORSFEED_feed[m.SENSORSFEED_FEEDID_FRP] = frp
+        m.SENSORSFEED_feed[m.SENSORSFEED_FEEDID_MAP] = ffi.cast("uint16_t", map)
+        m.SENSORSFEED_feed[m.SENSORSFEED_FEEDID_FRP] = ffi.cast("uint16_t", frp)
         deltapressure = min(max(0, frp - map - threshold), 0x100)
 
         m.UIBOARD_update_sensorgroup_pressure()
@@ -507,7 +507,7 @@ class TestNumpadUI:
         inputevent.componentID = self.INPUTCOMPONENT_NUMPADSEND
         inputevent.key = m.INPUT_KEY_ENTER
         inputevent.keystatus = m.INPUT_KEYSTATUS_CLICK
-                
+
         m.UINUMPAD_switch(target)
         target[0] = 0x7FFF
         m.UINUMPAD_page_control(m.NEXTION_PAGECONTROL_USERINPUT,cast_void(inputevent))

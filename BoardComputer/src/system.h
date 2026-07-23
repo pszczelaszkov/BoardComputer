@@ -7,9 +7,8 @@
 
 #ifndef SYSTEM_H_
 #define SYSTEM_H_
-#include <inttypes.h>
-#include "utils.h"
 #include "config.h"
+#include "system_interface.h"
 
 #define EVENT_TIMER_ISR ISR(TIMER2_COMPA_vect)
 TESTUSE typedef uint8_t SYSTEM_cycle_timestamp_t;

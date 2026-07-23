@@ -2,6 +2,9 @@
 #define SYSTEM_INTERFACE_H_
 #include <bitwise.h>
 #include <stdint.h>
+#include <avr/io.h>
+#include <avr/interrupt.h>
+
 #define ENTRY_ROUTINE void main()
 int8_t SYSTEMINTERFACE_is_board_enabled();
 void SYSTEMINTERFACE_initialize_IO();

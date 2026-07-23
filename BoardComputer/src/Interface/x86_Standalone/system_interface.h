@@ -3,9 +3,12 @@
 
 #include <stdint.h>
 #include <bitwise.h>
+#define ISR(...) void __VA_ARGS__()
 #define ENTRY_ROUTINE void main()
-extern uint8_t DDRA, DDRB, DDRC, DDRD;
-extern uint8_t PORTA, PORTB, PORTC, PORTD, DIDR0;
+extern volatile uint8_t DDRA, DDRB, DDRC, DDRD;
+extern volatile uint8_t PORTA, PORTB, PORTC, PORTD, DIDR0;
+extern volatile uint8_t PINA, PINB, PINC, PIND;
+extern volatile uint16_t TCNT1, TCNT2;
 
 int8_t SYSTEMINTERFACE_is_board_enabled();
 void SYSTEMINTERFACE_initialize_IO();

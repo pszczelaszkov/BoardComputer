@@ -15,8 +15,10 @@ static int wake_fd    = -1;   // external wake signal
 static thrd_t RTC_thread;
 static uint8_t board_is_enabled = 1;
 
-uint8_t DDRA, DDRB, DDRC, DDRD;
-uint8_t PORTA, PORTB, PORTC, PORTD, DIDR0;
+volatile uint8_t DDRA, DDRB, DDRC, DDRD;
+volatile uint8_t PORTA, PORTB, PORTC, PORTD, DIDR0;
+volatile uint8_t PINA, PINB, PINC, PIND;
+volatile uint16_t TCNT1, TCNT2;
 
 static int sysclk_thread(void* arg)
 {

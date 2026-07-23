@@ -55,7 +55,8 @@ x86_test: clean prepare_dirs
 # List all .o objects for x86 Test
 X86_SRCS := $(addprefix $(TDIR), $(COMMON_SRCS) $(UI_SRCS)) \
             $(TDIR)main.c
-X86_IFACE_SRCS := $(X86_TEST_IDIR)persistent_memory.c $(X86_TEST_IDIR)system_interface.c $(X86_TEST_IDIR)serial.c
+X86_IFACE_SRCS := $(X86_TEST_IDIR)persistent_memory.c $(X86_TEST_IDIR)system_interface.c $(X86_TEST_IDIR)serial.c \
+                  $(X86_TEST_IDIR)adc.c $(X86_TEST_IDIR)egt.c
 
 X86_OBJS := $(patsubst $(TDIR)%.c,$(BIN_DIR)%_.o,$(X86_SRCS)) \
              $(patsubst $(X86_TEST_IDIR)%.c,$(BIN_DIR)%_.o,$(X86_IFACE_SRCS))
@@ -82,7 +83,8 @@ x86_standalone: prepare_dirs
 X86_SRCS := $(addprefix src/, $(COMMON_SRCS) $(UI_SRCS)) \
             src/main.c
 
-X86_IFACE_SRCS := $(X86_STANDALONE_IDIR)persistent_memory.c $(X86_STANDALONE_IDIR)system_interface.c $(X86_STANDALONE_IDIR)serial.c
+X86_IFACE_SRCS := $(X86_STANDALONE_IDIR)persistent_memory.c $(X86_STANDALONE_IDIR)system_interface.c $(X86_STANDALONE_IDIR)serial.c \
+                  $(X86_STANDALONE_IDIR)adc.c $(X86_STANDALONE_IDIR)egt.c
 X86_OBJS := $(patsubst src/%.c,$(BIN_DIR)%_x86.o,$(X86_SRCS)) \
              $(patsubst $(X86_STANDALONE_IDIR)%.c,$(BIN_DIR)%_x86.o,$(X86_IFACE_SRCS))
 
@@ -105,7 +107,8 @@ HW_1: prepare_dirs $(BIN_DIR)BoardComputer.hex
 # List all .o objects for AVR
 AVR_SRCS := $(addprefix src/, $(COMMON_SRCS) $(UI_SRCS)) \
             src/main.c
-AVR_IFACE_SRCS := $(HW_1_AVR_IDIR)persistent_memory.c $(HW_1_AVR_IDIR)system_interface.c $(HW_1_AVR_IDIR)serial.c
+AVR_IFACE_SRCS := $(HW_1_AVR_IDIR)persistent_memory.c $(HW_1_AVR_IDIR)system_interface.c $(HW_1_AVR_IDIR)serial.c \
+                  $(HW_1_AVR_IDIR)adc.c $(HW_1_AVR_IDIR)egt.c
 
 AVR_OBJS := $(patsubst src/%.c,$(BIN_DIR)%.o,$(AVR_SRCS)) \
              $(patsubst $(HW_1_AVR_IDIR)%.c,$(BIN_DIR)%.o,$(AVR_IFACE_SRCS))

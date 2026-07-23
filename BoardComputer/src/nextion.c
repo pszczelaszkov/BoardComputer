@@ -258,7 +258,7 @@ int8_t NEXTION_switch_page(NEXTION_PageID_t pageID, uint8_t push_to_history)
 
 	NEXTION_clear_selected_component();
 
-	itoa(pageID, &buffer[5],10);//5th position right after "page"
+	i16toa(pageID, &buffer[5]);//5th position right after "page"
 	if(NEXTION_send(buffer,USART_HOLD))
 	{	
 		/*Continue only if message to HMI was scheduled to send*/

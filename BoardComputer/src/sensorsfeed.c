@@ -1,11 +1,6 @@
 #include "sensorsfeed.h"
 #include "system.h"
 
-#ifdef __AVR__
-	#include<util/atomic.h>
-#else
-	uint8_t SPDR0;
-#endif
 
 TESTUSE typedef enum TESTADDPREFIX(EGT_TRANSMISSION_STATUS)
 {
@@ -14,24 +9,45 @@ TESTUSE typedef enum TESTADDPREFIX(EGT_TRANSMISSION_STATUS)
 	SENSORSFEED_EGT_TRANSMISSION_FULL
 }TESTADDPREFIX(egt_transmission_status_t);
 
+TESTUSE typedef enum ADC_CHANNEL{
+	ADC_CHANNEL_OILTEMP,
+	ADC_CHANNEL_INTAKETEMP,
+	ADC_CHANNEL_OUTTEMP,
+	ADC_CHANNEL_MAP,
+	ADC_CHANNEL_FRP,
+	ADC_CHANNEL_TANK,
+	ADC_CHANNEL_EGT,
+	ADC_CHANNEL_COUNT
+}ADC_CHANNEL_t;
+
+enum SENSORSFEED_EGT_STATUS SENSORSFEED_EGT_status;
+
+static const uint16_t ADC_MAX = 1023;
+static const uint16_t ADC_BAD_VALUE = PROGRAMDATA_BAD_VAL;
+
 TESTUSE static egt_transmission_status_t TESTADDPREFIX(EGT_transmission_status);
 static uint16_t max6675_data;
 static uint16_t speed_max;
+// calculated modifiers on init (weights);
+static uint16_t fuelmodifier;
+static uint16_t speedmodifier;
+static uint8_t injtmodifier;
+//
+static struct ADC_state{
+	uint16_t adc_value:10;
+	const uint8_t adc_lut_index:6;
+}ADC_state[ADC_CHANNEL_COUNT] = {
+	[0 ... ADC_CHANNEL_COUNT-1] = { .adc_value = 0, .adc_lut_index = PROGRAMDATA_ADC_LUT_LAST},// Initialize all channels LUT to invalid
+	[ADC_CHANNEL_OUTTEMP] = {.adc_lut_index = PROGRAMDATA_ADC_LUT_NTC_2200R25_2200RS_3950B},
+	[ADC_CHANNEL_INTAKETEMP] = {.adc_lut_index = PROGRAMDATA_ADC_LUT_NTC_2200R25_2200RS_3950B},
+};
 
-static PROGRAMDATA_LUT_t ADC_luts[SENSORSFEED_ADC_CHANNELS] = { [0 ... SENSORSFEED_ADC_CHANNELS-1] = PROGRAMDATA_LUT_NTC_2200_INVERTED};
-enum SENSORSFEED_EGT_STATUS SENSORSFEED_EGT_status;
-
-FP16_t SENSORSFEED_feed[SENSORSFEED_FEED_SIZE];
-
-uint16_t SENSORSFEED_fuelmodifier;
-uint16_t SENSORSFEED_speedmodifier;
-
-uint8_t SENSORSFEED_injtmodifier;
+FP16_t SENSORSFEED_feed[SENSORSFEED_FEEDID_LAST];
 
 TESTUSE void TESTADDPREFIX(update_fuel)()
 {
 	uint16_t fuel_time = SENSORSFEED_feed[SENSORSFEED_FEEDID_FUELPS];
-	fuel_time = (uint32_t)(fuel_time * SENSORSFEED_fuelmodifier) >> 8;
+	fuel_time = (uint32_t)(fuel_time * fuelmodifier) >> 8;
 	SENSORSFEED_feed[SENSORSFEED_FEEDID_LPH] = fuel_time;
 }
 
@@ -43,7 +59,7 @@ TESTUSE static void TESTADDPREFIX(update_speed)()
 	if(speed > speed_max)
 		speed = speed_max;
 
-	speed = speed * SENSORSFEED_speedmodifier;
+	speed = speed * speedmodifier;
 	if(speed)
 		lp100 = (uint32_t)(liters)*(100<<8)/speed;
 
@@ -81,44 +97,91 @@ TESTUSE static void TESTADDPREFIX(update_EGT)()
 		SPDR0 = 0x0;
 	}
 }
-static void calculate_adc()
+
+static int16_t interpolate_adc(int16_t min, int16_t max, int16_t adc_value)
 {
-	for(uint8_t i; i < SENSORSFEED_ADC_CHANNELS; i++)
+	return (int16_t)(((int32_t)(max - min) * adc_value) >> 10/*Divide by 1023(10bits)*/) + min;
+}
+
+static void calculate_adc(ADC_CHANNEL_t channel)
+{
+	struct ADC_state state = ADC_state[channel];
+	switch(channel)
 	{
-		int16_t value = SENSORSFEED_feed[i];
-		SENSORSFEED_feed[i] = PROGRAMDATA_get_lut_value(ADC_luts[i], value);
+		case ADC_CHANNEL_OILTEMP:
+			SENSORSFEED_feed[SENSORSFEED_FEEDID_OILTEMP] = PROGRAMDATA_get_ADC_lut_value(state.adc_lut_index, state.adc_value);
+		break;
+		case ADC_CHANNEL_INTAKETEMP:
+			SENSORSFEED_feed[SENSORSFEED_FEEDID_INTAKETEMP] = PROGRAMDATA_get_ADC_lut_value(state.adc_lut_index, state.adc_value);
+		break;
+		case ADC_CHANNEL_OUTTEMP:
+			SENSORSFEED_feed[SENSORSFEED_FEEDID_OUTTEMP] = PROGRAMDATA_get_ADC_lut_value(state.adc_lut_index, state.adc_value);
+		break;
+		case ADC_CHANNEL_MAP:
+		break;
+		case ADC_CHANNEL_FRP:
+		break;
+		case ADC_CHANNEL_TANK:
+		break;
+		case ADC_CHANNEL_EGT:
+		break;
 	}
 }
 
 static void copy_countersfeed()
 {
-	#ifdef __AVR__
-		ATOMIC_BLOCK(ATOMIC_RESTORESTATE)
-	#endif
+	SENSORSFEED_ATOMIC_BLOCK
 	{
 		SENSORSFEED_feed[SENSORSFEED_FEEDID_FUELPS] = (uint16_t)COUNTERSFEED_feed[COUNTERSFEED_FEEDID_FUELPS];
 		SENSORSFEED_feed[SENSORSFEED_FEEDID_SPEED] = (uint16_t)COUNTERSFEED_feed[COUNTERSFEED_FEEDID_SPEED];
-		SENSORSFEED_feed[SENSORSFEED_FEEDID_INJT] = (uint16_t)COUNTERSFEED_feed[COUNTERSFEED_FEEDID_INJT] * SENSORSFEED_injtmodifier;
+		SENSORSFEED_feed[SENSORSFEED_FEEDID_INJT] = (uint16_t)COUNTERSFEED_feed[COUNTERSFEED_FEEDID_INJT] * injtmodifier;
 	}
 }
 
 void SENSORSFEED_update()
 {
 	uint8_t timer = SYSTEM_event_timer;
-	calculate_adc();
+
 	copy_countersfeed();
 	switch(timer)
 	{
 		case 0:
+			update_ADC();/*Give it some time as it's not atomic*/
+			update_fuel();
+			update_speed();
+		break;
+		case 1:
+			calculate_adc(ADC_CHANNEL_OILTEMP);
+			calculate_adc(ADC_CHANNEL_INTAKETEMP);
+			calculate_adc(ADC_CHANNEL_OUTTEMP);
+		break;
+		case 2:
+			calculate_adc(ADC_CHANNEL_MAP);
+			calculate_adc(ADC_CHANNEL_FRP);
+			calculate_adc(ADC_CHANNEL_TANK);
+		break;
 		case 3:
-			update_ADC();
+			calculate_adc(ADC_CHANNEL_TANK);
 			update_EGT();
 		break;
-		case 5:
+		case 4:
+			update_ADC();/*Give it some time as it's not atomic*/
 			update_fuel();
+			update_speed();
+		break;
+		case 5:
+			calculate_adc(ADC_CHANNEL_OILTEMP);
+			calculate_adc(ADC_CHANNEL_INTAKETEMP);
+			calculate_adc(ADC_CHANNEL_OUTTEMP);
 		break;
 		case 6:
-			update_speed();
+			calculate_adc(ADC_CHANNEL_MAP);
+			calculate_adc(ADC_CHANNEL_FRP);
+			calculate_adc(ADC_CHANNEL_TANK);
+		break;
+		case 7:
+			calculate_adc(ADC_CHANNEL_TANK);
+			update_EGT();
 		break;
 	}
 }
@@ -137,29 +200,21 @@ void SENSORSFEED_initialize()
 	uint16_t fixed_base = SENSORSFEED_HIGH_PRECISION_BASE/0xffff;//16bit fixed point base.
 	uint16_t liter_ticks = (COUNTERSFEED_TICKSPERSECOND*1000/60)/SYSTEM_config.SENSORS_INJECTORS_CCM;//ticks for 1000cch
 	uint32_t fraction_representation = SENSORSFEED_HIGH_PRECISION_BASE/liter_ticks;//Represent as 1/value form
-	SENSORSFEED_fuelmodifier = fraction_representation/fixed_base;//Get 16bit fixed point value
+	fuelmodifier = fraction_representation/fixed_base;//Get 16bit fixed point value
 
 	fixed_base = SENSORSFEED_LOW_PRECISION_BASE/0xff;//8bit fixed point base
 	fraction_representation = SENSORSFEED_LOW_PRECISION_BASE/(COUNTERSFEED_TICKSPERSECOND/1000);
-	SENSORSFEED_injtmodifier = fraction_representation/fixed_base;
+	injtmodifier = fraction_representation/fixed_base;
 
 	//Calculate ticks for 1km, which in short is 360/ticksp100
 	//Result is in fp 8+8.
 	//As an addition speed_max is limiter to protect from overflow during further processing.
 	uint32_t base_fp16 = 360U << 8;//reduced from 3600sec
-	SENSORSFEED_speedmodifier = base_fp16/SYSTEM_config.SENSORS_SIGNAL_PER_100M;
-	speed_max = 0xffff/SENSORSFEED_speedmodifier;
+	speedmodifier = base_fp16/SYSTEM_config.SENSORS_SIGNAL_PER_100M;
+	speed_max = 0xffff/speedmodifier;
 
-	//ADC init
-	#ifdef __AVR__
-	ADMUX |= (1<<REFS0);//Vcc ref
-	ADCSRA = (1<<ADEN)|(1<<ADIE);
-	
-
-	//SPI input for EGT
-	SPCR0 = (1<<MSTR)|(1<<SPIE)|(1<<SPE)|(1<<SPR1)|(1<<CPHA);
-	#endif
-
+	ADC_init();
+	EGT_init();
 	SENSORSFEED_EGT_CONVERSION;
 }
 
@@ -167,17 +222,20 @@ ISR(ADC_vect)
 {	
 	uint8_t channel = ADCMULTIPLEXER;
 	int16_t value = ADC;
-	if(value == 0x3ff)//10bit max is treated as badvalue too
-		value = 0;
-	SENSORSFEED_feed[channel] = value;
-	if(channel == SENSORSFEED_ADC_CHANNELS-1)
+	if(value == ADC_MAX)
+		value = ADC_BAD_VALUE;
+
+	ADC_state[channel].adc_value = value;
+	/* Clear multiplexer if we reach currently supported channels. */
+	if(channel == ADC_CHANNEL_COUNT-1)
 	{
-		CLEAR(ADMUX,0x0f);// clear multiplexer
+		CLEAR(ADMUX,0x0f);
 		return;
 	}
-
-	ADCSTART;
+	/* Increase whole ADMUX, so we can read next channel. Safe for 8 channels. */
 	ADMUX++;
+	ADCSTART;
+
 }
 
 EGT_ISR

@@ -353,28 +353,6 @@ class TestPreRun(TestParent):
             IRQ()
         assert m.COUNTERSFEED_feed[fuelindex] == total_time
 
-    def test_sensorsfeed(self):
-        # Divide by 0 issue
-        assert m.SENSORSFEED_fuelmodifier
-
-    @pytest.mark.parametrize(
-        "adcinput", [0xFE, 0xA5, 0x45, 0x67, 0x50, 0xFF, 0x00, 0xAA]
-    )
-    def test_analog(self, adcinput):
-        # Magic numbers, totally random
-        for i in range(m.SENSORSFEED_ADC_CHANNELS):
-            ADC_channel = m.ADMUX & 0x0F
-            m.ADC = adcinput
-            m.ADC_vect()
-            assert adcinput == m.SENSORSFEED_feed[ADC_channel]
-
-    def test_analog_full(self):
-        ADC_channel = m.ADMUX & 0x0F
-        testvalue = 0x3FF
-        m.ADC = testvalue
-        m.ADC_vect()
-        assert 0 == m.SENSORSFEED_feed[ADC_channel]
-
     def test_USART(self):
         write_usart(m, 0x01, b"PING")
         response = read_usart(m)

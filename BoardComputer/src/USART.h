@@ -1,7 +1,7 @@
 #ifndef __USART__
 #define __USART__
 
-#include "utils.h"
+#include "system_interface.h"
 
 #define USART_HOLD 0
 #define USART_FLUSH 1

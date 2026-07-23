@@ -2,6 +2,7 @@
 #include "UI/board.h"
 #include "UI/numpad.h"
 #include "bitwise.h"
+#include "system_interface.h"
 
 static uint8_t pending_componentID;
 INPUT_Keystatus_t INPUT_keystatus[INPUT_KEY_LAST];

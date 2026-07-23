@@ -3,9 +3,13 @@
 
 #include <stdint.h>
 #include <bitwise.h>
+#define ISR(...) void __VA_ARGS__()
 #define ENTRY_ROUTINE TESTUSE void test()
-TESTUSE extern uint8_t DDRA, DDRB, DDRC, DDRD;
-TESTUSE extern uint8_t PORTA, PORTB, PORTC, PORTD, DIDR0;
+
+TESTUSE extern volatile uint8_t DDRA, DDRB, DDRC, DDRD;
+TESTUSE extern volatile uint8_t PORTA, PORTB, PORTC, PORTD, DIDR0;
+TESTUSE extern volatile uint8_t PINA, PINB, PINC, PIND;
+TESTUSE extern volatile uint16_t TCNT1, TCNT2;
 TESTUSE extern uint8_t board_is_enabled;
 
 int8_t SYSTEMINTERFACE_is_board_enabled();

@@ -6,20 +6,15 @@
  */ 
 #ifndef PROGRAMDATA_H_
 #define PROGRAMDATA_H_
-#ifdef __AVR__
-#include <avr/pgmspace.h>
-#else
-#include "utils.h"
-#define PROGMEM
-uint16_t pgm_read_word(const int16_t* value);
-#endif
 
-typedef enum PROGRAMDATA_LUT
+#include <stdint.h>
+#define PROGRAMDATA_BAD_VAL 0xffff
+typedef enum PROGRAMDATA_ADC_LUT
 {
-    PROGRAMDATA_LUT_NTC_2200_INVERTED,
-    PROGRAMDATA_LUT_LAST, 
-}PROGRAMDATA_LUT_t;
+    PROGRAMDATA_ADC_LUT_NTC_2200R25_2200RS_3950B,
+    PROGRAMDATA_ADC_LUT_LAST, 
+}PROGRAMDATA_ADC_LUT_t;
 
-extern int16_t PROGRAMDATA_get_lut_value(PROGRAMDATA_LUT_t lut, uint16_t index);
+extern int16_t PROGRAMDATA_get_ADC_lut_value(const PROGRAMDATA_ADC_LUT_t lut, uint16_t adc_value);
 
 #endif /* PROGRAMDATA_H_ */

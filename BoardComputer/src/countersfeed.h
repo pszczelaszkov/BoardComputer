@@ -7,11 +7,14 @@
 #ifndef COUNTERS_H
 #define COUNTERS_H
 
+#include "system_interface.h"
+
 #ifdef __AVR__
 #include <avr/io.h>
 #include <avr/interrupt.h>
 #else
-#include "utils.h"
+
+
 TESTUSE void PCINT0_vect();
 #endif
 
