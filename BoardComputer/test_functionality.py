@@ -39,6 +39,7 @@ class TestParent:
     @pytest.fixture(autouse=True)
     def snapshot_control(self):
         session.load_snapshot()
+        m.SYSTEM_resetalert()
         yield
 
 class TestPreRun(TestParent):
@@ -501,17 +502,8 @@ class TestConfig(TestParent):
         for entry in config.config:
             test_config_variable(f'{entry["category"]}_{entry["name"]}', entry["size"])
     
-    @pytest.mark.parametrize("testval",[
-        (0),
-        (-1),
-        (125),
-        (-125),
-        (-32000),
-        (32000),
-        (0x7f7f7f7f)
-    ])
-    def test_read_config_entry_local(self,testval):
-        def test_config_variable(var_name,var_size):
+    def test_read_config_entry_local(self):
+        def test_config_variable(var_name,var_size,testval):
 
             c_testval = ffi.new("CONFIG_maxdata_t*")
             test_config = ffi.new("CONFIG_Config*")
@@ -527,26 +519,20 @@ class TestConfig(TestParent):
             assert lcpy["read_bytes"] == var_size
             
             if not overflow_detected:
-                assert (c_testval[0] & testval) == c_testval[0] # Trickery to compare omiting sign interpretation
+                assert testval == c_testval[0] # Trickery to compare omiting sign interpretation
 
         for entry in config.config:
-            test_config_variable(f'{entry["category"]}_{entry["name"]}', entry["size"])
+            varname = f'{entry["category"]}_{entry["name"]}'
+            min, max = config.ENTRY_VALIDATORS[entry["validator"]]
+            test_config_variable(varname, entry["size"], min)
+            test_config_variable(varname, entry["size"], max)
 
-    @pytest.mark.parametrize("testval",[
-        (0),
-        (-1),
-        (125),
-        (-125),
-        (-32000),
-        (32000),
-        (0x7f7f7f7f)
-    ])
-    def test_read_config_entry_persistent(self,testval):
-        def test_config_variable(var_name,var_size):
+
+    def test_read_config_entry_persistent(self):
+        def test_config_variable(var_name, var_size, testval):
 
             c_testval = ffi.new("CONFIG_maxdata_t*")
             test_config = ffi.new("CONFIG_Config*")
-
             lcpy = locals().copy()
             overflow_detected = False
             try:
@@ -559,11 +545,15 @@ class TestConfig(TestParent):
             #execute code reading variable from persistent memory(config == null)
             exec(f"read_bytes = m.CONFIG_read_entry(ffi.NULL, m.CONFIG_ENTRY_{var_name}, c_testval)", globals(), lcpy)
             assert lcpy["read_bytes"] == var_size
+
             if not overflow_detected:
-                assert (c_testval[0] & testval) == c_testval[0] # Trickery to compare omiting sign interpretation
+                assert testval == c_testval[0] # Trickery to compare omiting sign interpretation
 
         for entry in config.config:
-            test_config_variable(f'{entry["category"]}_{entry["name"]}', entry["size"])
+            varname = f'{entry["category"]}_{entry["name"]}'
+            min, max = config.ENTRY_VALIDATORS[entry["validator"]]
+            test_config_variable(varname, entry["size"], min)
+            test_config_variable(varname, entry["size"], max)
 
     @pytest.mark.parametrize(
         "entry,defaultvalue",
@@ -605,6 +595,85 @@ class TestConfig(TestParent):
         assert 1 == m.CONFIG_sanitize_config(SYSTEM_config_ptr)
         m.CONFIG_read_entry(SYSTEM_config_ptr, entry, readval)
         assert readval[0] in (minval,maxval) # Due to signedness of variable it may overflow so check any max val
+
+class TestSensorsFeedADC(TestParent):
+    def test_outtemp_calibration_offsets_lut_input(self):
+        adc_value = 400
+        calibration = 5
+
+        m.SYSTEM_config.SENSORS_OUTTEMP_CAL = 0
+        m.SENSORSFEED_set_ADC_channel_value(m.ADC_CHANNEL_OUTTEMP, adc_value)
+        m.SENSORSFEED_calculate_adc(m.ADC_CHANNEL_OUTTEMP)
+        uncalibrated = m.SENSORSFEED_feed[m.SENSORSFEED_FEEDID_OUTTEMP]
+
+        m.SYSTEM_config.SENSORS_OUTTEMP_CAL = calibration
+        m.SENSORSFEED_set_ADC_channel_value(m.ADC_CHANNEL_OUTTEMP, adc_value)
+        m.SENSORSFEED_calculate_adc(m.ADC_CHANNEL_OUTTEMP)
+        calibrated = m.SENSORSFEED_feed[m.SENSORSFEED_FEEDID_OUTTEMP]
+
+        m.SYSTEM_config.SENSORS_OUTTEMP_CAL = 0
+        m.SENSORSFEED_set_ADC_channel_value(m.ADC_CHANNEL_OUTTEMP, adc_value + calibration)
+        m.SENSORSFEED_calculate_adc(m.ADC_CHANNEL_OUTTEMP)
+        direct = m.SENSORSFEED_feed[m.SENSORSFEED_FEEDID_OUTTEMP]
+
+        assert calibrated == direct
+        assert calibrated != uncalibrated
+
+    def test_map_interpolation_uses_config_min_max(self):
+        m.SYSTEM_config.SENSORS_MAP_MIN = 0
+        m.SYSTEM_config.SENSORS_MAP_MAX = 512
+
+        m.SENSORSFEED_set_ADC_channel_value(m.ADC_CHANNEL_MAP, 0)
+        m.SENSORSFEED_calculate_adc(m.ADC_CHANNEL_MAP)
+        assert m.SENSORSFEED_feed[m.SENSORSFEED_FEEDID_MAP] == 0xFFFF
+
+        m.SENSORSFEED_set_ADC_channel_value(m.ADC_CHANNEL_MAP, 1023)
+        m.SENSORSFEED_calculate_adc(m.ADC_CHANNEL_MAP)
+        assert m.SENSORSFEED_feed[m.SENSORSFEED_FEEDID_MAP] == 0xFFFF
+
+        m.SENSORSFEED_set_ADC_channel_value(m.ADC_CHANNEL_MAP, 512)
+        m.SENSORSFEED_calculate_adc(m.ADC_CHANNEL_MAP)
+        assert m.SENSORSFEED_feed[m.SENSORSFEED_FEEDID_MAP] == 256
+
+    def test_frp_interpolation_uses_config_min_max(self):
+        m.SYSTEM_config.SENSORS_FRP_MIN = 0
+        m.SYSTEM_config.SENSORS_FRP_MAX = 512
+
+        m.SENSORSFEED_set_ADC_channel_value(m.ADC_CHANNEL_FRP, 0)
+        m.SENSORSFEED_calculate_adc(m.ADC_CHANNEL_FRP)
+        assert m.SENSORSFEED_feed[m.SENSORSFEED_FEEDID_FRP] == 0xFFFF
+
+        m.SENSORSFEED_set_ADC_channel_value(m.ADC_CHANNEL_FRP, 1023)
+        m.SENSORSFEED_calculate_adc(m.ADC_CHANNEL_FRP)
+        assert m.SENSORSFEED_feed[m.SENSORSFEED_FEEDID_FRP] == 0xFFFF
+
+        m.SENSORSFEED_set_ADC_channel_value(m.ADC_CHANNEL_FRP, 512)
+        m.SENSORSFEED_calculate_adc(m.ADC_CHANNEL_FRP)
+        assert m.SENSORSFEED_feed[m.SENSORSFEED_FEEDID_FRP] == 256
+
+    def test_tank_interpolation_uses_config_min_max(self):
+        m.SYSTEM_config.SENSORS_TANK_MIN = 0
+        m.SYSTEM_config.SENSORS_TANK_MAX = 100
+
+        m.SENSORSFEED_set_ADC_channel_value(m.ADC_CHANNEL_TANK, 512)
+        m.SENSORSFEED_calculate_adc(m.ADC_CHANNEL_TANK)
+        assert m.SENSORSFEED_feed[m.SENSORSFEED_FEEDID_TANK] == 50
+
+    def test_egt_adc_mode_uses_adc_value_as_celsius(self):
+        m.SYSTEM_config.SENSORS_EGT_INTERNAL = 0
+        m.SENSORSFEED_set_ADC_channel_value(m.ADC_CHANNEL_EGT, 50)
+        m.SENSORSFEED_calculate_adc(m.ADC_CHANNEL_EGT)
+
+        assert m.SENSORSFEED_feed[m.SENSORSFEED_FEEDID_EGT] == 50
+        assert m.SENSORSFEED_EGT_status == m.SENSORSFEED_EGT_STATUS_VALUE
+
+    def test_egt_spi_mode_leaves_calculate_adc_as_no_op(self):
+        m.SYSTEM_config.SENSORS_EGT_INTERNAL = 1
+        m.SENSORSFEED_feed[m.SENSORSFEED_FEEDID_EGT] = 777
+        m.SENSORSFEED_set_ADC_channel_value(m.ADC_CHANNEL_EGT, 50)
+        m.SENSORSFEED_calculate_adc(m.ADC_CHANNEL_EGT)
+
+        assert m.SENSORSFEED_feed[m.SENSORSFEED_FEEDID_EGT] == 777
 
 class TestPowerCycles(TestParent):
     @pytest.mark.parametrize("board_enabled,config_always_on,expected_system_status",[

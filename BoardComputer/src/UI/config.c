@@ -1,6 +1,7 @@
 #include "config.h"
 #include <config.h>
 #include "nextion.h"
+#include "sensorsfeed.h"
 #include "utils.h"
 #include "UI/numpad.h"
 
@@ -204,13 +205,6 @@ inline static void handle_userinput(INPUT_Event* input_event)
                     modify_configvariable_value((Direction_t)componentID - INPUTCOMPONENT_DEC);
                 break;
                 case INPUTCOMPONENT_BCK:
-                    save_configvariable();
-                    if(1 == SYSTEM_config.SYSTEM_FACTORY_RESET)
-                    {
-                        SYSTEM_config.CONFIG_VERSION = 0;
-                        SYSTEM_run = 0; // reset device.
-                    }
-                    CONFIG_saveconfig(&SYSTEM_config);
                     NEXTION_set_previous_page();
                     return;
                 break;
@@ -283,8 +277,6 @@ inline static void setup()
 
         if(send_configvalue_to_nextion())
             send_configpointer_to_nextion();
-
-
     }
 }
 
@@ -295,6 +287,16 @@ void UICONFIG_page_control(NEXTION_page_control_t pagecontrol, void* data)
 		case NEXTION_PAGECONTROL_SETUP:
             setup();
 		break;
+        case NEXTION_PAGECONTROL_EXIT:
+            save_configvariable();
+            if(1 == SYSTEM_config.SYSTEM_FACTORY_RESET)
+            {
+                SYSTEM_config.CONFIG_VERSION = 0; // Set version to 0 to force factory defaults on boot.
+                SYSTEM_run = 0; // Stop device (WD will kick in).
+            }
+            CONFIG_saveconfig(&SYSTEM_config);
+            SENSORSFEED_initialize();
+        break;
 		case NEXTION_PAGECONTROL_USERINPUT:
             handle_userinput(data);
         break;

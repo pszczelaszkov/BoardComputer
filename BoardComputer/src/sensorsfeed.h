@@ -17,6 +17,7 @@
 
 #define SENSORSFEED_HIGH_PRECISION_BASE 1000000000
 #define SENSORSFEED_LOW_PRECISION_BASE 100000
+extern const uint16_t SENSORSFEED_ADC_BAD_VALUE;
 
 TESTUSE extern enum SENSORSFEED_EGT_STATUS
 {
@@ -49,6 +50,8 @@ TESTUSE typedef uint16_t FP16_t;// Fixedpoint 8+8
 /* Main feed can be used as FP 8+8 or plain 16 bit integer, depends on sensor implementation*/
 TESTUSE extern FP16_t SENSORSFEED_feed[];
 
-void SENSORSFEED_update();
+TESTUSE void SENSORSFEED_update();
 TESTUSE void SENSORSFEED_initialize();
+/* Push value from ADC register into internal feed. */
+TESTUSE void SENSORSFEED_push_adc_value();
 #endif /* SENSORSFEED_H_ */

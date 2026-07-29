@@ -12,6 +12,7 @@
 #define TESTSTATICVAR(...) __VA_ARGS__
 #define MIN(i, j) (((i) < (j)) ? (i) : (j))
 #define MAX(i, j) (((i) > (j)) ? (i) : (j))
+#define CLAMP(value, min, max) (MAX(min, MIN(value, max)))
 #include <stdint.h>
 #include <string.h>
 

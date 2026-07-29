@@ -25,7 +25,11 @@ typedef enum ENTRY_VALIDATOR
     ENTRY_VALIDATOR_POSITIVE_4DIGIT_INCL_0, /* Check if 9999 >= value >=0 */
     ENTRY_VALIDATOR_NEGATIVE_4DIGIT_EXCL_0, /* Check if -9999 <= value < 0 */
     ENTRY_VALIDATOR_NEGATIVE_4DIGIT_INCL_0, /* Check if -9999 <= value <= 0 */
+    ENTRY_VALIDATOR_ALL_4DIGIT, /* Check if -9999 <= value <= 9999 */
+    ENTRY_VALIDATOR_ALL_3DIGIT, /* Check if -999 <= value <= 999 */
+    ENTRY_VALIDATOR_ALL_2DIGIT, /* Check if -99 <= value <= 99 */
     ENTRY_VALIDATOR_PERCENT, /* Check if 0 <= value <= 100 */
+    ENTRY_VALIDATOR_CALIBRATION_VALUE, /* Check if -100 <= value <= 100 */
 }ENTRY_VALIDATOR;
 
 typedef enum ENTRYINFO_SIZE
@@ -39,17 +43,20 @@ typedef enum ENTRYINFO_SIZE
 typedef struct ENTRYINFO
 {
     uint8_t memory_offset;
+    ENTRY_VALIDATOR validator:5;
     ENTRYINFO_SIZE size:2;
-    ENTRY_VALIDATOR validator:6;
+    uint8_t is_signed:1;
 }Entryinfo;
 
 #define SIZEOF_CONFIGFIELD(_field) sizeof(((CONFIG_Config *)0)->_field)
 #define GET_ENTRY_SIZE(_field) (ENTRYINFO_SIZE)(SIZEOF_CONFIGFIELD(_field) < ENTRYINFO_SIZE_64 ? SIZEOF_CONFIGFIELD(_field) / 2 : ENTRYINFO_SIZE_64)
+#define IS_SIGNED_TYPE(x) (((typeof(x))-1) < 0)
 #define CONFIG_ENTRY(_field, _validator) \
     [CONFIG_ENTRY_##_field] = { \
         .memory_offset = (uint8_t)offsetof(CONFIG_Config, _field), \
         .size = GET_ENTRY_SIZE(_field), \
-        .validator = _validator \
+        .validator = _validator, \
+        .is_signed = IS_SIGNED_TYPE(((CONFIG_Config *)0)->_field) \
     }
 
 const int32_t CONFIG_maxvalue = 32768;
@@ -62,6 +69,17 @@ static const Entryinfo entryinfo[CONFIG_ENTRY_LAST] PROGMEM = {
     CONFIG_ENTRY(SYSTEM_BRIGHTNESS, ENTRY_VALIDATOR_PERCENT),
     CONFIG_ENTRY(SENSORS_SIGNAL_PER_100M, ENTRY_VALIDATOR_POSITIVE_4DIGIT_EXCL_0),
     CONFIG_ENTRY(SENSORS_INJECTORS_CCM, ENTRY_VALIDATOR_POSITIVE_4DIGIT_EXCL_0),
+    CONFIG_ENTRY(SENSORS_OILTEMP_CAL, ENTRY_VALIDATOR_CALIBRATION_VALUE),
+    CONFIG_ENTRY(SENSORS_INTAKETEMP_CAL, ENTRY_VALIDATOR_CALIBRATION_VALUE),
+    CONFIG_ENTRY(SENSORS_OUTTEMP_CAL, ENTRY_VALIDATOR_CALIBRATION_VALUE),
+    CONFIG_ENTRY(SENSORS_MAP_MIN, ENTRY_VALIDATOR_ALL_3DIGIT),
+    CONFIG_ENTRY(SENSORS_MAP_MAX, ENTRY_VALIDATOR_ALL_3DIGIT),
+    CONFIG_ENTRY(SENSORS_FRP_MIN, ENTRY_VALIDATOR_ALL_3DIGIT),
+    CONFIG_ENTRY(SENSORS_FRP_MAX, ENTRY_VALIDATOR_ALL_3DIGIT),
+    CONFIG_ENTRY(SENSORS_TANK_MIN, ENTRY_VALIDATOR_PERCENT),
+    CONFIG_ENTRY(SENSORS_TANK_MAX, ENTRY_VALIDATOR_PERCENT),
+    CONFIG_ENTRY(SENSORS_EGT_INTERNAL, ENTRY_VALIDATOR_BOOLEAN),
+    CONFIG_ENTRY(BOARD_DELTA_THRESHOLD, ENTRY_VALIDATOR_ENUM_2),
 };
 
 static const uint32_t ADDRESS_IN_PERSISTENT_MEMORY = 0x0;
@@ -108,6 +126,22 @@ void CONFIG_get_entry_min_max_values(CONFIG_Entry entry, CONFIG_maxdata_t* min, 
                 *max = -1;
             case ENTRY_VALIDATOR_NEGATIVE_4DIGIT_INCL_0:
                 *min = -9999;
+            break;
+            case ENTRY_VALIDATOR_ALL_4DIGIT:
+                *min = -9999;
+                *max = 9999;
+            break;
+            case ENTRY_VALIDATOR_ALL_3DIGIT:
+                *min = -999;
+                *max = 999;
+            break;
+            case ENTRY_VALIDATOR_ALL_2DIGIT:
+                *min = -99;
+                *max = 99;
+            break;
+            case ENTRY_VALIDATOR_CALIBRATION_VALUE:
+                *min = -100;
+                *max = 100;
             break;
         }
     }
@@ -164,7 +198,7 @@ uint8_t CONFIG_modify_entry(CONFIG_Config* config, CONFIG_Entry entry, CONFIG_ma
 
     if(config)
     {
-        memcpy(&((uint8_t*)config)[offset], value, size);
+        memcpy(&((int8_t*)config)[offset], value, size);
     }
     else
     {
@@ -180,16 +214,31 @@ uint8_t CONFIG_read_entry(CONFIG_Config* config, CONFIG_Entry entry, CONFIG_maxd
     PROGRAM_MEMORY_read(&entryinfo[entry],&info,sizeof(Entryinfo));
     uint8_t size = 1 << info.size;
     uint8_t offset = info.memory_offset;
-    *value = 0;
+    CONFIG_maxdata_t temp_value = 0;
+
     if(config)
     {
-        memcpy(value, &((uint8_t*)config)[offset], size);
+        memcpy(&temp_value, &((int8_t*)config)[offset], size);
     }
     else
     {
-        PERSISTENT_MEMORY_read(ADDRESS_IN_PERSISTENT_MEMORY+offset, value, size);
+        PERSISTENT_MEMORY_read(ADDRESS_IN_PERSISTENT_MEMORY+offset, &temp_value, size);
     }
 
+    if(info.is_signed)
+    {
+        switch(info.size)
+        {
+            case ENTRYINFO_SIZE_8:  *value = *(int8_t *)&temp_value;  break;
+            case ENTRYINFO_SIZE_16: *value = *(int16_t *)&temp_value; break;
+            case ENTRYINFO_SIZE_32: *value = *(int32_t *)&temp_value; break;
+            case ENTRYINFO_SIZE_64: *value = *(int64_t *)&temp_value; break;
+        }
+    }
+    else
+    {
+        *value = temp_value;
+    }
     return size;
 }
 
@@ -200,13 +249,19 @@ uint8_t CONFIG_factory_default_reset()
     {
         if(CONFIG_ENTRY_SENSORS_INJECTORS_CCM == i 
             || CONFIG_ENTRY_SENSORS_SIGNAL_PER_100M == i 
-            || CONFIG_ENTRY_SYSTEM_ALWAYS_ON == i)
+            || CONFIG_ENTRY_SYSTEM_ALWAYS_ON == i
+            || CONFIG_ENTRY_SENSORS_EGT_INTERNAL == i)
         {
             default_value = 1;
         }
         else if(CONFIG_ENTRY_SYSTEM_BRIGHTNESS == i)
         {
             default_value = 100;
+        }
+        else if(CONFIG_ENTRY_SENSORS_MAP_MAX == i
+            || CONFIG_ENTRY_SENSORS_FRP_MAX == i)
+        {
+            default_value = 500;
         }
         else
         {

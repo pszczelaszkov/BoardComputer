@@ -1,4 +1,5 @@
 #include "adc.h"
+#include "sensorsfeed.h"
 
 void ADC_init()
 {
@@ -8,4 +9,8 @@ void ADC_init()
     (1<<ADIE) |
     (1<<ADPS2) |
     (1<<ADPS1);   // prescaler 64
+}
+ISR(ADC_vect)
+{
+    SENSORSFEED_push_adc_value();
 }

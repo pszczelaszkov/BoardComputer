@@ -31,7 +31,11 @@ ENTRY_VALIDATORS = {
     "ENTRY_VALIDATOR_POSITIVE_4DIGIT_INCL_0": (0, 9999), # Check if 9999 >= value >=0
     "ENTRY_VALIDATOR_NEGATIVE_4DIGIT_EXCL_0": (-9999, -1), # Check if -9999 <= value < 0
     "ENTRY_VALIDATOR_NEGATIVE_4DIGIT_INCL_0": (-9999, 0), # Check if -9999 <= value <= 0
+    "ENTRY_VALIDATOR_ALL_4DIGIT": (-9999,9999), # Check if -9999 <= value <= 9999
+    "ENTRY_VALIDATOR_ALL_3DIGIT": (-999,999), # Check if -999 <= value <= 999
+    "ENTRY_VALIDATOR_ALL_2DIGIT": (-99,99), # Check if -99 <= value <= 99
     "ENTRY_VALIDATOR_PERCENT": (0, 100), # Check if 0 <= value <= 100
+    "ENTRY_VALIDATOR_CALIBRATION_VALUE": (-100,100), # Check if -100 <= value <= 100 */
 }
 
 config = [
@@ -41,17 +45,34 @@ config = [
     {"category": "SYSTEM", "name":"BRIGHTNESS", "desc": "Display brightness.", "validator": "ENTRY_VALIDATOR_PERCENT", "size": 1, "default": 100},
     {"category": "SENSORS", "name":"SIGNAL_PER_100M", "desc": "Enter how many signals wheel need for 100 Meter.", "validator": "ENTRY_VALIDATOR_POSITIVE_4DIGIT_EXCL_0", "size": 2, "default": 1},
     {"category": "SENSORS", "name":"INJECTORS_CCM", "desc": "Enter injectors CCM value, remember to multiple if injectors fire in pairs.", "validator": "ENTRY_VALIDATOR_POSITIVE_4DIGIT_EXCL_0", "size": 2, "default": 1},
+
+    {"category": "SENSORS", "name":"OILTEMP_CAL", "desc": "Oil temperature ADC calibration offset.", "validator": "ENTRY_VALIDATOR_CALIBRATION_VALUE", "size": 1, "default": 0},
+    {"category": "SENSORS", "name":"INTAKETEMP_CAL", "desc": "Intake temperature ADC calibration offset.", "validator": "ENTRY_VALIDATOR_CALIBRATION_VALUE", "size": 1, "default": 0},
+    {"category": "SENSORS", "name":"OUTTEMP_CAL", "desc": "Outside temperature ADC calibration offset.", "validator": "ENTRY_VALIDATOR_CALIBRATION_VALUE", "size": 1, "default": 0},
+
+    {"category": "SENSORS", "name":"MAP_MIN", "desc": "Manifold pressure sensor minimum value (kPa).", "validator": "ENTRY_VALIDATOR_ALL_3DIGIT", "size": 2, "default": 0},
+    {"category": "SENSORS", "name":"MAP_MAX", "desc": "Manifold pressure sensor maximum value (kPa).", "validator": "ENTRY_VALIDATOR_ALL_3DIGIT", "size": 2, "default": 500},
+
+    {"category": "SENSORS", "name":"FRP_MIN", "desc": "Fuel rail pressure sensor minimum value (kPa).", "validator": "ENTRY_VALIDATOR_ALL_3DIGIT", "size": 2, "default": 0},
+    {"category": "SENSORS", "name":"FRP_MAX", "desc": "Fuel rail pressure sensor maximum value (kPa).", "validator": "ENTRY_VALIDATOR_ALL_3DIGIT", "size": 2, "default": 500},
+
+    {"category": "SENSORS", "name":"TANK_MIN", "desc": "Fuel tank sensor minimum (Liter).", "validator": "ENTRY_VALIDATOR_PERCENT", "size": 1, "default": 0},
+    {"category": "SENSORS", "name":"TANK_MAX", "desc": "Fuel tank sensor maximum (Liter).", "validator": "ENTRY_VALIDATOR_PERCENT", "size": 1, "default": 0},
+
+    {"category": "SENSORS", "name":"EGT_INTERNAL", "desc": "Use internal sensor for EGT. If disabled, use ADC channel(1-1022 C).", "validator": "ENTRY_VALIDATOR_BOOLEAN", "size": 1, "default": 1},
+
+    {"category": "BOARD", "name":"DELTA_THRESHOLD", "desc": "Set pressure threshold (Bar) for Fuel to Manifold pressure delta indicator.", "validator": "ENTRY_VALIDATOR_ENUM_2", "size": 1, "default": 0},
 ]
 
 
 def generate_boilerplate():
     return """\
 //Define slide limits
-if(max.val<32768)
+if(max.val<{MAXVALUE})
 {{
-  bar.minval=min.val+32767
-  bar.maxval=max.val+32767
-  bar.val=vlh.val+32767
+  bar.minval=min.val+{BELOW_MAXVALUE}
+  bar.maxval=max.val+{BELOW_MAXVALUE}
+  bar.val=vlh.val+{BELOW_MAXVALUE}
   bar.pic2={active_slider_pic}
 }}else
 {{
@@ -99,7 +120,7 @@ def generate_if_string():
 
     # Slider setup and result readout:
     if_lines = "\n".join(result_lines)
-    boilerplate_lines = "".join(generate_boilerplate().format(active_slider_pic=31,unactive_slider_pic=30))
+    boilerplate_lines = "".join(generate_boilerplate().format(MAXVALUE=MAXVALUE,BELOW_MAXVALUE=MAXVALUE-1,active_slider_pic=31,unactive_slider_pic=30))
     with open("config_rfpcontent.txt", "w") as file:
         file.write(f"//Generated content by config.py\n{if_lines}\n{boilerplate_lines}\n//End of generated content")
 

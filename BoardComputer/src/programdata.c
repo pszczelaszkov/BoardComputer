@@ -17,7 +17,7 @@ int16_t PROGRAMDATA_get_ADC_lut_value(const PROGRAMDATA_ADC_LUT_t lut, uint16_t 
     int16_t result = PROGRAMDATA_BAD_VAL;
     adc_value >>= (ADC_LUT_COMPRESSION_LEVEL-1);
     /*Edge values are invalid*/
-    if(ADC_LUT_SIZE-1 > adc_value && 0 < adc_value)
+    if(ADC_LUT_SIZE-1 > adc_value && 0 < adc_value && lut < PROGRAMDATA_ADC_LUT_LAST)
     {
         result = ADC_LUT_OFFSET + PROGRAM_MEMORY_read_byte(&adc_LUT[lut][adc_value]);
     }

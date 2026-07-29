@@ -291,46 +291,42 @@ class TestBoardUI:
         m.UIBOARD_update_sensorgroup_bottom()
         output = read_nextion_output(m, ffi)
         assert output["out.txt"] == (
-            f'"{str(outtemp).rjust(3)}"' if outtemp else '"---"'
+            f'"{str(outtemp).rjust(3)}"' if outtemp != m.PROGRAMDATA_BAD_VAL else '"---"'
         )
         assert output["int.txt"] == (
-            f'"{str(intaketemp).rjust(3)}"' if intaketemp else '"---"'
+            f'"{str(intaketemp).rjust(3)}"' if intaketemp != m.PROGRAMDATA_BAD_VAL else '"---"'
         )
         assert output["oil.txt"] == (
-            f'"{str(oiltemp).rjust(3)}"' if oiltemp else '"---"'
+            f'"{str(oiltemp).rjust(3)}"' if oiltemp != m.PROGRAMDATA_BAD_VAL else '"---"'
         )
 
     @pytest.mark.parametrize(
         "map, frp",
         [
             (0, 0),
-            (0, floattofp(2.5, 8)),
-            (floattofp(2.5, 8), 0),
-            (floattofp(2, 8), 0),
-            (0, floattofp(2, 8)),
-            (0, floattofp(2.999, 8)),
-            (floattofp(2.999, 8), 0),
-            (0, floattofp(99, 8)),
-            (floattofp(-0.5, 8), 0),
+            (0, 250),
+            (250, 0),
+            (200, 0),
+            (0, 200),
+            (0, 299),
+            (299, 0),
+            (0, 99),
+            (-50, 0),
         ],
     )
     def test_uiboard_sensorgroup_pressure(self, map, frp):
-        threshold = 2 << 8
+        threshold = 2
+        m.SYSTEM_config.BOARD_DELTA_THRESHOLD = threshold
+        m.UIBOARD_page_control(m.NEXTION_PAGECONTROL_SETUP,ffi.NULL)
         m.SENSORSFEED_feed[m.SENSORSFEED_FEEDID_MAP] = ffi.cast("uint16_t", map)
         m.SENSORSFEED_feed[m.SENSORSFEED_FEEDID_FRP] = ffi.cast("uint16_t", frp)
-        deltapressure = min(max(0, frp - map - threshold), 0x100)
+        deltapressure = min(max(0, frp - map - threshold*100), 100)
 
         m.UIBOARD_update_sensorgroup_pressure()
         output = read_nextion_output(m, ffi)
-        assert output["map.txt"] == (
-            f'"{f"{fptofloat(map,8):.2f}".rjust(5)}"' if map else '"-----"'
-        )
-        assert output["frp.txt"] == (
-            f'"{f"{fptofloat(frp,8):.2f}".rjust(5)}"' if frp else '"-----"'
-        )
-        print(deltapressure)
-        print(deltapressure * 100 >> 8)
-        assert int(output["fmd.val"]) == deltapressure * 100 >> 8
+        assert int(output["map.txt"]) == map
+        assert int(output["frp.txt"]) == frp
+        assert int(output["fmd.val"]) == deltapressure
 
     @pytest.mark.parametrize(
         "watchtype,expectedstring",
@@ -868,7 +864,7 @@ class TestConfigUI:
         #Page should be back to Board
         assert int(output["page"]) == m.NEXTION_PAGEID_BOARD
 
-    def test_back_triggers_factory_reset_when_set(self):
+    def test_back_and_exit_triggers_factory_reset_when_set(self):
         m.SYSTEM_run = True
         #Set fake version in persistent memory
         m.SYSTEM_config.CONFIG_VERSION = 0xFFFF
@@ -882,11 +878,9 @@ class TestConfigUI:
         #Factory reset is always first, increase value by 1 to True.
         m.UICONFIG_page_control(m.NEXTION_PAGECONTROL_USERINPUT ,cast_void(touch_event))
 
-        touch_event.keystatus = m.INPUT_KEYSTATUS_CLICK
-        touch_event.componentID = self.INPUTCOMPONENT_BCK
-        #Go back by button
-        m.UICONFIG_page_control(m.NEXTION_PAGECONTROL_USERINPUT ,cast_void(touch_event))
-
+        #Simulate page exit
+        m.UICONFIG_page_control(m.NEXTION_PAGECONTROL_EXIT ,ffi.NULL)
+        
         m.CONFIG_loadconfig(ffi.addressof(m.SYSTEM_config))
         #Check if config version has been reseted
         #Factory restart will be executed at system startup when config version mismatch.
@@ -895,16 +889,14 @@ class TestConfigUI:
         # Check if device restart is triggered
         assert False == m.SYSTEM_run
 
-    def test_back_saves_values_to_persistent_memory(self):
-        TESTDATA = ffi.cast("CONFIG_maxdata_t*",ffi.new("uint32_t*", 0xFF))
+    def test_exit_saves_values_to_persistent_memory(self):
+        initial_value = 0xFF
+        TESTDATA = ffi.cast("CONFIG_maxdata_t*",ffi.new("uint32_t*", initial_value))
         for i in range(m.CONFIG_ENTRY_LAST):
             m.CONFIG_modify_entry(ffi.addressof(m.SYSTEM_config), i , TESTDATA)
-        
-        touch_event = ffi.new("INPUT_Event*")
-        touch_event.key = m.INPUT_KEY_ENTER
-        touch_event.keystatus = m.INPUT_KEYSTATUS_CLICK
-        touch_event.componentID = self.INPUTCOMPONENT_BCK
-        m.UICONFIG_page_control(m.NEXTION_PAGECONTROL_USERINPUT ,cast_void(touch_event))
+
+        #Simulate page exit
+        m.UICONFIG_page_control(m.NEXTION_PAGECONTROL_EXIT ,ffi.NULL)
 
         for i in range(m.CONFIG_ENTRY_LAST):
             m.CONFIG_read_entry(ffi.NULL, i , TESTDATA)
@@ -912,4 +904,4 @@ class TestConfigUI:
             if m.CONFIG_ENTRY_SYSTEM_FACTORY_RESET == i:
                 assert 0 == TESTDATA[0]
             else:
-                assert 0xFF == TESTDATA[0]
+                assert initial_value == (TESTDATA[0] & initial_value) # Omit sign, only check bitwise

@@ -1,6 +1,6 @@
 #include "sensorsfeed.h"
 #include "system.h"
-
+#include "adc.h"
 
 TESTUSE typedef enum TESTADDPREFIX(EGT_TRANSMISSION_STATUS)
 {
@@ -23,7 +23,7 @@ TESTUSE typedef enum ADC_CHANNEL{
 enum SENSORSFEED_EGT_STATUS SENSORSFEED_EGT_status;
 
 static const uint16_t ADC_MAX = 1023;
-static const uint16_t ADC_BAD_VALUE = PROGRAMDATA_BAD_VAL;
+const uint16_t SENSORSFEED_ADC_BAD_VALUE = PROGRAMDATA_BAD_VAL;
 
 TESTUSE static egt_transmission_status_t TESTADDPREFIX(EGT_transmission_status);
 static uint16_t max6675_data;
@@ -70,14 +70,17 @@ TESTUSE static void TESTADDPREFIX(update_speed)()
 
 TESTUSE static void TESTADDPREFIX(update_ADC)()
 {
-	if(ADCMULTIPLEXER != 0)// Relaunch only at 0
+	if(ADC_get_current_channel() != 0)// Relaunch only at 0
 		return;
 
-	ADCSTART;
+	ADC_start_conversion();
 }
 
 TESTUSE static void TESTADDPREFIX(update_EGT)()
 {
+	if(!SYSTEM_config.SENSORS_EGT_INTERNAL)
+		return;
+
 	if(EGT_transmission_status == SENSORSFEED_EGT_TRANSMISSION_READY)
 	{
 		SENSORSFEED_EGT_TRANSMISSION;
@@ -100,32 +103,91 @@ TESTUSE static void TESTADDPREFIX(update_EGT)()
 
 static int16_t interpolate_adc(int16_t min, int16_t max, int16_t adc_value)
 {
-	return (int16_t)(((int32_t)(max - min) * adc_value) >> 10/*Divide by 1023(10bits)*/) + min;
+	int16_t result = SENSORSFEED_ADC_BAD_VALUE;
+	if(0 < adc_value && ADC_MAX > adc_value && min <= max)
+	{
+		result = (int16_t)(((int32_t)(max - min) * adc_value) >> 10/*Divide by 1023(10bits)*/) + min;
+	}
+	return result;
 }
 
-static void calculate_adc(ADC_CHANNEL_t channel)
+static uint16_t calibrated_adc_value(uint16_t adc_value, int8_t calibration)
+{
+	/* Adjust adc value by calibration value. ADC is 10 bit so no overflow possible. */
+	int16_t adjusted = (int16_t)adc_value + calibration;
+	return (uint16_t)CLAMP(adjusted, 0, ADC_MAX);
+}
+
+TESTUSE static void TESTADDPREFIX(set_ADC_channel_value)(ADC_CHANNEL_t channel, uint16_t value)
+{
+	ADC_state[channel].adc_value = value;
+}
+
+TESTUSE static void TESTADDPREFIX(calculate_adc)(ADC_CHANNEL_t channel)
 {
 	struct ADC_state state = ADC_state[channel];
 	switch(channel)
 	{
 		case ADC_CHANNEL_OILTEMP:
-			SENSORSFEED_feed[SENSORSFEED_FEEDID_OILTEMP] = PROGRAMDATA_get_ADC_lut_value(state.adc_lut_index, state.adc_value);
+		{
+			uint16_t adc = calibrated_adc_value(state.adc_value, SYSTEM_config.SENSORS_OILTEMP_CAL);
+			SENSORSFEED_feed[SENSORSFEED_FEEDID_OILTEMP] = PROGRAMDATA_get_ADC_lut_value(state.adc_lut_index, adc);
+		}
 		break;
 		case ADC_CHANNEL_INTAKETEMP:
-			SENSORSFEED_feed[SENSORSFEED_FEEDID_INTAKETEMP] = PROGRAMDATA_get_ADC_lut_value(state.adc_lut_index, state.adc_value);
+		{
+			uint16_t adc = calibrated_adc_value(state.adc_value, SYSTEM_config.SENSORS_INTAKETEMP_CAL);
+			SENSORSFEED_feed[SENSORSFEED_FEEDID_INTAKETEMP] = PROGRAMDATA_get_ADC_lut_value(state.adc_lut_index, adc);
+		}
 		break;
 		case ADC_CHANNEL_OUTTEMP:
-			SENSORSFEED_feed[SENSORSFEED_FEEDID_OUTTEMP] = PROGRAMDATA_get_ADC_lut_value(state.adc_lut_index, state.adc_value);
+		{
+			uint16_t adc = calibrated_adc_value(state.adc_value, SYSTEM_config.SENSORS_OUTTEMP_CAL);
+			SENSORSFEED_feed[SENSORSFEED_FEEDID_OUTTEMP] = PROGRAMDATA_get_ADC_lut_value(state.adc_lut_index, adc);
+		}
 		break;
 		case ADC_CHANNEL_MAP:
+			SENSORSFEED_feed[SENSORSFEED_FEEDID_MAP] = interpolate_adc(
+				SYSTEM_config.SENSORS_MAP_MIN,
+				SYSTEM_config.SENSORS_MAP_MAX,
+				state.adc_value);
 		break;
 		case ADC_CHANNEL_FRP:
+			SENSORSFEED_feed[SENSORSFEED_FEEDID_FRP] = interpolate_adc(
+				SYSTEM_config.SENSORS_FRP_MIN,
+				SYSTEM_config.SENSORS_FRP_MAX,
+				state.adc_value);
 		break;
 		case ADC_CHANNEL_TANK:
+			SENSORSFEED_feed[SENSORSFEED_FEEDID_TANK] = interpolate_adc(
+				SYSTEM_config.SENSORS_TANK_MIN,
+				SYSTEM_config.SENSORS_TANK_MAX,
+				state.adc_value);
 		break;
 		case ADC_CHANNEL_EGT:
+			if(SYSTEM_config.SENSORS_EGT_INTERNAL)
+				break;
+
+			if(state.adc_value == 0 || state.adc_value >= ADC_MAX)
+			{
+				SENSORSFEED_EGT_status = SENSORSFEED_EGT_STATUS_UNKN;
+				SENSORSFEED_feed[SENSORSFEED_FEEDID_EGT] = 0;
+			}
+			else
+			{
+				SENSORSFEED_EGT_status = SENSORSFEED_EGT_STATUS_VALUE;
+				SENSORSFEED_feed[SENSORSFEED_FEEDID_EGT] = state.adc_value;
+			}
 		break;
 	}
+}
+
+static void update_egt_feed()
+{
+	if(SYSTEM_config.SENSORS_EGT_INTERNAL)
+		update_EGT();
+	else
+		calculate_adc(ADC_CHANNEL_EGT);
 }
 
 static void copy_countersfeed()
@@ -162,7 +224,7 @@ void SENSORSFEED_update()
 		break;
 		case 3:
 			calculate_adc(ADC_CHANNEL_TANK);
-			update_EGT();
+			update_egt_feed();
 		break;
 		case 4:
 			update_ADC();/*Give it some time as it's not atomic*/
@@ -181,7 +243,7 @@ void SENSORSFEED_update()
 		break;
 		case 7:
 			calculate_adc(ADC_CHANNEL_TANK);
-			update_EGT();
+			update_egt_feed();
 		break;
 	}
 }
@@ -214,28 +276,28 @@ void SENSORSFEED_initialize()
 	speed_max = 0xffff/speedmodifier;
 
 	ADC_init();
-	EGT_init();
-	SENSORSFEED_EGT_CONVERSION;
+	if(SYSTEM_config.SENSORS_EGT_INTERNAL)
+	{
+		EGT_init();
+		SENSORSFEED_EGT_CONVERSION;
+	}
 }
 
-ISR(ADC_vect)
+void SENSORSFEED_push_adc_value()
 {	
-	uint8_t channel = ADCMULTIPLEXER;
+	uint8_t channel = ADC_get_current_channel();
 	int16_t value = ADC;
-	if(value == ADC_MAX)
-		value = ADC_BAD_VALUE;
 
-	ADC_state[channel].adc_value = value;
+	set_ADC_channel_value(channel,value);
 	/* Clear multiplexer if we reach currently supported channels. */
 	if(channel == ADC_CHANNEL_COUNT-1)
 	{
-		CLEAR(ADMUX,0x0f);
+		ADC_clear_multiplexer();
 		return;
 	}
 	/* Increase whole ADMUX, so we can read next channel. Safe for 8 channels. */
-	ADMUX++;
-	ADCSTART;
-
+	ADC_increase_multiplexer();
+	ADC_start_conversion();
 }
 
 EGT_ISR

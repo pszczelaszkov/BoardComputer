@@ -3,7 +3,7 @@
 #include "timer.h"
 #include "../USART.h"
 #include "../system.h"
-
+#include "programdata.h"
 typedef enum INPUTCOMPONENTID
 {
 	INPUTCOMPONENT_NONE = 0,
@@ -12,7 +12,12 @@ typedef enum INPUTCOMPONENTID
 	INPUTCOMPONENT_WATCHSEL = 5,
 	INPUTCOMPONENT_CONFIG = 6,
 }InputComponentID_t;
-
+typedef enum FMS_IMAGE
+{
+	FMS_IMAGE_THRESHOLD_0 = 33,
+	FMS_IMAGE_THRESHOLD_1 = 34,
+	FMS_IMAGE_THRESHOLD_2 = 35,
+}FMS_image_t;
 TESTUSE typedef enum VISUALALERTSEVERITY
 {
 	VISUALALERT_SEVERITY_NONE,
@@ -44,7 +49,8 @@ typedef struct Visualalert
 static const uint8_t MAX_VISUALALERT_SEND_IN_ONE_STEP = 2;//Limit to prevent communication buffer full.
 
 static const uint8_t visualalert_duration = 8*2; //2 seconds
-static const int16_t fuelmanifold_threshold = 2 << 8; //2 Bar
+static int16_t fuelmanifold_threshold;
+
 static const uint16_t MD_MAX_VALUE = 0x63e7; //99.9
 
 static void renderer_md_lph();
@@ -344,6 +350,25 @@ static void update_EGT()
 	}
 }
 
+static void initialize_FMS()
+{
+	NEXTION_INSTRUCTION_BUFFER_BLOCK(3)
+	NEXTION_instruction_compose("fms","pic",instruction);
+	switch(SYSTEM_config.BOARD_DELTA_THRESHOLD)
+	{
+		case 1:
+			i16toa(FMS_IMAGE_THRESHOLD_1,payload);
+		break;
+		case 2:
+			i16toa(FMS_IMAGE_THRESHOLD_2,payload);
+		break;
+		default:
+			i16toa(FMS_IMAGE_THRESHOLD_0,payload);
+		break;
+	}
+	NEXTION_send(instruction,USART_HOLD);
+}
+
 static void update_sensorgroup_bottom()
 {
 	NEXTION_INSTRUCTION_BUFFER_BLOCK(5)
@@ -351,13 +376,13 @@ static void update_sensorgroup_bottom()
 	NEXTION_quote_payloadbuffer(payload,payload_length);
 
 	const uint8_t num_of_digits = 3;
-	int16_t out_temp = SENSORSFEED_feed[SENSORSFEED_FEEDID_OUTTEMP];
-	int16_t int_temp = SENSORSFEED_feed[SENSORSFEED_FEEDID_INTAKETEMP];
-	int16_t oil_temp = SENSORSFEED_feed[SENSORSFEED_FEEDID_OILTEMP];
+	uint16_t out_temp = SENSORSFEED_feed[SENSORSFEED_FEEDID_OUTTEMP];
+	uint16_t int_temp = SENSORSFEED_feed[SENSORSFEED_FEEDID_INTAKETEMP];
+	uint16_t oil_temp = SENSORSFEED_feed[SENSORSFEED_FEEDID_OILTEMP];
 
-	if(out_temp)
+	if(PROGRAMDATA_BAD_VAL != out_temp)
 	{
-		rightconcat_short(&payload[1],out_temp, num_of_digits);
+		rightconcat_short(&payload[1],(int16_t)out_temp, num_of_digits);
 	}
 	else
 	{
@@ -368,9 +393,9 @@ static void update_sensorgroup_bottom()
 	memset(&payload[1],' ',num_of_digits);
 
 	memcpy(buffer,"int",3);
-	if(int_temp)
+	if(PROGRAMDATA_BAD_VAL != int_temp)
 	{
-		rightconcat_short(&payload[1],int_temp,num_of_digits);
+		rightconcat_short(&payload[1],(int16_t)int_temp,num_of_digits);
 	}
 	else
 	{
@@ -381,9 +406,9 @@ static void update_sensorgroup_bottom()
 	memset(&payload[1],' ', num_of_digits);
 
 	memcpy(buffer,"oil", 3);
-	if(oil_temp)
+	if(PROGRAMDATA_BAD_VAL != oil_temp)
 	{
-		rightconcat_short(&payload[1],oil_temp, num_of_digits);
+		rightconcat_short(&payload[1],(int16_t)oil_temp, num_of_digits);
 	}
 	else
 	{
@@ -395,45 +420,36 @@ static void update_sensorgroup_bottom()
 
 static void update_sensorgroup_pressure()
 {
-	NEXTION_INSTRUCTION_BUFFER_BLOCK(7)
-	NEXTION_instruction_compose("map","txt",instruction);
-	NEXTION_quote_payloadbuffer(payload,payload_length);
+	NEXTION_INSTRUCTION_BUFFER_BLOCK(6)
+	NEXTION_instruction_compose("map","val",instruction);
 
 	int16_t manifoldpressure = SENSORSFEED_feed[SENSORSFEED_FEEDID_MAP];
 	int16_t fuelrailpressure = SENSORSFEED_feed[SENSORSFEED_FEEDID_FRP];
 
-	if(manifoldpressure)
-	{
-		fp16toa(manifoldpressure,&payload[1],2,2);
-	}
-	else
+	if(SENSORSFEED_ADC_BAD_VALUE == (uint16_t)manifoldpressure)
 	{
 		raisevisualalert(VISUALALERTID_MAP,VISUALALERT_SEVERITY_BADVALUE);
-		memset(&payload[1], '-', 5);
+		manifoldpressure = 0;
 	}
+	i16toa(manifoldpressure,payload);
+
 	NEXTION_send(buffer,USART_HOLD);
-	memset(&payload[1],' ',payload_length-2);
+	memset(payload,' ',payload_length);
 	memcpy(buffer,"frp",3);
 	///
-	if(fuelrailpressure)
-	{
-		fp16toa(fuelrailpressure,&payload[1],2,2);
-	}
-	else
+	if(SENSORSFEED_ADC_BAD_VALUE == (uint16_t)fuelrailpressure)
 	{
 		raisevisualalert(VISUALALERTID_FRP,VISUALALERT_SEVERITY_BADVALUE);
-		memset(&payload[1], '-', 5);
+		fuelrailpressure = 0;
 	}
+	i16toa(fuelrailpressure,payload);
 	NEXTION_send(buffer,USART_HOLD);
 	memset(payload,' ',payload_length);
 	NEXTION_instruction_compose("fmd","val",instruction);
-	///
-	int16_t deltapressure = MIN(MAX(0, fuelrailpressure - manifoldpressure - fuelmanifold_threshold),0x100);
-	//Delta has resolution of 1Bar, only fraction part is used
-	//Multiply by 100 to shift 2 fraction positions into integer part
-	//Then unpack value with a 8 times shift
-	deltapressure = deltapressure * 100 >> 8;
-	i16toa(deltapressure, payload);+
+	/// 
+	int16_t deltapressure = CLAMP(0, fuelrailpressure - manifoldpressure - fuelmanifold_threshold,100);
+	//Delta has resolution of 1Bar(100kPa) which covers progress bar range 0-100.
+	i16toa(deltapressure, payload);
 	
 	NEXTION_send(buffer,USART_HOLD);
 }
@@ -516,7 +532,9 @@ static void switch_maindisplay()
 
 inline static void setup()
 {
-	SENSORSFEED_update();
+	/* In case config has changed, recalculate every page switch */
+	fuelmanifold_threshold = SYSTEM_config.BOARD_DELTA_THRESHOLD * 100;
+	initialize_FMS();
 }
 
 inline static void handle_userinput(INPUT_Event* input_event)
