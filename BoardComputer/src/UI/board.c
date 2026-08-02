@@ -216,6 +216,10 @@ static void raisevisualalert(Visualalertid_t alertid, Visualalertseverity_t seve
 	{
 		/* Prematurely disable alert */
 		visualalert->counter = 0;
+		/* sent flag needs to be cleaned in case new raisealert slip between this
+		 and visual alert update which will refresh counter and desync alert HMI logic.
+		*/
+		visualalert->alert_sent = 0;
 	}
 }
 
@@ -633,6 +637,9 @@ void UIBOARD_page_control(NEXTION_page_control_t pagecontrol, void* data)
 	{
 		case NEXTION_PAGECONTROL_SETUP:
 			setup();
+		break;
+		case NEXTION_PAGECONTROL_EXIT:
+			resetvisualalerts();
 		break;
 		case NEXTION_PAGECONTROL_UPDATE:
 			update();
