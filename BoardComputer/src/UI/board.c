@@ -12,12 +12,7 @@ typedef enum INPUTCOMPONENTID
 	INPUTCOMPONENT_WATCHSEL = 5,
 	INPUTCOMPONENT_CONFIG = 6,
 }InputComponentID_t;
-typedef enum FMS_IMAGE
-{
-	FMS_IMAGE_THRESHOLD_0 = 33,
-	FMS_IMAGE_THRESHOLD_1 = 34,
-	FMS_IMAGE_THRESHOLD_2 = 35,
-}FMS_image_t;
+
 TESTUSE typedef enum VISUALALERTSEVERITY
 {
 	VISUALALERT_SEVERITY_NONE,
@@ -352,21 +347,10 @@ static void update_EGT()
 
 static void initialize_FMS()
 {
-	NEXTION_INSTRUCTION_BUFFER_BLOCK(3)
-	NEXTION_instruction_compose("fms","pic",instruction);
-	switch(SYSTEM_config.BOARD_DELTA_THRESHOLD)
-	{
-		case 1:
-			i16toa(FMS_IMAGE_THRESHOLD_1,payload);
-		break;
-		case 2:
-			i16toa(FMS_IMAGE_THRESHOLD_2,payload);
-		break;
-		default:
-			i16toa(FMS_IMAGE_THRESHOLD_0,payload);
-		break;
-	}
-	NEXTION_send(instruction,USART_HOLD);
+	NEXTION_INSTRUCTION_BUFFER_BLOCK(1)
+	NEXTION_instruction_compose("dt0","val",instruction);
+	payload[0] = '0' + (char)SYSTEM_config.BOARD_DELTA_THRESHOLD;
+	NEXTION_send(buffer,USART_HOLD);
 }
 
 static void update_sensorgroup_bottom()
@@ -447,7 +431,7 @@ static void update_sensorgroup_pressure()
 	memset(payload,' ',payload_length);
 	NEXTION_instruction_compose("fmd","val",instruction);
 	/// 
-	int16_t deltapressure = CLAMP(0, fuelrailpressure - manifoldpressure - fuelmanifold_threshold,100);
+	int16_t deltapressure = CLAMP(fuelrailpressure - manifoldpressure - fuelmanifold_threshold,0,100);
 	//Delta has resolution of 1Bar(100kPa) which covers progress bar range 0-100.
 	i16toa(deltapressure, payload);
 	

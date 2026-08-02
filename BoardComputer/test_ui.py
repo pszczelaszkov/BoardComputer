@@ -283,7 +283,7 @@ class TestBoardUI:
             (100, 100, 100),
         ],
     )
-    def test_uiboard_sensorgroup_bottom(self, oiltemp, intaketemp, outtemp):
+    def test_sensorgroup_bottom(self, oiltemp, intaketemp, outtemp):
         m.SENSORSFEED_feed[m.SENSORSFEED_FEEDID_OILTEMP] = oiltemp
         m.SENSORSFEED_feed[m.SENSORSFEED_FEEDID_INTAKETEMP] = intaketemp
         m.SENSORSFEED_feed[m.SENSORSFEED_FEEDID_OUTTEMP] = outtemp
@@ -301,32 +301,81 @@ class TestBoardUI:
         )
 
     @pytest.mark.parametrize(
-        "map, frp",
+        "map, frp, expected_map, expected_frp, map_alert, frp_alert",
         [
-            (0, 0),
-            (0, 250),
-            (250, 0),
-            (200, 0),
-            (0, 200),
-            (0, 299),
-            (299, 0),
-            (0, 99),
-            (-50, 0),
+            (0, 0, 0, 0, False, False),
+            (0, 250, 0, 250, False, False),
+            (250, 0, 250, 0, False, False),
+            (200, 0, 200, 0, False, False),
+            (0, 200, 0, 200, False, False),
+            (0, 299, 0, 299, False, False),
+            (299, 0, 299, 0, False, False),
+            (0, 99, 0, 99, False, False),
+            (-50, 0, -50, 0, False, False),
+            (0, -50, 0, -50, False, False),
+            (m.PROGRAMDATA_BAD_VAL, 100, 0, 100, m.VISUALALERT_SEVERITY_BADVALUE, False),
+            (100, m.PROGRAMDATA_BAD_VAL, 100, 0, False, m.VISUALALERT_SEVERITY_BADVALUE),
+            (
+                m.PROGRAMDATA_BAD_VAL,
+                m.PROGRAMDATA_BAD_VAL,
+                0,
+                0,
+                m.VISUALALERT_SEVERITY_BADVALUE,
+                m.VISUALALERT_SEVERITY_BADVALUE,
+            ),
         ],
     )
-    def test_uiboard_sensorgroup_pressure(self, map, frp):
-        threshold = 2
-        m.SYSTEM_config.BOARD_DELTA_THRESHOLD = threshold
-        m.UIBOARD_page_control(m.NEXTION_PAGECONTROL_SETUP,ffi.NULL)
+    def test_sensorgroup_pressure(
+        self, map, frp, expected_map, expected_frp, map_alert, frp_alert
+    ):
         m.SENSORSFEED_feed[m.SENSORSFEED_FEEDID_MAP] = ffi.cast("uint16_t", map)
         m.SENSORSFEED_feed[m.SENSORSFEED_FEEDID_FRP] = ffi.cast("uint16_t", frp)
-        deltapressure = min(max(0, frp - map - threshold*100), 100)
+        m.UIBOARD_update_sensorgroup_pressure()
+        m.UIBOARD_update_visual_alert()
+        output = read_nextion_output(m, ffi)
+        assert int(output["map.val"]) == expected_map
+        assert int(output["frp.val"]) == expected_frp
+        if map_alert:
+            assert int(output[f"al{m.VISUALALERTID_MAP}.val"]) == map_alert
+        else:
+            assert f"al{m.VISUALALERTID_MAP}.val" not in output
+        if frp_alert:
+            assert int(output[f"al{m.VISUALALERTID_FRP}.val"]) == frp_alert
+        else:
+            assert f"al{m.VISUALALERTID_FRP}.val" not in output
 
+    @pytest.mark.parametrize(
+        "threshold, map, frp",
+        [
+            (2, 0, 0),
+            (2, 0, 250),
+            (2, 250, 0),
+            (2, 200, 0),
+            (2, 0, 200),
+            (2, 0, 299),
+            (2, 299, 0),
+            (2, 0, 99),
+            (2, -50, 0),
+            (2, 0, -50),
+            (0, 0, 250),
+            (1, 0, 250),
+            (3, 0, 250),
+            (0, 0, 350),
+        ],
+    )
+    def test_pressure_delta(self, threshold, map, frp):
+        m.SYSTEM_config.BOARD_DELTA_THRESHOLD = threshold
+        m.UIBOARD_page_control(m.NEXTION_PAGECONTROL_SETUP, ffi.NULL)
+        output = read_nextion_output(m, ffi)
+        assert int(output["dt0.val"]) == threshold
+
+        m.SENSORSFEED_feed[m.SENSORSFEED_FEEDID_MAP] = ffi.cast("uint16_t", map)
+        m.SENSORSFEED_feed[m.SENSORSFEED_FEEDID_FRP] = ffi.cast("uint16_t", frp)
+        deltapressure = min(max(0, frp - map - threshold * 100), 100)
         m.UIBOARD_update_sensorgroup_pressure()
         output = read_nextion_output(m, ffi)
-        assert int(output["map.txt"]) == map
-        assert int(output["frp.txt"]) == frp
         assert int(output["fmd.val"]) == deltapressure
+
 
     @pytest.mark.parametrize(
         "watchtype,expectedstring",
@@ -335,7 +384,7 @@ class TestBoardUI:
             (m.TIMER_TIMERTYPE_STOPWATCH, "34:56:78"),
         ],
     )
-    def test_uiboard_watch(self, watchtype, expectedstring):
+    def test_watch(self, watchtype, expectedstring):
         fullwatchstring = b"12:34:56:78"
         m.TIMER_set_watch(watchtype)
         m.TIMER_active_watch_formated.c_str = fullwatchstring

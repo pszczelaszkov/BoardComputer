@@ -61,7 +61,7 @@ config = [
 
     {"category": "SENSORS", "name":"EGT_INTERNAL", "desc": "Use internal sensor for EGT. If disabled, use ADC channel(1-1022 C).", "validator": "ENTRY_VALIDATOR_BOOLEAN", "size": 1, "default": 1},
 
-    {"category": "BOARD", "name":"DELTA_THRESHOLD", "desc": "Set pressure threshold (Bar) for Fuel to Manifold pressure delta indicator.", "validator": "ENTRY_VALIDATOR_ENUM_2", "size": 1, "default": 0},
+    {"category": "BOARD", "name":"DELTA_THRESHOLD", "desc": "Set pressure threshold (Bar) for Fuel to Manifold pressure delta indicator.", "validator": "ENTRY_VALIDATOR_ENUM_3", "size": 1, "default": 0},
 ]
 
 
