@@ -2,6 +2,8 @@
 #include <avr/interrupt.h>
 #include <avr/sleep.h>
 #include "system_interface.h"
+#include "system.h"
+#define EVENT_TIMER_ISR ISR(TIMER2_COMPA_vect)
 
 int8_t SYSTEMINTERFACE_is_board_enabled()
 {
@@ -33,4 +35,13 @@ void SYSTEMINTERFACE_start_system_clock()
 void SYSTEMINTERFACE_sleep()
 {
     sleep_cpu();
+}
+
+EVENT_TIMER_ISR
+{	
+    if(++SYSTEM_event_timer > 7)
+    {
+        SYSTEM_event_timer = 0;
+    }	
+    SYSTEM_exec = 1;
 }

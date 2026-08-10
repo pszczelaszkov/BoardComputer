@@ -13,6 +13,8 @@
 #include "system_interface.h"
 #include "USART.h"
 #include "sensorsfeed.h"
+#include "countersfeed.h"
+#include "average.h"
 #include "timer.h"
 #include "nextion.h"
 #include "input.h"
@@ -20,6 +22,7 @@
 #include "config.h"
 #include "persistent_memory.h"
 #include "serial.h"
+#include "counters.h"
 
 void post_irq_core()
 {
@@ -37,6 +40,7 @@ void core()
 	{
 		INPUT_update();
 		INPUT_handle();
+		COUNTERSFEED_update();
 		SENSORSFEED_update();
 		NEXTION_update();
 	}
@@ -48,6 +52,7 @@ void core()
 ENTRY_ROUTINE
 {
 	SYSTEM_initialize();
+	COUNTERSFEED_initialize();
 	SENSORSFEED_initialize();
 	TIMER_initialize();
 	INPUT_initialize();

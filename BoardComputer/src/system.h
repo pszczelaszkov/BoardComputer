@@ -10,7 +10,6 @@
 #include "config.h"
 #include "system_interface.h"
 
-#define EVENT_TIMER_ISR ISR(TIMER2_COMPA_vect)
 TESTUSE typedef uint8_t SYSTEM_cycle_timestamp_t;
 TESTUSE typedef uint16_t ALERT_PATTERN;
 
@@ -64,7 +63,4 @@ TESTUSE extern volatile uint8_t SYSTEM_exec;
 TESTUSE extern volatile uint8_t SYSTEM_event_timer;//Represent fraction of second in values from 0 to 7.
 TESTUSE extern void SYSTEM_initialize();
 TESTUSE void SYSTEM_update();
-#ifndef __AVR__
-EVENT_TIMER_ISR;
-#endif
 #endif

@@ -1,5 +1,6 @@
 #include "board.h"
 #include "../sensorsfeed.h"
+#include "../countersfeed.h"
 #include "timer.h"
 #include "../USART.h"
 #include "../system.h"
@@ -237,8 +238,8 @@ static void renderer_md_lph()
 	NEXTION_instruction_compose("mdv","txt",instruction);
 	NEXTION_quote_payloadbuffer(payload,payload_length);
 
-	uint16_t speed = SENSORSFEED_feed[SENSORSFEED_FEEDID_SPEED];
-	uint16_t lph = SENSORSFEED_feed[SENSORSFEED_FEEDID_LPH];
+	uint16_t speed = COUNTERSFEED_feed[COUNTERSFEED_FEEDID_SPEED_KPH];
+	uint16_t lph = COUNTERSFEED_feed[COUNTERSFEED_FEEDID_LPH];
 
 	if(speed)
 		UIBOARD_maindisplay_activecomponent = &UIBOARD_maindisplay_components[UIBOARD_MD_LP100];
@@ -254,8 +255,8 @@ static void renderer_md_lp100()
 	NEXTION_instruction_compose("mdv","txt",instruction);
 	NEXTION_quote_payloadbuffer(payload,payload_length);
 
-	uint16_t lp100 = SENSORSFEED_feed[SENSORSFEED_FEEDID_LP100];
-	uint16_t speed = SENSORSFEED_feed[SENSORSFEED_FEEDID_SPEED];
+	uint16_t lp100 = COUNTERSFEED_feed[COUNTERSFEED_FEEDID_LP100];
+	uint16_t speed = COUNTERSFEED_feed[COUNTERSFEED_FEEDID_SPEED_KPH];
 
 	if(!speed)
 	{
@@ -272,7 +273,7 @@ static void renderer_md_lp100_avg()
 	NEXTION_INSTRUCTION_BUFFER_BLOCK(6)
 	NEXTION_instruction_compose("mdv","txt",instruction);
 	NEXTION_quote_payloadbuffer(payload,payload_length);
-	uint16_t lp100 = SENSORSFEED_feed[SENSORSFEED_FEEDID_LP100_AVG];
+	uint16_t lp100 = COUNTERSFEED_feed[COUNTERSFEED_FEEDID_LP100_AVG];
 
 	lp100 = MIN(lp100,MD_MAX_VALUE);
 	fp16toa(lp100,&buffer[9],2,1);
@@ -285,7 +286,7 @@ static void renderer_md_speed_avg()
 	NEXTION_INSTRUCTION_BUFFER_BLOCK(6)
 	NEXTION_instruction_compose("mdv","txt",instruction);
 	NEXTION_quote_payloadbuffer(payload,payload_length);
-	uint16_t speed = SENSORSFEED_feed[SENSORSFEED_FEEDID_SPEED_AVG] >> 8;
+	uint16_t speed = COUNTERSFEED_feed[COUNTERSFEED_FEEDID_SPEED_AVG] >> 8;
 	rightconcat_short(&payload[1], speed, 4);
 	NEXTION_send(buffer, USART_HOLD);
 }
@@ -297,7 +298,7 @@ static void renderer_md_inj_t()
 	NEXTION_INSTRUCTION_BUFFER_BLOCK(6)
 	NEXTION_instruction_compose("mdv","txt",instruction);
 	NEXTION_quote_payloadbuffer(payload,payload_length);
-	uint16_t fuel_time = SENSORSFEED_feed[SENSORSFEED_FEEDID_INJT];
+	uint16_t fuel_time = COUNTERSFEED_feed[COUNTERSFEED_FEEDID_INJT_MS];
 
 	fuel_time = MIN(fuel_time,MD_MAX_VALUE);
 	fp16toa(fuel_time,&buffer[9],2,1);
@@ -312,7 +313,7 @@ static void renderer_md_range()
 	NEXTION_instruction_compose("mdv","txt",instruction);
 	NEXTION_quote_payloadbuffer(payload,payload_length);
 	uint8_t tank = SENSORSFEED_feed[SENSORSFEED_FEEDID_TANK];
-	uint8_t lp100 = SENSORSFEED_feed[SENSORSFEED_FEEDID_LP100_AVG] >> 8;
+	uint8_t lp100 = COUNTERSFEED_feed[COUNTERSFEED_FEEDID_LP100_AVG] >> 8;
 	uint16_t range = 0;
 
 	if(lp100)

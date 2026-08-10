@@ -35,184 +35,201 @@ class TestBoardUI:
         m.USART_TX_clear()
 
     @pytest.mark.parametrize(
-        "component,inputdata,expectedstring",
+        "component,countersdata,sensorsdata,expectedstring",
         [
             (
                 m.UIBOARD_MD_LPH,
-                {m.SENSORSFEED_FEEDID_LPH: 100 << 8},
+                {m.COUNTERSFEED_FEEDID_LPH: 100 << 8},
+                {},
                 "99.9",
             ),
             (
                 m.UIBOARD_MD_LPH,
-                {m.SENSORSFEED_FEEDID_LPH: 10 << 8},
+                {m.COUNTERSFEED_FEEDID_LPH: 10 << 8},
+                {},
                 "10.0",
             ),
             (
                 m.UIBOARD_MD_LPH,
-                {m.SENSORSFEED_FEEDID_LPH: 1 << 8},
+                {m.COUNTERSFEED_FEEDID_LPH: 1 << 8},
+                {},
                 " 1.0",
             ),
             (
                 m.UIBOARD_MD_LPH,
-                {m.SENSORSFEED_FEEDID_LPH: 0},
+                {m.COUNTERSFEED_FEEDID_LPH: 0},
+                {},
                 " 0.0",
             ),
             (
                 m.UIBOARD_MD_LPH,
-                {m.SENSORSFEED_FEEDID_LPH: 129},
+                {m.COUNTERSFEED_FEEDID_LPH: 129},
+                {},
                 " 0.5",
             ),
             (
                 m.UIBOARD_MD_LPH,
-                {m.SENSORSFEED_FEEDID_LPH: 255},
+                {m.COUNTERSFEED_FEEDID_LPH: 255},
+                {},
                 " 0.9",
             ),
             (
                 m.UIBOARD_MD_LP100,
                 {
-                    m.SENSORSFEED_FEEDID_LP100: 100 << 8,
-                    m.SENSORSFEED_FEEDID_SPEED: True,
+                    m.COUNTERSFEED_FEEDID_LP100: 100 << 8,
+                    m.COUNTERSFEED_FEEDID_SPEED_KPH: True,
                 },
+                {},
                 "99.9",
             ),
             (
                 m.UIBOARD_MD_LP100,
                 {
-                    m.SENSORSFEED_FEEDID_LP100: 10 << 8,
-                    m.SENSORSFEED_FEEDID_SPEED: True,
+                    m.COUNTERSFEED_FEEDID_LP100: 10 << 8,
+                    m.COUNTERSFEED_FEEDID_SPEED_KPH: True,
                 },
+                {},
                 "10.0",
             ),
             (
                 m.UIBOARD_MD_LP100,
                 {
-                    m.SENSORSFEED_FEEDID_LP100: 1 << 8,
-                    m.SENSORSFEED_FEEDID_SPEED: True,
+                    m.COUNTERSFEED_FEEDID_LP100: 1 << 8,
+                    m.COUNTERSFEED_FEEDID_SPEED_KPH: True,
                 },
+                {},
                 " 1.0",
             ),
             (
                 m.UIBOARD_MD_LP100,
                 {
-                    m.SENSORSFEED_FEEDID_LP100: 0,
-                    m.SENSORSFEED_FEEDID_SPEED: True,
+                    m.COUNTERSFEED_FEEDID_LP100: 0,
+                    m.COUNTERSFEED_FEEDID_SPEED_KPH: True,
                 },
+                {},
                 " 0.0",
             ),
             (
                 m.UIBOARD_MD_LP100,
                 {
-                    m.SENSORSFEED_FEEDID_LP100: 129,
-                    m.SENSORSFEED_FEEDID_SPEED: True,
+                    m.COUNTERSFEED_FEEDID_LP100: 129,
+                    m.COUNTERSFEED_FEEDID_SPEED_KPH: True,
                 },
+                {},
                 " 0.5",
             ),
             (
                 m.UIBOARD_MD_LP100,
                 {
-                    m.SENSORSFEED_FEEDID_LP100: 255,
-                    m.SENSORSFEED_FEEDID_SPEED: True,
+                    m.COUNTERSFEED_FEEDID_LP100: 255,
+                    m.COUNTERSFEED_FEEDID_SPEED_KPH: True,
                 },
+                {},
                 " 0.9",
             ),
             (
                 m.UIBOARD_MD_LP100_AVG,
-                {m.SENSORSFEED_FEEDID_LP100_AVG: 100 << 8},
+                {m.COUNTERSFEED_FEEDID_LP100_AVG: 100 << 8},
+                {},
                 "99.9",
             ),
             (
                 m.UIBOARD_MD_LP100_AVG,
-                {m.SENSORSFEED_FEEDID_LP100_AVG: 10 << 8},
+                {m.COUNTERSFEED_FEEDID_LP100_AVG: 10 << 8},
+                {},
                 "10.0",
             ),
             (
                 m.UIBOARD_MD_LP100_AVG,
-                {m.SENSORSFEED_FEEDID_LP100_AVG: 1 << 8},
+                {m.COUNTERSFEED_FEEDID_LP100_AVG: 1 << 8},
+                {},
                 " 1.0",
             ),
             (
                 m.UIBOARD_MD_LP100_AVG,
-                {m.SENSORSFEED_FEEDID_LP100_AVG: 0},
+                {m.COUNTERSFEED_FEEDID_LP100_AVG: 0},
+                {},
                 " 0.0",
             ),
             (
                 m.UIBOARD_MD_LP100_AVG,
-                {m.SENSORSFEED_FEEDID_LP100_AVG: 129},
+                {m.COUNTERSFEED_FEEDID_LP100_AVG: 129},
+                {},
                 " 0.5",
             ),
             (
                 m.UIBOARD_MD_LP100_AVG,
-                {m.SENSORSFEED_FEEDID_LP100_AVG: 255},
+                {m.COUNTERSFEED_FEEDID_LP100_AVG: 255},
+                {},
                 " 0.9",
             ),
             (
                 m.UIBOARD_MD_SPEED_AVG,
-                {m.SENSORSFEED_FEEDID_SPEED_AVG: 255 << 8},
+                {m.COUNTERSFEED_FEEDID_SPEED_AVG: 255 << 8},
+                {},
                 " 255",
             ),
             (
                 m.UIBOARD_MD_SPEED_AVG,
-                {m.SENSORSFEED_FEEDID_SPEED_AVG: 10 << 8},
+                {m.COUNTERSFEED_FEEDID_SPEED_AVG: 10 << 8},
+                {},
                 "  10",
             ),
             (
                 m.UIBOARD_MD_SPEED_AVG,
-                {m.SENSORSFEED_FEEDID_SPEED_AVG: 1 << 8},
+                {m.COUNTERSFEED_FEEDID_SPEED_AVG: 1 << 8},
+                {},
                 "   1",
             ),
             (
                 m.UIBOARD_MD_SPEED_AVG,
-                {m.SENSORSFEED_FEEDID_SPEED_AVG: 0},
+                {m.COUNTERSFEED_FEEDID_SPEED_AVG: 0},
+                {},
                 "   0",
             ),
             (
                 m.UIBOARD_MD_SPEED_AVG,
-                {m.SENSORSFEED_FEEDID_SPEED_AVG: 255},
+                {m.COUNTERSFEED_FEEDID_SPEED_AVG: 255},
+                {},
                 "   0",
             ),
-            (m.UIBOARD_MD_INJ_T, {m.SENSORSFEED_FEEDID_INJT: 101 << 8}, "99.9"),
-            (m.UIBOARD_MD_INJ_T, {m.SENSORSFEED_FEEDID_INJT: 10 << 8}, "10.0"),
-            (m.UIBOARD_MD_INJ_T, {m.SENSORSFEED_FEEDID_INJT: 129}, " 0.5"),
-            (m.UIBOARD_MD_INJ_T, {m.SENSORSFEED_FEEDID_INJT: 255}, " 0.9"),
+            (m.UIBOARD_MD_INJ_T, {m.COUNTERSFEED_FEEDID_INJT_MS: 101 << 8}, {}, "99.9"),
+            (m.UIBOARD_MD_INJ_T, {m.COUNTERSFEED_FEEDID_INJT_MS: 10 << 8}, {}, "10.0"),
+            (m.UIBOARD_MD_INJ_T, {m.COUNTERSFEED_FEEDID_INJT_MS: 129}, {}, " 0.5"),
+            (m.UIBOARD_MD_INJ_T, {m.COUNTERSFEED_FEEDID_INJT_MS: 255}, {}, " 0.9"),
             (
                 m.UIBOARD_MD_RANGE,
-                {
-                    m.SENSORSFEED_FEEDID_LP100_AVG: 50 << 8,
-                    m.SENSORSFEED_FEEDID_TANK: 50,
-                },
+                {m.COUNTERSFEED_FEEDID_LP100_AVG: 50 << 8},
+                {m.SENSORSFEED_FEEDID_TANK: 50},
                 " 100",
             ),
             (
                 m.UIBOARD_MD_RANGE,
-                {
-                    m.SENSORSFEED_FEEDID_LP100_AVG: 1 << 8,
-                    m.SENSORSFEED_FEEDID_TANK: 100,
-                },
+                {m.COUNTERSFEED_FEEDID_LP100_AVG: 1 << 8},
+                {m.SENSORSFEED_FEEDID_TANK: 100},
                 "9999",
             ),
             (
                 m.UIBOARD_MD_RANGE,
-                {
-                    m.SENSORSFEED_FEEDID_LP100_AVG: 0,
-                    m.SENSORSFEED_FEEDID_TANK: 50,
-                },
+                {m.COUNTERSFEED_FEEDID_LP100_AVG: 0},
+                {m.SENSORSFEED_FEEDID_TANK: 50},
                 "   0",
             ),
             (
                 m.UIBOARD_MD_RANGE,
-                {
-                    m.SENSORSFEED_FEEDID_LP100_AVG: 10,
-                    m.SENSORSFEED_FEEDID_TANK: 0,
-                },
+                {m.COUNTERSFEED_FEEDID_LP100_AVG: 10},
+                {m.SENSORSFEED_FEEDID_TANK: 0},
                 "   0",
             ),
         ],
     )
-    def test_maindisplay(self, component, inputdata, expectedstring):
-        component = m.UIBOARD_maindisplay_components[component]
-        for key, value in inputdata.items():
+    def test_maindisplay(self, component, countersdata, sensorsdata, expectedstring):
+        nextion_component = m.UIBOARD_maindisplay_components[component]
+        for key, value in countersdata.items():
+            m.COUNTERSFEED_feed[key] = value
+        for key, value in sensorsdata.items():
             m.SENSORSFEED_feed[key] = value
-        component.executable_component.execute()
+        nextion_component.executable_component.execute()
         output = read_nextion_output(m,ffi)
         assert output["mdv.txt"] == f'"{expectedstring}"'
 

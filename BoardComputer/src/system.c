@@ -1,4 +1,5 @@
 #include "system.h"
+#include "counters.h"
 #include "countersfeed.h"
 #include "nextion.h"
 #include "system_interface.h"
@@ -94,6 +95,7 @@ void SYSTEM_resetalert()
 void SYSTEM_initialize()
 {
     SYSTEMINTERFACE_initialize_IO();
+    COUNTERS_init();
     CONFIG_loadconfig(&SYSTEM_config);
     /*
         Check Config version compatibility.
@@ -186,20 +188,5 @@ void SYSTEM_update()
         {
             SYSTEMINTERFACE_beeper_off();
         }
-    }
-}
-
-EVENT_TIMER_ISR
-{	
-    SYSTEM_event_timer++;	
-    SYSTEM_exec = 1;
-    switch(SYSTEM_event_timer)
-    {
-        case 7:
-			COUNTERSFEED_feed[COUNTERSFEED_FEEDID_FUELPS] = COUNTERSFEED_feed[COUNTERSFEED_FEEDID_FUEL];
-            COUNTERSFEED_feed[COUNTERSFEED_FEEDID_FUEL] = 0;
-            SYSTEM_event_timer = 0;
-			return;
-        break;
     }
 }

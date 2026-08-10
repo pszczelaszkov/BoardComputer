@@ -2,6 +2,7 @@
 #include <config.h>
 #include "nextion.h"
 #include "sensorsfeed.h"
+#include "countersfeed.h"
 #include "utils.h"
 #include "UI/numpad.h"
 
@@ -295,6 +296,7 @@ void UICONFIG_page_control(NEXTION_page_control_t pagecontrol, void* data)
                 SYSTEM_run = 0; // Stop device (WD will kick in).
             }
             CONFIG_saveconfig(&SYSTEM_config);
+            COUNTERSFEED_initialize();
             SENSORSFEED_initialize();
         break;
 		case NEXTION_PAGECONTROL_USERINPUT:

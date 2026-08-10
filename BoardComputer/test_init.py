@@ -11,7 +11,7 @@ def cast_void(ffi, variable):
 
 class testInit(unittest.TestCase):
     def test_countersfeed(self):
-        self.assertTrue(m.COUNTERSFEED_TICKSPERSECOND)
+        self.assertTrue(m.COUNTERS_FUELTICKSPERSECOND)
 
     def test_average(self):
         self.assertTrue(m.AVERAGE_BUFFERS_SIZE)

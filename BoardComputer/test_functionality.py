@@ -10,7 +10,6 @@ from helpers import (
     parse_nextion,
     read_nextion_output,
     ModuleWrapper,
-    generate_signal,
     exec_cycle,
 )
 
@@ -295,64 +294,117 @@ class TestPreRun(TestParent):
             m.AVERAGE_clear(0)
 
     @pytest.mark.parametrize(
-        "highlevel_time,lowlevel_time",
+        "fuel_value",
         [
-            (1, 5),
-            (5, 1),
-            (100, 200),
-            (1000, 100),
-            (20000, 20000),
-            (30000, 40000),
-            (65535, 200),
-            (200, 65535),
+            1,       # min non-zero; accumulator does not wrap
+            100,     # accumulator wraps (SAMPLES * value > 0xFFFF)
+            32768,   # injt_weight overflow (value * 2 wraps to 0)
+            65535,   # uint16 max
         ],
     )
-    def test_countersfeed_fuel_signal(self, highlevel_time, lowlevel_time):
+    def test_countersfeed_fuel_signal(self, fuel_value):
         SAMPLES = 1000
-        IRQ = m.PCINT0_vect
-        fuelindex = m.COUNTERSFEED_FEEDID_FUELPS
-        injtindex = m.COUNTERSFEED_FEEDID_INJT
-        injector_input = m.COUNTERSFEED_INPUT_INJECTOR
+        INJT_WEIGHT = 2  # (LOW_PRECISION_BASE/(TICKS/1000))/(LOW_PRECISION_BASE/0xff)
+        fuelindex = m.COUNTERSFEED_FEEDID_LPH
+        injtindex = m.COUNTERSFEED_FEEDID_INJT_MS
+        m.SYSTEM_config.SENSORS_INJECTORS_CCM = 250
+        m.COUNTERSFEED_initialize()
+        m.SYSTEM_event_timer = 0
         m.COUNTERSFEED_feed[fuelindex] = 0
         m.COUNTERSFEED_feed[injtindex] = 0
-        for rising_edge, falling_edge in generate_signal(
-            highlevel_time, lowlevel_time, SAMPLES
-        ):
-            m.TCNT1 = rising_edge & 0xFFFF
-            m.PINB = injector_input
-            IRQ()
-            m.TCNT1 = falling_edge & 0xFFFF
-            m.PINB = m.PINB ^ injector_input
-            IRQ()
-        assert m.COUNTERSFEED_feed[injtindex] == highlevel_time
-        assert m.COUNTERSFEED_feed[fuelindex] == 0
+        for _ in range(SAMPLES):
+            m.COUNTERSFEED_count_fuelusage(fuel_value)
+        raw_fuel = (fuel_value * SAMPLES) & 0xFFFF
+        m.COUNTERSFEED_update()
+        assert m.COUNTERSFEED_feed[injtindex] == (fuel_value * INJT_WEIGHT) & 0xFFFF
+        assert m.COUNTERSFEED_feed[fuelindex] == ((raw_fuel * m.fuelmodifier) >> 8) & 0xFFFF
 
     @pytest.mark.parametrize(
-        "highlevel_time,lowlevel_time",
+        "fuel_value",
         [
-            (1, 5),
-            (5, 1),
-            (100, 200),
-            (655, 655),
+            1,       # min non-zero; accumulator does not wrap
+            655,     # last value without uint16 wrap (SAMPLES * 655 = 65500)
+            65535,   # uint16 max; accumulator wraps
         ],
     )
-    def test_countersfeed_fuel(self, highlevel_time, lowlevel_time):
+    def test_countersfeed_fuel(self, fuel_value):
         SAMPLES = 100
-        IRQ = m.PCINT0_vect
-        fuelindex = m.COUNTERSFEED_FEEDID_FUEL
-        injector_input = m.COUNTERSFEED_INPUT_INJECTOR
-        total_time = highlevel_time * SAMPLES
+        fuelindex = m.COUNTERSFEED_FEEDID_LPH
+        total_time = (fuel_value * SAMPLES) & 0xFFFF
+        m.SYSTEM_config.SENSORS_INJECTORS_CCM = 250
+        m.COUNTERSFEED_initialize()
+        m.SYSTEM_event_timer = 0
         m.COUNTERSFEED_feed[fuelindex] = 0
-        for rising_edge, falling_edge in generate_signal(
-            highlevel_time, lowlevel_time, SAMPLES
-        ):
-            m.TCNT1 = rising_edge & 0xFFFF
-            m.PINB = injector_input
-            IRQ()
-            m.TCNT1 = falling_edge & 0xFFFF
-            m.PINB = m.PINB ^ injector_input
-            IRQ()
-        assert m.COUNTERSFEED_feed[fuelindex] == total_time
+        for _ in range(SAMPLES):
+            m.COUNTERSFEED_count_fuelusage(fuel_value)
+
+        m.COUNTERSFEED_update()
+        assert m.COUNTERSFEED_feed[fuelindex] == ((total_time * m.fuelmodifier) >> 8) & 0xFFFF
+        # After publish, fuelticks_per_second is cleared; next sample counts from zero.
+        m.COUNTERSFEED_count_fuelusage(fuel_value)
+        m.COUNTERSFEED_update()
+        assert m.COUNTERSFEED_feed[fuelindex] == ((fuel_value * m.fuelmodifier) >> 8) & 0xFFFF
+
+    def test_countersfeed_speed_publishes_once_per_second(self):
+        signal_per_100m = 10
+        pulses = 5  # must stay <= speed_max (0xffff / speedmodifier)
+        speedmodifier = (360 << 8) // signal_per_100m
+        expected_kph = (pulses * speedmodifier) & 0xFFFF
+
+        m.SYSTEM_config.SENSORS_SIGNAL_PER_100M = signal_per_100m
+        m.SYSTEM_config.SENSORS_INJECTORS_CCM = 250
+        m.COUNTERSFEED_initialize()
+        m.AVERAGE_clear(m.AVERAGE_BUFFER_SPEED)
+        m.AVERAGE_clear(m.AVERAGE_BUFFER_LP100)
+        m.COUNTERSFEED_feed[m.COUNTERSFEED_FEEDID_SPEED_KPH] = 0
+        m.COUNTERSFEED_feed[m.COUNTERSFEED_FEEDID_LP100] = 0
+
+        m.SYSTEM_event_timer = 1
+        m.COUNTERSFEED_count_speed(pulses)
+        m.COUNTERSFEED_update()
+        assert m.COUNTERSFEED_feed[m.COUNTERSFEED_FEEDID_SPEED_KPH] == 0
+
+        for timer in range(2, 8):
+            m.SYSTEM_event_timer = timer
+            m.COUNTERSFEED_update()
+            assert m.COUNTERSFEED_feed[m.COUNTERSFEED_FEEDID_SPEED_KPH] == 0
+
+        m.SYSTEM_event_timer = 0
+        m.COUNTERSFEED_update()
+        assert m.COUNTERSFEED_feed[m.COUNTERSFEED_FEEDID_SPEED_KPH] == expected_kph
+        assert m.COUNTERSFEED_feed[m.COUNTERSFEED_FEEDID_SPEED_AVG] == expected_kph
+
+    def test_countersfeed_lp100_from_lph_and_speed(self):
+        signal_per_100m = 10
+        pulses = 5  # must stay <= speed_max (0xffff / speedmodifier)
+        speedmodifier = (360 << 8) // signal_per_100m
+        expected_kph = (pulses * speedmodifier) & 0xFFFF
+        fuel_ticks = 1000
+
+        m.SYSTEM_config.SENSORS_SIGNAL_PER_100M = signal_per_100m
+        m.SYSTEM_config.SENSORS_INJECTORS_CCM = 250
+        m.COUNTERSFEED_initialize()
+        m.AVERAGE_clear(m.AVERAGE_BUFFER_SPEED)
+        m.AVERAGE_clear(m.AVERAGE_BUFFER_LP100)
+        m.COUNTERSFEED_feed[m.COUNTERSFEED_FEEDID_SPEED_KPH] = 0
+        m.COUNTERSFEED_feed[m.COUNTERSFEED_FEEDID_LPH] = 0
+
+        m.SYSTEM_event_timer = 1
+        m.COUNTERSFEED_count_speed(pulses)
+        m.COUNTERSFEED_count_fuelusage(fuel_ticks)
+        m.COUNTERSFEED_update()
+        assert m.COUNTERSFEED_feed[m.COUNTERSFEED_FEEDID_SPEED_KPH] == 0
+        assert m.COUNTERSFEED_feed[m.COUNTERSFEED_FEEDID_LPH] == 0
+
+        m.SYSTEM_event_timer = 0
+        m.COUNTERSFEED_update()
+        expected_lph = ((fuel_ticks * m.fuelmodifier) >> 8) & 0xFFFF
+        expected_lp100 = (expected_lph * (100 << 8) // expected_kph) & 0xFFFF
+        assert m.COUNTERSFEED_feed[m.COUNTERSFEED_FEEDID_LPH] == expected_lph
+        assert m.COUNTERSFEED_feed[m.COUNTERSFEED_FEEDID_SPEED_KPH] == expected_kph
+        assert m.COUNTERSFEED_feed[m.COUNTERSFEED_FEEDID_LP100] == expected_lp100
+        assert m.COUNTERSFEED_feed[m.COUNTERSFEED_FEEDID_LP100_AVG] == expected_lp100
+        assert m.COUNTERSFEED_feed[m.COUNTERSFEED_FEEDID_SPEED_AVG] == expected_kph
 
     def test_USART(self):
         write_usart(m, 0x01, b"PING")

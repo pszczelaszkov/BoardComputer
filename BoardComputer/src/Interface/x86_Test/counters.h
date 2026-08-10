@@ -1,0 +1,8 @@
+#ifndef __COUNTERS__
+#define __COUNTERS__
+
+#define COUNTERS_FUELTICKSPERSECOND 125000
+void COUNTERS_init(void);
+#define COUNTERS_ATOMIC_BLOCK
+
+#endif

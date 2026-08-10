@@ -27,11 +27,7 @@ const uint16_t SENSORSFEED_ADC_BAD_VALUE = PROGRAMDATA_BAD_VAL;
 
 TESTUSE static egt_transmission_status_t TESTADDPREFIX(EGT_transmission_status);
 static uint16_t max6675_data;
-static uint16_t speed_max;
-// calculated modifiers on init (weights);
-static uint16_t fuelmodifier;
-static uint16_t speedmodifier;
-static uint8_t injtmodifier;
+
 //
 static struct ADC_state{
 	uint16_t adc_value:10;
@@ -43,30 +39,6 @@ static struct ADC_state{
 };
 
 FP16_t SENSORSFEED_feed[SENSORSFEED_FEEDID_LAST];
-
-TESTUSE void TESTADDPREFIX(update_fuel)()
-{
-	uint16_t fuel_time = SENSORSFEED_feed[SENSORSFEED_FEEDID_FUELPS];
-	fuel_time = (uint32_t)(fuel_time * fuelmodifier) >> 8;
-	SENSORSFEED_feed[SENSORSFEED_FEEDID_LPH] = fuel_time;
-}
-
-TESTUSE static void TESTADDPREFIX(update_speed)()
-{
-	uint16_t lp100 = 0;
-	uint16_t liters = SENSORSFEED_feed[SENSORSFEED_FEEDID_LPH];
-	uint16_t speed = SENSORSFEED_feed[SENSORSFEED_FEEDID_SPEED];
-	if(speed > speed_max)
-		speed = speed_max;
-
-	speed = speed * speedmodifier;
-	if(speed)
-		lp100 = (uint32_t)(liters)*(100<<8)/speed;
-
-	SENSORSFEED_feed[SENSORSFEED_FEEDID_LP100] = lp100;
-	SENSORSFEED_feed[SENSORSFEED_FEEDID_SPEED_AVG] = AVERAGE_addvalue(AVERAGE_BUFFER_SPEED, speed);
-	SENSORSFEED_feed[SENSORSFEED_FEEDID_LP100_AVG] = AVERAGE_addvalue(AVERAGE_BUFFER_LP100, lp100);
-}
 
 TESTUSE static void TESTADDPREFIX(update_ADC)()
 {
@@ -190,27 +162,14 @@ static void update_egt_feed()
 		calculate_adc(ADC_CHANNEL_EGT);
 }
 
-static void copy_countersfeed()
-{
-	SENSORSFEED_ATOMIC_BLOCK
-	{
-		SENSORSFEED_feed[SENSORSFEED_FEEDID_FUELPS] = (uint16_t)COUNTERSFEED_feed[COUNTERSFEED_FEEDID_FUELPS];
-		SENSORSFEED_feed[SENSORSFEED_FEEDID_SPEED] = (uint16_t)COUNTERSFEED_feed[COUNTERSFEED_FEEDID_SPEED];
-		SENSORSFEED_feed[SENSORSFEED_FEEDID_INJT] = (uint16_t)COUNTERSFEED_feed[COUNTERSFEED_FEEDID_INJT] * injtmodifier;
-	}
-}
-
 void SENSORSFEED_update()
 {
 	uint8_t timer = SYSTEM_event_timer;
 
-	copy_countersfeed();
 	switch(timer)
 	{
 		case 0:
 			update_ADC();/*Give it some time as it's not atomic*/
-			update_fuel();
-			update_speed();
 		break;
 		case 1:
 			calculate_adc(ADC_CHANNEL_OILTEMP);
@@ -228,8 +187,6 @@ void SENSORSFEED_update()
 		break;
 		case 4:
 			update_ADC();/*Give it some time as it's not atomic*/
-			update_fuel();
-			update_speed();
 		break;
 		case 5:
 			calculate_adc(ADC_CHANNEL_OILTEMP);
@@ -250,31 +207,6 @@ void SENSORSFEED_update()
 
 void SENSORSFEED_initialize()
 {
-	//Note:
-	//ccm - cm^3/minute
-	//cch - cm^3/hour
-	//Fuel precision base is big int to omit use of floats.
-	//Calculate system ticks required for 1000ccm, knowing injector ccm
-	//Since minutes are base unit, after /60 as a result we have ticks for cch rather than ccm.
-	//First we obtain ticks required for 1 liter / h, then we changing form so it will be possible to multiplicate it later rather than divide.
-	//Last step is to obtain it in form of 16 bit fixed point value.
-	//Now to get liters we just need to multiplicate counted ticks by modifier and byte shift 16 times.
-	uint16_t fixed_base = SENSORSFEED_HIGH_PRECISION_BASE/0xffff;//16bit fixed point base.
-	uint16_t liter_ticks = (COUNTERSFEED_TICKSPERSECOND*1000/60)/SYSTEM_config.SENSORS_INJECTORS_CCM;//ticks for 1000cch
-	uint32_t fraction_representation = SENSORSFEED_HIGH_PRECISION_BASE/liter_ticks;//Represent as 1/value form
-	fuelmodifier = fraction_representation/fixed_base;//Get 16bit fixed point value
-
-	fixed_base = SENSORSFEED_LOW_PRECISION_BASE/0xff;//8bit fixed point base
-	fraction_representation = SENSORSFEED_LOW_PRECISION_BASE/(COUNTERSFEED_TICKSPERSECOND/1000);
-	injtmodifier = fraction_representation/fixed_base;
-
-	//Calculate ticks for 1km, which in short is 360/ticksp100
-	//Result is in fp 8+8.
-	//As an addition speed_max is limiter to protect from overflow during further processing.
-	uint32_t base_fp16 = 360U << 8;//reduced from 3600sec
-	speedmodifier = base_fp16/SYSTEM_config.SENSORS_SIGNAL_PER_100M;
-	speed_max = 0xffff/speedmodifier;
-
 	ADC_init();
 	if(SYSTEM_config.SENSORS_EGT_INTERNAL)
 	{
