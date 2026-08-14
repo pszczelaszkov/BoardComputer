@@ -298,16 +298,15 @@ class TestPreRun(TestParent):
         [
             1,       # min non-zero; accumulator does not wrap
             100,     # accumulator wraps (SAMPLES * value > 0xFFFF)
-            32768,   # injt_weight overflow (value * 2 wraps to 0)
+            32768,   # injt_weight overflow (value * weight >> 8 exceeds uint16)
             65535,   # uint16 max
         ],
     )
     def test_countersfeed_fuel_signal(self, fuel_value):
         SAMPLES = 1000
-        INJT_WEIGHT = 2  # (LOW_PRECISION_BASE/(TICKS/1000))/(LOW_PRECISION_BASE/0xff)
         fuelindex = m.COUNTERSFEED_FEEDID_LPH
         injtindex = m.COUNTERSFEED_FEEDID_INJT_MS
-        m.SYSTEM_config.SENSORS_INJECTORS_CCM = 250
+        m.SYSTEM_config.COUNTERS_INJECTORS_CCM = 250
         m.COUNTERSFEED_initialize()
         m.SYSTEM_event_timer = 0
         m.COUNTERSFEED_feed[fuelindex] = 0
@@ -316,7 +315,7 @@ class TestPreRun(TestParent):
             m.COUNTERSFEED_count_fuelusage(fuel_value)
         raw_fuel = (fuel_value * SAMPLES) & 0xFFFF
         m.COUNTERSFEED_update()
-        assert m.COUNTERSFEED_feed[injtindex] == (fuel_value * INJT_WEIGHT) & 0xFFFF
+        assert m.COUNTERSFEED_feed[injtindex] == ((fuel_value * m.injt_weight) >> 8) & 0xFFFF
         assert m.COUNTERSFEED_feed[fuelindex] == ((raw_fuel * m.fuelmodifier) >> 8) & 0xFFFF
 
     @pytest.mark.parametrize(
@@ -331,7 +330,7 @@ class TestPreRun(TestParent):
         SAMPLES = 100
         fuelindex = m.COUNTERSFEED_FEEDID_LPH
         total_time = (fuel_value * SAMPLES) & 0xFFFF
-        m.SYSTEM_config.SENSORS_INJECTORS_CCM = 250
+        m.SYSTEM_config.COUNTERS_INJECTORS_CCM = 250
         m.COUNTERSFEED_initialize()
         m.SYSTEM_event_timer = 0
         m.COUNTERSFEED_feed[fuelindex] = 0
@@ -351,8 +350,8 @@ class TestPreRun(TestParent):
         speedmodifier = (360 << 8) // signal_per_100m
         expected_kph = (pulses * speedmodifier) & 0xFFFF
 
-        m.SYSTEM_config.SENSORS_SIGNAL_PER_100M = signal_per_100m
-        m.SYSTEM_config.SENSORS_INJECTORS_CCM = 250
+        m.SYSTEM_config.COUNTERS_SIGNAL_PER_100M = signal_per_100m
+        m.SYSTEM_config.COUNTERS_INJECTORS_CCM = 250
         m.COUNTERSFEED_initialize()
         m.AVERAGE_clear(m.AVERAGE_BUFFER_SPEED)
         m.AVERAGE_clear(m.AVERAGE_BUFFER_LP100)
@@ -381,8 +380,8 @@ class TestPreRun(TestParent):
         expected_kph = (pulses * speedmodifier) & 0xFFFF
         fuel_ticks = 1000
 
-        m.SYSTEM_config.SENSORS_SIGNAL_PER_100M = signal_per_100m
-        m.SYSTEM_config.SENSORS_INJECTORS_CCM = 250
+        m.SYSTEM_config.COUNTERS_SIGNAL_PER_100M = signal_per_100m
+        m.SYSTEM_config.COUNTERS_INJECTORS_CCM = 250
         m.COUNTERSFEED_initialize()
         m.AVERAGE_clear(m.AVERAGE_BUFFER_SPEED)
         m.AVERAGE_clear(m.AVERAGE_BUFFER_LP100)

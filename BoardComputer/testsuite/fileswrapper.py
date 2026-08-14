@@ -148,7 +148,7 @@ def scan_for_definitions(path: str) -> ParsedData:
     '''
     macrodefinition = re.compile(r"#define \w* [\w* .\/]*\n")
     function = re.compile(r"(TESTUSE \w* ?\w+\** \w*\([\w,\[\]* &]*\))[\n;{]")
-    variable = re.compile(r"(TESTUSE ?\w* ?\w* \w+\** [^()\n=;]+)([ =\w]*);")
+    variable = re.compile(r"(TESTUSE ?\w* ?\w* \w+\** [^()\n=;]+)(\s*=[^;]*)?;")
     enumeration = re.compile(r"TESTUSE \w* ?enum \w+")
     struct = re.compile(r"TESTUSE \w* ?struct \w+")
     union = re.compile(r"TESTUSE \w* ?union \w+")
@@ -187,7 +187,7 @@ def scan_for_definitions(path: str) -> ParsedData:
                 data.macrodefinitions.update([macro])
             elif (variablematch := variable.search(line)) is not None:
                 data.variables.append(variablematch.groups()[0].replace(
-                    "TESTUSE ", '') + ";")
+                    "TESTUSE ", '').strip() + ";")
             elif (functionmatch := function.search(line)) is not None:
                 data.functions.append(functionmatch.groups()[0].replace(
                     "TESTUSE ", '') + ";")

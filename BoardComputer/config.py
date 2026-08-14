@@ -43,8 +43,8 @@ config = [
     {"category": "SYSTEM", "name":"ALWAYS_ON", "desc": "If enabled, ignore ignition signal.", "validator": "ENTRY_VALIDATOR_BOOLEAN", "size": 1, "default": 1},
     {"category": "SYSTEM", "name":"BEEP_ON_CLICK", "desc": "Enable if audible feedback is needed.", "validator": "ENTRY_VALIDATOR_BOOLEAN", "size": 1, "default": 0},
     {"category": "SYSTEM", "name":"BRIGHTNESS", "desc": "Display brightness.", "validator": "ENTRY_VALIDATOR_PERCENT", "size": 1, "default": 100},
-    {"category": "SENSORS", "name":"SIGNAL_PER_100M", "desc": "Enter how many signals wheel need for 100 Meter.", "validator": "ENTRY_VALIDATOR_POSITIVE_4DIGIT_EXCL_0", "size": 2, "default": 1},
-    {"category": "SENSORS", "name":"INJECTORS_CCM", "desc": "Enter injectors CCM value, remember to multiple if injectors fire in pairs.", "validator": "ENTRY_VALIDATOR_POSITIVE_4DIGIT_EXCL_0", "size": 2, "default": 1},
+    {"category": "COUNTERS", "name":"SIGNAL_PER_100M", "desc": "Enter how many signals wheel need for 100 Meter.", "validator": "ENTRY_VALIDATOR_POSITIVE_4DIGIT_EXCL_0", "size": 2, "default": 1},
+    {"category": "COUNTERS", "name":"INJECTORS_CCM", "desc": "Enter injectors CCM value, remember to multiple if injectors fire in pairs.", "validator": "ENTRY_VALIDATOR_POSITIVE_4DIGIT_EXCL_0", "size": 2, "default": 1},
 
     {"category": "SENSORS", "name":"OILTEMP_CAL", "desc": "Oil temperature ADC calibration offset.", "validator": "ENTRY_VALIDATOR_CALIBRATION_VALUE", "size": 1, "default": 0},
     {"category": "SENSORS", "name":"INTAKETEMP_CAL", "desc": "Intake temperature ADC calibration offset.", "validator": "ENTRY_VALIDATOR_CALIBRATION_VALUE", "size": 1, "default": 0},

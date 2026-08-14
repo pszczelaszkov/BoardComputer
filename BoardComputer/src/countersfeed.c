@@ -4,16 +4,28 @@
 #include "average.h"
 
 #define COUNTERSFEED_FEED_SIZE COUNTERSFEED_FEEDID_LAST
-#define LOW_PRECISION_BASE 100000
 #define HIGH_PRECISION_BASE 1000000000
-/*Multiply raw counter ticks value by this modifier to get fp16 8+8 injection time in ms*/
-const static uint8_t injt_weight = (LOW_PRECISION_BASE/(COUNTERS_FUELTICKSPERSECOND/1000))/(LOW_PRECISION_BASE/0xff);
+const uint16_t fixed_base = HIGH_PRECISION_BASE/0xffff;//16bit fixed point base.
+
+/*
+    Injection time: convert raw ticks to milliseconds in fp 8+8.
+
+                HIGH_PRECISION_BASE × 1000 ms/s
+    injt_frac = --------------------------------
+                            ticks/s
+
+    injt_weight = injt_frac / fixed_base  (≈ 0xffff × 1000 / ticks/s)
+
+    Example: 125000 ticks/s → injt_weight ≈ 524.
+    Then (ticks * injt_weight) >> 8 yields fp 8+8 milliseconds.
+*
+//* Multiply raw ticks by this value, then >> 8, to get fp16 8+8 injection time in ms. */
+TESTUSE const static uint16_t injt_weight = ((HIGH_PRECISION_BASE * 1000ULL) / COUNTERS_FUELTICKSPERSECOND)/ fixed_base;
 /* Multiply raw ticks by this value to get fp16 8+8 fuel amount in liters per hour. */
 TESTUSE static uint16_t fuelmodifier;
 /* Multiply raw pulses/s by this value to get fp16 8+8 speed in kph. */
 static uint16_t speedmodifier;
 static uint16_t speed_max;
-
 /*Public feed*/
 volatile uint16_t COUNTERSFEED_feed[COUNTERSFEED_FEED_SIZE];
 /*Internal feed for atomic operations*/
@@ -53,11 +65,10 @@ void COUNTERSFEED_initialize()
 
 		Keep the multiplication before division to preserve integer precision.
 	*/
-	const uint16_t fixed_base = HIGH_PRECISION_BASE/0xffff;//16bit fixed point base.
 
 	uint32_t ticks_per_lph =
 		(COUNTERS_FUELTICKSPERSECOND * 1000ULL) /
-		(60ULL * SYSTEM_config.SENSORS_INJECTORS_CCM);
+		(60ULL * SYSTEM_config.COUNTERS_INJECTORS_CCM);
 	/*
 		Last step is to obtain it in form of 16 bit fixed point value.
 		Now to get liters per hour we just need to multiplicate by fuelmodifier and byte shift 8(FP 8+8) times.
@@ -69,7 +80,7 @@ void COUNTERSFEED_initialize()
 	//Result is in fp 8+8.
 	//As an addition speed_max is limiter to protect from overflow during further processing.
 	uint32_t base_fp16 = 360U << 8;//reduced from 3600sec
-	speedmodifier = base_fp16/SYSTEM_config.SENSORS_SIGNAL_PER_100M;
+	speedmodifier = base_fp16/SYSTEM_config.COUNTERS_SIGNAL_PER_100M;
 	speed_max = 0xffff/speedmodifier;
 }
 
@@ -116,7 +127,8 @@ void COUNTERSFEED_update()
         COUNTERSFEED_feed[COUNTERSFEED_FEEDID_SPEED_AVG] = AVERAGE_addvalue(AVERAGE_BUFFER_SPEED, speed);
         COUNTERSFEED_feed[COUNTERSFEED_FEEDID_LP100_AVG] = AVERAGE_addvalue(AVERAGE_BUFFER_LP100, lp100);
     }
-    COUNTERSFEED_feed[COUNTERSFEED_FEEDID_INJT_MS] = temporary_injt * injt_weight;
+    COUNTERSFEED_feed[COUNTERSFEED_FEEDID_INJT_MS] =
+        (uint16_t)(((uint32_t)temporary_injt * injt_weight) >> 8);
 }
 
 void COUNTERSFEED_count_fuelusage(uint16_t amount)
