@@ -15,8 +15,9 @@ HW_1_AVR_IDIR := $(IDIR)Interface/HW_1_AVR/
 
 # Flags
 TESTDEFINES 	:= -DTESTUSE=
-STANDALONEFLAGS	:= -O1 -g $(TESTDEFINES)
-TESTFLAGS   	:= -O1 -fpic -g -D__DEBUG__ $(TESTDEFINES)
+X86_HARDENING   := -fstack-protector-strong
+STANDALONEFLAGS	:= -O1 -g $(TESTDEFINES) $(X86_HARDENING)
+TESTFLAGS   	:= -O1 -fpic -g -D__DEBUG__ $(TESTDEFINES) $(X86_HARDENING)
 AVRFLAGS    	:= -O1 -mmcu=atmega324pb -DF_CPU=8000000 -fshort-enums $(TESTDEFINES)
 
 # Common sources

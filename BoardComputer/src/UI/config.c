@@ -54,7 +54,7 @@ static void save_configvariable()
 
 static uint8_t send_configpointer_to_nextion()
 {
-    NEXTION_INSTRUCTION_BUFFER_BLOCK(3)
+    NEXTION_INSTRUCTION_BUFFER_BLOCK(11)
     CONFIG_maxdata_t min, max;
     CONFIG_get_entry_min_max_values(configvariable_it,&min,&max);
     NEXTION_instruction_compose("ptr","val",instruction);
@@ -62,11 +62,11 @@ static uint8_t send_configpointer_to_nextion()
     NEXTION_send(buffer,0);
 
     NEXTION_instruction_compose("min","val",instruction);
-    u16toa(min, payload);
+    i32toa(min, payload);
     NEXTION_send(buffer,0);
 
     NEXTION_instruction_compose("max","val",instruction);
-    u16toa(max, payload);
+    i32toa(max, payload);
     NEXTION_send(buffer,0);
 
     NEXTION_send("rfp.en=1",0);
