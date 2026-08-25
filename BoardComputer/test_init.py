@@ -1,6 +1,5 @@
 import pytest
 import unittest
-import pandas
 from helpers import load, floattofp, ModuleWrapper
 
 # This test class should be launched first to check global definitions

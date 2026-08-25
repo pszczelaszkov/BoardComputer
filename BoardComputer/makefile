@@ -1,5 +1,7 @@
 # --- Configuration -----------------------------------------------------------
 PYTHON_VER := $(shell python3 -c "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}')")
+PYTHON_INCLUDES := $(shell python3-config --includes)
+PYTHON_LDFLAGS := $(shell python3-config --ldflags --embed 2>/dev/null || python3-config --ldflags)
 
 # Directories
 IDIR := src/
@@ -64,11 +66,11 @@ X86_OBJS := $(patsubst $(TDIR)%.c,$(BIN_DIR)%_.o,$(X86_SRCS)) \
 
 $(BIN_DIR)testmodule.so: $(X86_OBJS)
 	$(call PRINTF,"Linking $@")
-	$(CC_X86) -shared $^ -lpython$(PYTHON_VER) -o $@
+	$(CC_X86) -shared $^ $(PYTHON_LDFLAGS) -o $@
 
 $(BIN_DIR)%_.o: $(TDIR)%.c
 	$(call PRINTF,"Compiling $<")
-	$(CC_X86) $(TESTFLAGS) -I$(IDIR) -I$(X86_TEST_IDIR) -I/usr/include/python$(PYTHON_VER) -c $< -o $@
+	$(CC_X86) $(TESTFLAGS) -I$(IDIR) -I$(X86_TEST_IDIR) $(PYTHON_INCLUDES) -c $< -o $@
 
 $(BIN_DIR)%_.o: $(X86_TEST_IDIR)%.c
 	$(call PRINTF,"Compiling $<")
