@@ -95,7 +95,7 @@ void SYSTEM_resetalert()
 void SYSTEM_initialize()
 {
     SYSTEMINTERFACE_initialize_IO();
-    COUNTERS_init();
+
     CONFIG_loadconfig(&SYSTEM_config);
     /*
         Check Config version compatibility.
@@ -126,7 +126,8 @@ void SYSTEM_initialize()
     {
         SYSTEM_status = SYSTEM_STATUS_IDLE;
     }
-
+    
+    COUNTERS_init();
     SYSTEMINTERFACE_start_system_clock();
 }
 
