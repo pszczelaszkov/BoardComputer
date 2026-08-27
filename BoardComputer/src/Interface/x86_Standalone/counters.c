@@ -1,50 +1,62 @@
 #include "counters.h"
 #include "countersfeed.h"
+
 #include <signal.h>
-#include <string.h>
+#include <threads.h>
 
-volatile uint8_t COUNTERS_signal_enable = 0;
+static mtx_t counters_lock;
+static thrd_t counters_signal_thread;
 
-static void fuel_signal_handler(int sig, siginfo_t* info, void* context)
+static int counters_signal_loop(void* arg)
 {
-    (void)sig;
-    (void)context;
-    if(info)
-        COUNTERSFEED_count_fuelusage((uint16_t)info->si_value.sival_int);
-}
+    sigset_t set;
+    siginfo_t info;
 
-static void speed_signal_handler(int sig, siginfo_t* info, void* context)
-{
-    (void)sig;
-    (void)context;
-    if(info)
-        COUNTERSFEED_count_speed((uint16_t)info->si_value.sival_int);
+    (void)arg;
+    sigemptyset(&set);
+    sigaddset(&set, COUNTERS_SIG_FUEL);
+    sigaddset(&set, COUNTERS_SIG_SPEED);
+
+    for(;;)
+    {
+        int sig = sigwaitinfo(&set, &info);
+        if(sig < 0)
+            continue;
+
+        mtx_lock(&counters_lock);
+        if(sig == COUNTERS_SIG_FUEL)
+            COUNTERSFEED_count_fuelusage((uint16_t)info.si_value.sival_int);
+        else if(sig == COUNTERS_SIG_SPEED)
+            COUNTERSFEED_count_speed((uint16_t)info.si_value.sival_int);
+        mtx_unlock(&counters_lock);
+    }
+
+    return 0;
 }
 
 void COUNTERS_enable_signals(void)
 {
-
+    mtx_unlock(&counters_lock);
 }
 
 void COUNTERS_disable_signals(void)
 {
-
+    mtx_lock(&counters_lock);
 }
 
 void COUNTERS_init(void)
 {
-    struct sigaction sa_fuel;
-    struct sigaction sa_speed;
+    sigset_t set;
 
-    memset(&sa_fuel, 0, sizeof(sa_fuel));
-    sa_fuel.sa_sigaction = fuel_signal_handler;
-    sa_fuel.sa_flags = SA_SIGINFO;
-    sigemptyset(&sa_fuel.sa_mask);
-    sigaction(COUNTERS_SIG_FUEL, &sa_fuel, NULL);
+    mtx_init(&counters_lock, mtx_plain);
 
-    memset(&sa_speed, 0, sizeof(sa_speed));
-    sa_speed.sa_sigaction = speed_signal_handler;
-    sa_speed.sa_flags = SA_SIGINFO;
-    sigemptyset(&sa_speed.sa_mask);
-    sigaction(COUNTERS_SIG_SPEED, &sa_speed, NULL);
+    sigemptyset(&set);
+    sigaddset(&set, COUNTERS_SIG_FUEL);
+    sigaddset(&set, COUNTERS_SIG_SPEED);
+    /* Block before other threads exist so they inherit this mask.
+     * sigwaitinfo only sees signals that stay blocked. */
+    sigprocmask(SIG_BLOCK, &set, NULL);
+
+    thrd_create(&counters_signal_thread, counters_signal_loop, NULL);
+    thrd_detach(counters_signal_thread);
 }

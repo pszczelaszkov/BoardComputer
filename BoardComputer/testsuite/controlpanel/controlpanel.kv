@@ -1,0 +1,304 @@
+#:kivy 2.0.0
+
+<ControlPanelRoot>:
+    orientation: 'horizontal'
+    padding: 10
+    spacing: 12
+
+    # Left: 8 ADC sliders stacked top to bottom
+    BoxLayout:
+        orientation: 'vertical'
+        size_hint_x: 0.6
+        spacing: 4
+        padding: [0, 4]
+
+        BoxLayout:
+            orientation: 'horizontal'
+            size_hint_y: None
+            height: 36
+            Label:
+                text: 'ADC0 OILTEMP'
+                size_hint_x: 0.28
+                text_size: self.size
+                halign: 'left'
+                valign: 'middle'
+            Slider:
+                id: adc_0
+                min: 0
+                max: 1023
+                step: 1
+                value: 0
+                size_hint_x: 0.55
+                on_value: root.on_adc_change(0, self.value)
+            Label:
+                text: str(int(adc_0.value))
+                size_hint_x: 0.17
+                text_size: self.size
+                halign: 'right'
+                valign: 'middle'
+
+        BoxLayout:
+            orientation: 'horizontal'
+            size_hint_y: None
+            height: 36
+            Label:
+                text: 'ADC1 INTAKETEMP'
+                size_hint_x: 0.28
+                text_size: self.size
+                halign: 'left'
+                valign: 'middle'
+            Slider:
+                id: adc_1
+                min: 0
+                max: 1023
+                step: 1
+                value: 0
+                size_hint_x: 0.55
+                on_value: root.on_adc_change(1, self.value)
+            Label:
+                text: str(int(adc_1.value))
+                size_hint_x: 0.17
+                text_size: self.size
+                halign: 'right'
+                valign: 'middle'
+
+        BoxLayout:
+            orientation: 'horizontal'
+            size_hint_y: None
+            height: 36
+            Label:
+                text: 'ADC2 OUTTEMP'
+                size_hint_x: 0.28
+                text_size: self.size
+                halign: 'left'
+                valign: 'middle'
+            Slider:
+                id: adc_2
+                min: 0
+                max: 1023
+                step: 1
+                value: 0
+                size_hint_x: 0.55
+                on_value: root.on_adc_change(2, self.value)
+            Label:
+                text: str(int(adc_2.value))
+                size_hint_x: 0.17
+                text_size: self.size
+                halign: 'right'
+                valign: 'middle'
+
+        BoxLayout:
+            orientation: 'horizontal'
+            size_hint_y: None
+            height: 36
+            Label:
+                text: 'ADC3 MAP'
+                size_hint_x: 0.28
+                text_size: self.size
+                halign: 'left'
+                valign: 'middle'
+            Slider:
+                id: adc_3
+                min: 0
+                max: 1023
+                step: 1
+                value: 0
+                size_hint_x: 0.55
+                on_value: root.on_adc_change(3, self.value)
+            Label:
+                text: str(int(adc_3.value))
+                size_hint_x: 0.17
+                text_size: self.size
+                halign: 'right'
+                valign: 'middle'
+
+        BoxLayout:
+            orientation: 'horizontal'
+            size_hint_y: None
+            height: 36
+            Label:
+                text: 'ADC4 FRP'
+                size_hint_x: 0.28
+                text_size: self.size
+                halign: 'left'
+                valign: 'middle'
+            Slider:
+                id: adc_4
+                min: 0
+                max: 1023
+                step: 1
+                value: 0
+                size_hint_x: 0.55
+                on_value: root.on_adc_change(4, self.value)
+            Label:
+                text: str(int(adc_4.value))
+                size_hint_x: 0.17
+                text_size: self.size
+                halign: 'right'
+                valign: 'middle'
+
+        BoxLayout:
+            orientation: 'horizontal'
+            size_hint_y: None
+            height: 36
+            Label:
+                text: 'ADC5 TANK'
+                size_hint_x: 0.28
+                text_size: self.size
+                halign: 'left'
+                valign: 'middle'
+            Slider:
+                id: adc_5
+                min: 0
+                max: 1023
+                step: 1
+                value: 0
+                size_hint_x: 0.55
+                on_value: root.on_adc_change(5, self.value)
+            Label:
+                text: str(int(adc_5.value))
+                size_hint_x: 0.17
+                text_size: self.size
+                halign: 'right'
+                valign: 'middle'
+
+        BoxLayout:
+            orientation: 'horizontal'
+            size_hint_y: None
+            height: 36
+            Label:
+                text: 'ADC6 EGT'
+                size_hint_x: 0.28
+                text_size: self.size
+                halign: 'left'
+                valign: 'middle'
+            Slider:
+                id: adc_6
+                min: 0
+                max: 1023
+                step: 1
+                value: 0
+                size_hint_x: 0.55
+                on_value: root.on_adc_change(6, self.value)
+            Label:
+                text: str(int(adc_6.value))
+                size_hint_x: 0.17
+                text_size: self.size
+                halign: 'right'
+                valign: 'middle'
+
+        BoxLayout:
+            orientation: 'horizontal'
+            size_hint_y: None
+            height: 36
+            Label:
+                text: 'ADC7 (unused)'
+                size_hint_x: 0.28
+                text_size: self.size
+                halign: 'left'
+                valign: 'middle'
+            Slider:
+                id: adc_7
+                min: 0
+                max: 1023
+                step: 1
+                value: 0
+                size_hint_x: 0.55
+                on_value: root.on_adc_change(7, self.value)
+            Label:
+                text: str(int(adc_7.value))
+                size_hint_x: 0.17
+                text_size: self.size
+                halign: 'right'
+                valign: 'middle'
+
+        Widget:
+            size_hint_y: 1
+
+    # Right: injector / speed value + interval
+    BoxLayout:
+        orientation: 'vertical'
+        size_hint_x: 0.4
+        spacing: 12
+        padding: [8, 4]
+        size_hint_y: None
+        height: self.minimum_height
+        pos_hint: {'top': 1}
+
+        Label:
+            text: 'Counters (SIGRT)'
+            size_hint_y: None
+            height: 28
+            bold: True
+            text_size: self.size
+            halign: 'left'
+            valign: 'middle'
+
+        # Header row
+        BoxLayout:
+            orientation: 'horizontal'
+            size_hint_y: None
+            height: 24
+            Label:
+                text: ''
+                size_hint_x: 0.3
+            Label:
+                text: 'Value'
+                size_hint_x: 0.35
+            Label:
+                text: 'Interval (ms)'
+                size_hint_x: 0.35
+
+        # Injector row
+        BoxLayout:
+            orientation: 'horizontal'
+            size_hint_y: None
+            height: 40
+            spacing: 6
+            Label:
+                text: 'Injector'
+                size_hint_x: 0.3
+                text_size: self.size
+                halign: 'left'
+                valign: 'middle'
+            TextInput:
+                id: injector_value
+                text: '0'
+                multiline: False
+                input_filter: 'int'
+                size_hint_x: 0.35
+                on_text: root.on_counter_field('injector_value', self.text)
+            TextInput:
+                id: injector_interval
+                text: '0'
+                multiline: False
+                input_filter: 'int'
+                size_hint_x: 0.35
+                on_text: root.on_counter_field('injector_interval', self.text)
+
+        # Speed row
+        BoxLayout:
+            orientation: 'horizontal'
+            size_hint_y: None
+            height: 40
+            spacing: 6
+            Label:
+                text: 'Speed'
+                size_hint_x: 0.3
+                text_size: self.size
+                halign: 'left'
+                valign: 'middle'
+            TextInput:
+                id: speed_value
+                text: '0'
+                multiline: False
+                input_filter: 'int'
+                size_hint_x: 0.35
+                on_text: root.on_counter_field('speed_value', self.text)
+            TextInput:
+                id: speed_interval
+                text: '0'
+                multiline: False
+                input_filter: 'int'
+                size_hint_x: 0.35
+                on_text: root.on_counter_field('speed_interval', self.text)
