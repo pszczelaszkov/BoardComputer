@@ -128,8 +128,8 @@ static void switch_configvariable(Direction_t direction)
 
     CONFIG_read_entry(&SYSTEM_config, configvariable_it, &configvariable_value);
 
-    if(send_configvalue_to_nextion())
-        send_configpointer_to_nextion();
+    send_configpointer_to_nextion();
+    send_configvalue_to_nextion();
 }
 
 static void modify_configvariable_value(Direction_t direction)

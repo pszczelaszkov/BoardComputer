@@ -233,6 +233,18 @@ class TestBoardUI:
         output = read_nextion_output(m,ffi)
         assert output["mdv.txt"] == f'"{expectedstring}"'
 
+    '''
+    After page swap HMI resets maindisplay picture.
+    Setup must restore picture of currently active maindisplay component.
+    '''
+    @pytest.mark.parametrize("component", range(m.UIBOARD_MD_LAST))
+    def test_setup_restores_maindisplay_picture(self, component):
+        md_component = m.UIBOARD_maindisplay_components[component]
+        m.UIBOARD_maindisplay_activecomponent = ffi.addressof(md_component)
+        expected_pic = md_component.executable_component.component.value_default
+        m.UIBOARD_page_control(m.NEXTION_PAGECONTROL_SETUP, ffi.NULL)
+        output = read_nextion_output(m, ffi)
+        assert int(output["mds.pic"]) == expected_pic
 
     @pytest.mark.parametrize(
         "status,expectedstring",

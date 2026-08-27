@@ -519,11 +519,18 @@ static void switch_maindisplay()
 	UIBOARD_maindisplay_activecomponent = UIBOARD_maindisplay_activecomponent->nextComponent;
 }
 
+static void update_maindisplay_picture()
+{
+	NEXTION_Component* component = (NEXTION_Component*)UIBOARD_maindisplay_activecomponent;
+	NEXTION_set_component_select_status(component, NEXTION_COMPONENTSELECTSTATUS_DEFAULT);
+}
+
 inline static void setup()
 {
 	/* In case config has changed, recalculate every page switch */
 	fuelmanifold_threshold = SYSTEM_config.BOARD_DELTA_THRESHOLD * 100;
 	initialize_FMS();
+	update_maindisplay_picture();
 }
 
 inline static void handle_userinput(INPUT_Event* input_event)
@@ -576,8 +583,7 @@ inline static void handle_userinput(INPUT_Event* input_event)
 	switch(componentID)
 	{
 		case INPUTCOMPONENT_MAINDISPLAY:
-			component = (NEXTION_Component*)UIBOARD_maindisplay_activecomponent;
-			on_click = switch_maindisplay;
+			on_press = switch_maindisplay;
 		break;
 		case INPUTCOMPONENT_WATCHSEL:
 			component = &UIBOARD_components[UIBOARD_COMPONENT_WATCHSEL];
@@ -593,9 +599,6 @@ inline static void handle_userinput(INPUT_Event* input_event)
 		break;
 	}
 
-	if(INPUT_KEYSTATUS_PRESSED == keystatus || INPUT_KEYSTATUS_HOLD == keystatus)
-		NEXTION_set_component_select_status(component, NEXTION_COMPONENTSELECTSTATUS_SELECTED);
-
 	if(key == INPUT_KEY_ENTER)
 	{
 		if(NULL != on_click && keystatus == INPUT_KEYSTATUS_CLICK)
@@ -605,6 +608,12 @@ inline static void handle_userinput(INPUT_Event* input_event)
 		else if(NULL != on_press && keystatus == INPUT_KEYSTATUS_PRESSED)
 			on_press();
 	}
+
+	if(INPUTCOMPONENT_MAINDISPLAY == componentID)
+		component = (NEXTION_Component*)UIBOARD_maindisplay_activecomponent;
+
+	if(INPUT_KEYSTATUS_PRESSED == keystatus || INPUT_KEYSTATUS_HOLD == keystatus )
+		NEXTION_set_component_select_status(component, NEXTION_COMPONENTSELECTSTATUS_SELECTED);
 }
 
 inline static void update()
