@@ -7,3 +7,5 @@
 #include "utils.h"
 
 TESTUSE void core();
+TESTUSE void post_irq_core();
+TESTUSE void high_prio_core();

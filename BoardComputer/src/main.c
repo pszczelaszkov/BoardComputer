@@ -26,11 +26,15 @@
 
 void post_irq_core()
 {
-	INPUT_handle();
+/*
+	Add code here to be executed after the IRQ core is finished.
+	It can't be code thats send data to the nextion display or to the serial port.
+*/	
 }
 
 void high_prio_core()
 {
+	INPUT_handle();
 	TIMER_update();
 }
 
