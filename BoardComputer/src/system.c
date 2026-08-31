@@ -1,6 +1,7 @@
 #include "system.h"
 #include "counters.h"
 #include "countersfeed.h"
+#include "keys.h"
 #include "nextion.h"
 #include "system_interface.h"
 
@@ -127,6 +128,7 @@ void SYSTEM_initialize()
         SYSTEM_status = SYSTEM_STATUS_IDLE;
     }
     
+    KEYS_init();
     COUNTERS_init();
     SYSTEMINTERFACE_start_system_clock();
 }

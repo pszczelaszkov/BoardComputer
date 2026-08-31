@@ -556,7 +556,7 @@ inline static void handle_userinput(INPUT_Event* input_event)
 	{
 		if(INPUT_KEY_DOWN == key)
 		{ 
-			if(input_order_it >= sizeof(input_order)/sizeof(InputComponentID_t))
+			if(sizeof(input_order)/sizeof(InputComponentID_t)-1 <= input_order_it)
 			{
 				input_order_it = 0;
 			}
@@ -583,7 +583,7 @@ inline static void handle_userinput(INPUT_Event* input_event)
 	switch(componentID)
 	{
 		case INPUTCOMPONENT_MAINDISPLAY:
-			on_press = switch_maindisplay;
+			on_click = switch_maindisplay;
 		break;
 		case INPUTCOMPONENT_WATCHSEL:
 			component = &UIBOARD_components[UIBOARD_COMPONENT_WATCHSEL];
@@ -605,14 +605,12 @@ inline static void handle_userinput(INPUT_Event* input_event)
 			on_click();
 		else if(NULL != on_hold && keystatus == INPUT_KEYSTATUS_HOLD)
 			on_hold();
-		else if(NULL != on_press && keystatus == INPUT_KEYSTATUS_PRESSED)
-			on_press();
 	}
 
 	if(INPUTCOMPONENT_MAINDISPLAY == componentID)
 		component = (NEXTION_Component*)UIBOARD_maindisplay_activecomponent;
 
-	if(INPUT_KEYSTATUS_PRESSED == keystatus || INPUT_KEYSTATUS_HOLD == keystatus )
+	if(INPUT_KEYSTATUS_CLICK== keystatus || INPUT_KEYSTATUS_HOLD == keystatus )
 		NEXTION_set_component_select_status(component, NEXTION_COMPONENTSELECTSTATUS_SELECTED);
 }
 

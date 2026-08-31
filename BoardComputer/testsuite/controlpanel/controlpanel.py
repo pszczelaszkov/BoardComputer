@@ -1,7 +1,7 @@
 '''
 Panel to apply values to BoardComputer during x86 run.
 
-Writes ADC values to BC_DIR/ADCn and drives fuel/speed counters via SIGRT.
+Writes ADC values to BC_DIR/ADCn and drives fuel/speed counters and keys via SIGRT.
 '''
 import os
 
@@ -26,6 +26,10 @@ UINT16_MAX = 65535
 
 COUNTERS_SIG_FUEL = signal.SIGRTMIN + 0
 COUNTERS_SIG_SPEED = signal.SIGRTMIN + 1
+INPUT_SIG = signal.SIGRTMIN + 3
+
+INPUT_KEY_ENTER = 0
+INPUT_KEY_DOWN = 1
 
 ADC_LABELS = (
     'OILTEMP',
@@ -153,6 +157,7 @@ class ControlPanelRoot(BoxLayout):
         self._speed_clock = None
         self._fuel_clock_error_logged = False
         self._speed_clock_error_logged = False
+        self._keys_error_logged = False
 
     def _log_verbose(self, message):
         if self.config.verbose:
@@ -304,6 +309,16 @@ class ControlPanelRoot(BoxLayout):
             self._update_fuel_clock()
         elif name == 'speed_interval':
             self._update_speed_clock()
+
+    def on_key(self, key):
+        if self._sigqueue_pulse(
+            INPUT_SIG,
+            key,
+            'keys',
+            '_keys_error_logged',
+        ):
+            key_name = 'ENTER' if key == INPUT_KEY_ENTER else 'DOWN'
+            self._log_verbose(f'key edge: {key_name} ({key})')
 
 
 class ControlPanelApp(App):

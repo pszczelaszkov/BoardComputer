@@ -57,6 +57,10 @@ Fuel and speed remain signal-driven (no files). Send pulse amounts with `sigqueu
 - `SIGRTMIN+0` (`COUNTERS_SIG_FUEL`) — fuel ticks in `sival_int`
 - `SIGRTMIN+1` (`COUNTERS_SIG_SPEED`) — speed pulses in `sival_int`
 
+### Keys simulation (RT signals)
+Hardware key edges are signal-driven. Each `sigqueue` is one edge (press or release toggle):
+- `SIGRTMIN+3` (`KEYS_SIG`) — key id in `sival_int`: `0` = Enter, `1` = Down
+
 ## Note
 When switching between testing and build remember to clean:</br>
 ```

@@ -71,6 +71,4 @@ TESTUSE void INPUT_userinput(INPUT_Keystatus_t keystatus, INPUT_Key_t key, INPUT
 TESTUSE void INPUT_update();
 void INPUT_handle();
 void INPUT_initialize();
-ISR(INT0_vect);
-ISR(INT1_vect);
 #endif

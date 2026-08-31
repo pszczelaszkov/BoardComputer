@@ -302,3 +302,28 @@
                 input_filter: 'int'
                 size_hint_x: 0.35
                 on_text: root.on_counter_field('speed_interval', self.text)
+
+        Label:
+            text: 'Keys (SIGRT)'
+            size_hint_y: None
+            height: 28
+            bold: True
+            text_size: self.size
+            halign: 'left'
+            valign: 'middle'
+
+        BoxLayout:
+            orientation: 'horizontal'
+            size_hint_y: None
+            height: 40
+            spacing: 6
+            Button:
+                text: 'Enter'
+                size_hint_x: 0.5
+                on_press: root.on_key(0)
+                on_release: root.on_key(0)
+            Button:
+                text: 'Down'
+                size_hint_x: 0.5
+                on_press: root.on_key(1)
+                on_release: root.on_key(1)
