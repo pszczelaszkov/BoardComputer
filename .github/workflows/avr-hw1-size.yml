@@ -8,6 +8,10 @@ permissions:
   contents: read
   actions: read
 
+env:
+  AVR_GCC_VERSION: "14.2.0"
+  AVR_GCC_INSTALL_DIR: ${{ runner.tool_cache }}/avr-gcc
+
 jobs:
   size:
     runs-on: ubuntu-latest
@@ -17,12 +21,18 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install AVR toolchain
-        run: sudo apt-get update && sudo apt-get install -y gcc-avr avr-libc binutils-avr unzip
+      - name: Cache AVR toolchain
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.AVR_GCC_INSTALL_DIR }}
+          key: modm-avr-gcc-${{ env.AVR_GCC_VERSION }}
 
-      - name: Install ATmega324PB device files
+      - name: Install AVR toolchain
         working-directory: .
-        run: sudo bash .github/scripts/install-avr-324pb-device.sh BoardComputer/utils
+        run: bash .github/scripts/install-avr-toolchain.sh
+
+      - name: Add AVR toolchain to PATH
+        run: echo "${AVR_GCC_INSTALL_DIR}/bin" >> "${GITHUB_PATH}"
 
       - name: Build HW_1
         run: make HW_1

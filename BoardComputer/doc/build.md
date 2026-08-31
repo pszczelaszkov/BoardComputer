@@ -3,10 +3,10 @@
 There are 3 targets:
 
 ## HW_1
-First hardware version, it's based on Atmega324PB
-Device specs for Atmega 324PB may not be included in avr-gcc/libavr as it is older than device itself.</br>
-If it's so additional files are in [Utils](../utils)</br>
-They need to be copied into avr library directory.</br>
+First hardware version, it's based on Atmega324PB.</br>
+AVR builds need a recent avr-gcc with ATmega324PB support (gcc 12+ / avr-libc 2.2+).</br>
+If your distro packages are too old (e.g. Ubuntu `gcc-avr` 7.3), install the [modm AVR toolchain](https://github.com/modm-io/avr-gcc/releases) and add its `bin/` directory to `PATH`.</br>
+Legacy device files for manual installation into an older toolchain are in [utils/device-specs.zip](../utils/device-specs.zip).</br>
 To start build type:</br>
 ```
 make HW_1
