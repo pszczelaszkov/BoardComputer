@@ -1,0 +1,62 @@
+name: AVR HW1 size
+
+on:
+  push:
+    branches: [master]
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  size:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: BoardComputer
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install AVR toolchain
+        run: sudo apt-get update && sudo apt-get install -y gcc-avr avr-libc binutils-avr unzip
+
+      - name: Install ATmega324PB device files
+        working-directory: .
+        run: sudo bash .github/scripts/install-avr-324pb-device.sh BoardComputer/utils
+
+      - name: Build HW_1
+        run: make HW_1
+
+      - name: Download previous size baseline
+        working-directory: .
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p .avr-size-baseline
+          PREV_RUN=$(gh run list \
+            --workflow .github/workflows/avr-hw1-size.yml \
+            --branch master \
+            --status success \
+            --limit 5 \
+            --json databaseId,headSha \
+            --jq ".[] | select(.headSha != \"${{ github.sha }}\") | .databaseId" \
+            | head -1)
+          if [[ -n "${PREV_RUN}" ]]; then
+            gh run download "${PREV_RUN}" -n avr-hw1-size -D .avr-size-baseline || true
+          fi
+
+      - name: Report firmware size
+        working-directory: .
+        run: |
+          PREV=""
+          if [[ -f .avr-size-baseline/size.json ]]; then
+            PREV=".avr-size-baseline/size.json"
+          fi
+          bash .github/scripts/report-avr-size.sh BoardComputer/bin/BoardComputer.elf "${PREV}"
+
+      - name: Upload size artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: avr-hw1-size
+          path: size.json
+          if-no-files-found: error
