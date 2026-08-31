@@ -10,7 +10,6 @@ permissions:
 
 env:
   AVR_GCC_VERSION: "14.2.0"
-  AVR_GCC_INSTALL_DIR: ${{ runner.tool_cache }}/avr-gcc
 
 jobs:
   size:
@@ -24,14 +23,18 @@ jobs:
       - name: Cache AVR toolchain
         uses: actions/cache@v4
         with:
-          path: ${{ env.AVR_GCC_INSTALL_DIR }}
+          path: ${{ runner.tool_cache }}/avr-gcc
           key: modm-avr-gcc-${{ env.AVR_GCC_VERSION }}
 
       - name: Install AVR toolchain
         working-directory: .
+        env:
+          AVR_GCC_INSTALL_DIR: ${{ runner.tool_cache }}/avr-gcc
         run: bash .github/scripts/install-avr-toolchain.sh
 
       - name: Add AVR toolchain to PATH
+        env:
+          AVR_GCC_INSTALL_DIR: ${{ runner.tool_cache }}/avr-gcc
         run: echo "${AVR_GCC_INSTALL_DIR}/bin" >> "${GITHUB_PATH}"
 
       - name: Build HW_1
