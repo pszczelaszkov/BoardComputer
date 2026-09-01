@@ -55,7 +55,7 @@ void USART_TX_clear()
 
 void USART_flush()
 {	
-	if(OPERATION_MODE_NORMAL == operation_mode && 0 < USART_TX_message_length)
+	if(OPERATION_MODE_NORMAL == operation_mode && 0 < USART_TX_message_length && USART_TX_buffer_index == USART_TX_BUFFER_SIZE)
 	{
 		USART_TX_buffer_index = 0;
 		#ifdef __DEBUG__
