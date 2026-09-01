@@ -1,8 +1,8 @@
 '''
 Panel to apply values to BoardComputer during x86 run.
 
-Writes ADC values to BC_DIR/ADCn, IGNITION state to BC_DIR/IGNITION, and drives
-fuel/speed counters and keys via SIGRT.
+On start, writes 0 to BC_DIR/ADC0..ADC7 and BC_DIR/IGNITION. Then writes ADC
+values and IGNITION from the UI, and drives fuel/speed counters and keys via SIGRT.
 '''
 import os
 
@@ -148,8 +148,7 @@ def _parse_args(argv):
 class ControlPanelRoot(BoxLayout):
     def __init__(self, config: PanelConfig, **kwargs):
         self.config = config
-        self.ignition_enabled = self._read_ignition_file()
-        super().__init__(**kwargs)
+        self.ignition_enabled = False
         self.adc_values = [0] * ADC_CHANNEL_COUNT
         self.injector_value = 0
         self.injector_interval = 0
@@ -160,20 +159,14 @@ class ControlPanelRoot(BoxLayout):
         self._fuel_clock_error_logged = False
         self._speed_clock_error_logged = False
         self._keys_error_logged = False
+        super().__init__(**kwargs)
+        self._reset_bc_files()
 
-    def _read_ignition_file(self):
-        path = os.path.join(self.config.bc_dir, 'IGNITION')
-        try:
-            with open(path, encoding='ascii') as ignition_file:
-                text = ignition_file.read().strip()
-        except OSError:
-            return True
-        if not text:
-            return True
-        try:
-            return int(text) != 0
-        except ValueError:
-            return True
+    def _reset_bc_files(self):
+        '''Write 0 into ADC0..ADC7 and IGNITION so leftover sim files do not leak.'''
+        for index in range(ADC_CHANNEL_COUNT):
+            self._write_adc_file(index, 0)
+        self._write_ignition_file(False)
 
     def _write_ignition_file(self, enabled):
         if not self._ensure_bc_dir():
