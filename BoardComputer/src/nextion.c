@@ -321,7 +321,10 @@ void NEXTION_update()
 			SYSTEM_raisealert(SYSTEM_ALERT_UI_INCOMPATIBLE);
 		case DISPLAYSTATUS_CONNECTED:
 			NEXTION_switch_page(NEXTION_PAGEID_INIT,0);
-			NEXTION_set_brightness(SYSTEM_config.SYSTEM_BRIGHTNESS);
+			/*
+				Set brightness to minimum of 10 to prevent display from being too dim if someone turns it off by accident
+			*/
+			NEXTION_set_brightness(MAX(10,SYSTEM_config.SYSTEM_BRIGHTNESS));
 			displaystatus = DISPLAYSTATUS_OPERATIONAL;
 			display_watchdog_counter = WATCHDOG_THRESHOLD;
 		break;

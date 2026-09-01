@@ -110,7 +110,7 @@ void USART_initialize()
 void message_register(uint8_t message_size)
 {
 	//Check for "DRAKJHSUYDGBNCJHGJKSHBDN", although more complex rule is not needed.
-	if(message_size == 24 && USART_RX_buffer[1] == 'R')
+	if(sizeof("DRAKJHSUYDGBNCJHGJKSHBDN")-1 == message_size && 'R' == USART_RX_buffer[1])
 	{
 		operation_mode = OPERATION_MODE_PASSTHROUGH;
 		passthrough_watchdog_counter = PASSTHROUGHWATCHDOG_THRESHOLD;
@@ -119,7 +119,7 @@ void message_register(uint8_t message_size)
 	{
 		switch((NEXTIONMESSAGETYPE)USART_RX_buffer[0])
 		{	
-			#ifndef __AVR__
+			#ifdef __DEBUG__
 			case NEXTIONMESSAGETYPE_TEST:
 				test();
 			break;

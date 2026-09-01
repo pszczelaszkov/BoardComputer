@@ -154,10 +154,11 @@ void SYSTEM_update()
         else if(SYSTEM_STATUS_OPERATIONAL == SYSTEM_status && !SYSTEMINTERFACE_is_board_enabled())
         {
             /*
-                Set system to idle, display should have sleep procedure handlet by itself
+                Set system to idle, display should have sleep procedure handled by itself
                 Display will sleep after no serial activity.
             */
             SYSTEM_status = SYSTEM_STATUS_IDLE;
+            NEXTION_set_brightness(0);
         }
     }
 
