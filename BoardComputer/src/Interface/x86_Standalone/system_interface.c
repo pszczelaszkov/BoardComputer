@@ -1,10 +1,14 @@
 #include "system_interface.h"
 #include "system.h"
+#include <errno.h>
+#include <fcntl.h>
 #include <stdio.h>
 #include <stdint.h>
+#include <stdlib.h>
 #include <unistd.h>
 #include <threads.h>
 #include <poll.h>
+#include <sys/stat.h>
 #include <sys/timerfd.h>
 #include <sys/eventfd.h>
 #include <string.h>
@@ -12,8 +16,8 @@
 
 static int timer_fd   = -1;   // 128 ms periodic timer
 static int wake_fd    = -1;   // external wake signal
+static int ignition_fd = -1;
 static thrd_t RTC_thread;
-static uint8_t board_is_enabled = 1;
 
 volatile uint8_t DDRA, DDRB, DDRC, DDRD;
 volatile uint8_t PORTA, PORTB, PORTC, PORTD, DIDR0;
@@ -46,13 +50,75 @@ static int sysclk_thread(void* arg)
 	return 1;
 }
 
+static const char* bc_dir_path(void)
+{
+	const char* dir = getenv("BC_DIR");
+	if(dir && dir[0] != '\0')
+		return dir;
+	return ".";
+}
+
+static int open_ignition_file(const char* dir)
+{
+	char path[512];
+	int n = snprintf(path, sizeof(path), "%s/IGNITION", dir);
+	if(n < 0 || (size_t)n >= sizeof(path))
+		return -1;
+
+	int fd = open(path, O_RDWR | O_CREAT | O_NONBLOCK, 0644);
+	if(fd < 0)
+		return -1;
+
+	struct stat st;
+	if(fstat(fd, &st) == 0 && S_ISREG(st.st_mode) && st.st_size == 0)
+		(void)write(fd, "1\n", 2);
+
+	return fd;
+}
+
+static int8_t read_ignition_file(void)
+{
+	char buf[32];
+	ssize_t n;
+	char* end;
+	unsigned long value;
+
+	if(ignition_fd < 0)
+		return 1;
+
+	if(lseek(ignition_fd, 0, SEEK_SET) < 0)
+		return 1;
+
+	n = read(ignition_fd, buf, sizeof(buf) - 1);
+	if(n <= 0)
+		return 1;
+
+	buf[n] = '\0';
+	errno = 0;
+	value = strtoul(buf, &end, 10);
+	if(end == buf || errno == ERANGE)
+		return 1;
+	if(value == 0)
+		return 0;
+	return 1;
+}
+
 int8_t SYSTEMINTERFACE_is_board_enabled()
 {
-    return board_is_enabled;
+	return read_ignition_file();
 }
 
 void SYSTEMINTERFACE_initialize_IO()
 {
+	const char* dir = bc_dir_path();
+
+	if(mkdir(dir, 0755) < 0 && errno != EEXIST)
+		perror(dir);
+
+	ignition_fd = open_ignition_file(dir);
+	if(ignition_fd < 0)
+		perror("IGNITION open");
+
     DIDR0 = 0xff;
 	DDRD = 0x00;
 	PORTD = 0x00;

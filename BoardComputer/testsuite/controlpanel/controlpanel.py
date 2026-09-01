@@ -1,7 +1,8 @@
 '''
 Panel to apply values to BoardComputer during x86 run.
 
-Writes ADC values to BC_DIR/ADCn and drives fuel/speed counters and keys via SIGRT.
+Writes ADC values to BC_DIR/ADCn, IGNITION state to BC_DIR/IGNITION, and drives
+fuel/speed counters and keys via SIGRT.
 '''
 import os
 
@@ -133,7 +134,7 @@ def _parse_args(argv):
     parser.add_argument(
         '--bc-dir',
         default=default_bc_dir,
-        help='directory for ADC0..ADC7 (default: $BC_DIR or .)',
+        help='directory for ADC0..ADC7 and IGNITION (default: $BC_DIR or .)',
     )
     parser.add_argument(
         '--pid',
@@ -146,8 +147,9 @@ def _parse_args(argv):
 
 class ControlPanelRoot(BoxLayout):
     def __init__(self, config: PanelConfig, **kwargs):
-        super().__init__(**kwargs)
         self.config = config
+        self.ignition_enabled = self._read_ignition_file()
+        super().__init__(**kwargs)
         self.adc_values = [0] * ADC_CHANNEL_COUNT
         self.injector_value = 0
         self.injector_interval = 0
@@ -158,6 +160,42 @@ class ControlPanelRoot(BoxLayout):
         self._fuel_clock_error_logged = False
         self._speed_clock_error_logged = False
         self._keys_error_logged = False
+
+    def _read_ignition_file(self):
+        path = os.path.join(self.config.bc_dir, 'IGNITION')
+        try:
+            with open(path, encoding='ascii') as ignition_file:
+                text = ignition_file.read().strip()
+        except OSError:
+            return True
+        if not text:
+            return True
+        try:
+            return int(text) != 0
+        except ValueError:
+            return True
+
+    def _write_ignition_file(self, enabled):
+        if not self._ensure_bc_dir():
+            return
+
+        path = os.path.join(self.config.bc_dir, 'IGNITION')
+        value = 1 if enabled else 0
+        try:
+            with open(path, 'w', encoding='ascii') as ignition_file:
+                ignition_file.write(f'{value}\n')
+        except OSError as exc:
+            _log_error(f'IGNITION write failed ({path}): {exc}')
+            return
+
+        self._log_verbose(f'IGNITION = {value}')
+
+    def on_ignition_change(self, active):
+        enabled = bool(active)
+        if self.ignition_enabled == enabled:
+            return
+        self.ignition_enabled = enabled
+        self._write_ignition_file(enabled)
 
     def _log_verbose(self, message):
         if self.config.verbose:

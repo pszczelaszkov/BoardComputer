@@ -225,6 +225,23 @@
         height: self.minimum_height
         pos_hint: {'top': 1}
 
+        BoxLayout:
+            orientation: 'horizontal'
+            size_hint_y: None
+            height: 40
+            spacing: 6
+            Label:
+                text: 'IGNITION'
+                size_hint_x: 0.5
+                text_size: self.size
+                halign: 'left'
+                valign: 'middle'
+            Switch:
+                id: ignition_switch
+                active: root.ignition_enabled
+                size_hint_x: 0.5
+                on_active: root.on_ignition_change(self.active)
+
         Label:
             text: 'Counters (SIGRT)'
             size_hint_y: None

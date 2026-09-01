@@ -1,4 +1,5 @@
 #include "keys.h"
+#include "counters.h"
 #include "input.h"
 
 #include <signal.h>
@@ -43,9 +44,12 @@ void KEYS_init(void)
 	sigset_t set;
 
 	sigemptyset(&set);
+	sigaddset(&set, COUNTERS_SIG_FUEL);
+	sigaddset(&set, COUNTERS_SIG_SPEED);
 	sigaddset(&set, KEYS_SIG);
-	/* Block before other threads exist so they inherit this mask.
-	 * sigwaitinfo only sees signals that stay blocked. */
+	/* Block the full sim SIGRT set before any waiter thread exists so
+	 * later threads inherit it. sigwaitinfo only sees signals that stay
+	 * blocked; an unblocked SIGRT with default disposition kills the process. */
 	sigprocmask(SIG_BLOCK, &set, NULL);
 
 	thrd_create(&keys_signal_thread, keys_signal_loop, NULL);
