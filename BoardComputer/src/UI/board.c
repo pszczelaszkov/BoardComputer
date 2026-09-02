@@ -1,6 +1,7 @@
 #include "board.h"
 #include "../sensorsfeed.h"
 #include "../countersfeed.h"
+#include "../average.h"
 #include "timer.h"
 #include "../USART.h"
 #include "../system.h"
@@ -305,19 +306,19 @@ static void renderer_md_inj_t()
 	NEXTION_send(buffer, USART_HOLD);
 }
 
-
-
 static void renderer_md_range()
 {
 	NEXTION_INSTRUCTION_BUFFER_BLOCK(6)
 	NEXTION_instruction_compose("mdv","txt",instruction);
 	NEXTION_quote_payloadbuffer(payload,payload_length);
-	uint8_t tank = SENSORSFEED_feed[SENSORSFEED_FEEDID_TANK];
-	uint8_t lp100 = COUNTERSFEED_feed[COUNTERSFEED_FEEDID_LP100_AVG] >> 8;
+	uint16_t tank = SENSORSFEED_feed[SENSORSFEED_FEEDID_TANK] << 8;// Load as fp8.8
+	uint16_t lp100 = COUNTERSFEED_feed[COUNTERSFEED_FEEDID_LP100_AVG];
 	uint16_t range = 0;
 
-	if(lp100)
-		range = tank*100/lp100;
+	if(lp100 && tank)
+	{
+		range = ((uint32_t)(tank*100u)/lp100);
+	}
 
 	range = MIN(range,9999);
 	rightconcat_short(&payload[1], range, 4);
@@ -519,6 +520,14 @@ static void switch_maindisplay()
 	UIBOARD_maindisplay_activecomponent = UIBOARD_maindisplay_activecomponent->nextComponent;
 }
 
+static void clear_maindisplay_values()
+{
+	AVERAGE_clear(AVERAGE_BUFFER_SPEED);
+	AVERAGE_clear(AVERAGE_BUFFER_LP100);
+	COUNTERSFEED_feed[COUNTERSFEED_FEEDID_SPEED_AVG] = 0;
+	COUNTERSFEED_feed[COUNTERSFEED_FEEDID_LP100_AVG] = 0;
+}
+
 static void update_maindisplay_picture()
 {
 	NEXTION_Component* component = (NEXTION_Component*)UIBOARD_maindisplay_activecomponent;
@@ -584,6 +593,7 @@ inline static void handle_userinput(INPUT_Event* input_event)
 	{
 		case INPUTCOMPONENT_MAINDISPLAY:
 			on_click = switch_maindisplay;
+			on_hold = clear_maindisplay_values;
 		break;
 		case INPUTCOMPONENT_WATCHSEL:
 			component = &UIBOARD_components[UIBOARD_COMPONENT_WATCHSEL];

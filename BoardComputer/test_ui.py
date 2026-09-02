@@ -221,6 +221,18 @@ class TestBoardUI:
                 {m.SENSORSFEED_FEEDID_TANK: 0},
                 "   0",
             ),
+            (
+                m.UIBOARD_MD_RANGE,
+                {m.COUNTERSFEED_FEEDID_LP100_AVG: 486},
+                {m.SENSORSFEED_FEEDID_TANK: 50},
+                "2633",
+            ),
+            (
+                m.UIBOARD_MD_RANGE,
+                {m.COUNTERSFEED_FEEDID_LP100_AVG: 128},
+                {m.SENSORSFEED_FEEDID_TANK: 10},
+                "2000",
+            ),
         ],
     )
     def test_maindisplay(self, component, countersdata, sensorsdata, expectedstring):
@@ -438,6 +450,26 @@ class TestBoardUI:
         #Watch is stopped and blinking as notification alert is raised
         assert m.TIMER_TIMERSTATUS_STOP == watch.timer.watchstatus
         assert m.VISUALALERT_SEVERITY_WARNING == int(read_nextion_output(m, ffi)[f"al{m.VISUALALERTID_WATCHDISPLAY}.val"])
+
+    def test_uiboard_hold_clears_maindisplay_averages(self):
+        m.AVERAGE_addvalue(m.AVERAGE_BUFFER_SPEED, 1000)
+        m.AVERAGE_addvalue(m.AVERAGE_BUFFER_LP100, 500)
+        m.COUNTERSFEED_feed[m.COUNTERSFEED_FEEDID_SPEED_AVG] = 1000
+        m.COUNTERSFEED_feed[m.COUNTERSFEED_FEEDID_LP100_AVG] = 500
+        m.COUNTERSFEED_feed[m.COUNTERSFEED_FEEDID_LPH] = 10 << 8
+
+        touch_event = ffi.new("INPUT_Event*")
+        touch_event.key = m.INPUT_KEY_ENTER
+        touch_event.keystatus = m.INPUT_KEYSTATUS_HOLD
+        touch_event.componentID = self.INPUTCOMPONENT_MAINDISPLAY
+
+        m.UIBOARD_page_control(m.NEXTION_PAGECONTROL_USERINPUT, cast_void(touch_event))
+
+        assert m.AVERAGE_buffers[m.AVERAGE_BUFFER_SPEED].average == 0
+        assert m.AVERAGE_buffers[m.AVERAGE_BUFFER_LP100].average == 0
+        assert m.COUNTERSFEED_feed[m.COUNTERSFEED_FEEDID_SPEED_AVG] == 0
+        assert m.COUNTERSFEED_feed[m.COUNTERSFEED_FEEDID_LP100_AVG] == 0
+        assert m.COUNTERSFEED_feed[m.COUNTERSFEED_FEEDID_LPH] == 10 << 8
 
 
     '''
