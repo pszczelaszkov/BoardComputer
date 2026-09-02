@@ -552,8 +552,7 @@ inline static void handle_userinput(INPUT_Event* input_event)
 		INPUTCOMPONENT_WATCH,
 	};
 
-	
-	Callback on_press = NULL;
+
 	Callback on_hold = NULL;
 	Callback on_click = NULL;
 	NEXTION_Component* component = NULL;
@@ -606,6 +605,8 @@ inline static void handle_userinput(INPUT_Event* input_event)
 		case INPUTCOMPONENT_CONFIG:
 			component = &UIBOARD_components[UIBOARD_COMPONENT_CONFIG];
 			on_click = switch_page_to_config;
+		break;
+		default:
 		break;
 	}
 

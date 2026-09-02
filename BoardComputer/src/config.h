@@ -116,7 +116,7 @@ TESTUSE void CONFIG_saveconfig(CONFIG_Config* config);
 /*
     Resets config in persistent memory to default values. 
 */
-TESTUSE uint8_t CONFIG_factory_default_reset();
+TESTUSE void CONFIG_factory_default_reset();
 
 /*
     Sanitize config, replacing offending values with minimal possible.

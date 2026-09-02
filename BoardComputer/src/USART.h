@@ -24,7 +24,7 @@ TESTUSE void USART_read_service_byte();
 TESTUSE void USART_write_nextion_byte();
 TESTUSE void USART_write_service_byte();
 
-uint8_t USART_send(char data[],uint8_t flush);
+TESTUSE uint8_t USART_send(char data[],uint8_t flush);
 TESTUSE void USART_TX_clear();
 TESTUSE void USART_flush();
 void USART_initialize();

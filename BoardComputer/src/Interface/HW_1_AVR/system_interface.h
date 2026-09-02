@@ -5,7 +5,7 @@
 #include <avr/io.h>
 #include <avr/interrupt.h>
 
-#define ENTRY_ROUTINE void main()
+#define ENTRY_ROUTINE int main()
 int8_t SYSTEMINTERFACE_is_board_enabled();
 void SYSTEMINTERFACE_initialize_IO();
 void SYSTEMINTERFACE_start_system_clock();

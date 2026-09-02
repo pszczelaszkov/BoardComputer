@@ -60,7 +60,6 @@ TESTUSE typedef struct INPUT_Event{
 
 
 static const uint8_t components_count;
-static uint8_t pending_componentID;
 extern uint8_t INPUT_active_page;
 extern INPUT_Userinput_Handler INPUT_userinput_handler;
 TESTUSE extern INPUT_Keystatus_t INPUT_keystatus[];

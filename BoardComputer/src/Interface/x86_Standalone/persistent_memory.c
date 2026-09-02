@@ -21,7 +21,7 @@ static inline void prepare_storage(uint16_t size)
     }
 }
 
-uint8_t PERSISTENT_MEMORY_write(const uint32_t address, void* src, uint16_t size)
+uint8_t PERSISTENT_MEMORY_write(const uint32_t address, const void* src, uint16_t size)
 {
     prepare_storage(address + size);
     void* destination = &storage[address];

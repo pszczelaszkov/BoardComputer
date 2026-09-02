@@ -4,7 +4,7 @@
 #include <stdint.h>
 #include <bitwise.h>
 #define ISR(...) void __VA_ARGS__()
-#define ENTRY_ROUTINE void main()
+#define ENTRY_ROUTINE int main()
 extern volatile uint8_t DDRA, DDRB, DDRC, DDRD;
 extern volatile uint8_t PORTA, PORTB, PORTC, PORTD, DIDR0;
 extern volatile uint8_t PINA, PINB, PINC, PIND;

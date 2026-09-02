@@ -9,7 +9,7 @@
 
 #include <avr/pgmspace.h>
 
-inline uint8_t PROGRAM_MEMORY_read(const void* address, void* dest, uint16_t size)
+inline void PROGRAM_MEMORY_read(const void* address, void* dest, uint16_t size)
 {
     memcpy_P(dest, address, size);
 }

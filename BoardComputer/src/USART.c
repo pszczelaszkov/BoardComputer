@@ -2,23 +2,10 @@
 #include "input.h"
 #include "serial.h"
 
-#ifndef __AVR__
-static void test()
-{
-	char eot[] = {0xff,0x0};
-	if(!strncmp(&USART_RX_buffer[1],"PING",4))
-	{
-		USART_send("PONG",0);
-		USART_send(eot,1);
-	}
-}
-#endif
-
 #define PASSTHROUGHWATCHDOG_THRESHOLD 8
 
 typedef enum NEXTIONMESSAGETYPE
 {
-	NEXTIONMESSAGETYPE_TEST = 0x1,
 	NEXTIONMESSAGETYPE_TOUCHINPUT = 0x65,
 	NEXTIONMESSAGETYPE_PAGEID= 0x66,
 	NEXTIONMESSAGETYPE_INCOMINGDATA = 0x71,
@@ -119,11 +106,6 @@ void message_register(uint8_t message_size)
 	{
 		switch((NEXTIONMESSAGETYPE)USART_RX_buffer[0])
 		{	
-			#ifdef __DEBUG__
-			case NEXTIONMESSAGETYPE_TEST:
-				test();
-			break;
-			#endif
 			case NEXTIONMESSAGETYPE_TOUCHINPUT:
 				INPUT_ComponentID_t componentID = (INPUT_ComponentID_t)(USART_RX_buffer[2]);
 				INPUT_Keystatus_t keystatus = USART_RX_buffer[3];
@@ -133,10 +115,7 @@ void message_register(uint8_t message_size)
 				NEXTION_handler_sendme(USART_RX_buffer[1]);
 			break;
 			case NEXTIONMESSAGETYPE_INCOMINGDATA:
-				if(NEXTION_incomingdata_handler)
-				{
-					NEXTION_incomingdata_handler((void*)&USART_RX_buffer[1]);
-				}
+				NEXTION_incomingdata_handler((void*)&USART_RX_buffer[1]);
 			break;
 			case NEXTIONMESSAGETYPE_DEVICEREADY:
 				NEXTION_handler_ready(*(uint16_t*)&USART_RX_buffer[1]);

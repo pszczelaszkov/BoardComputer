@@ -96,61 +96,66 @@ TESTUSE static void TESTADDPREFIX(set_ADC_channel_value)(ADC_CHANNEL_t channel, 
 }
 
 TESTUSE static void TESTADDPREFIX(calculate_adc)(ADC_CHANNEL_t channel)
-{
-	struct ADC_state state = ADC_state[channel];
-	switch(channel)
+{	
+	if(ADC_CHANNEL_COUNT > channel)
 	{
-		case ADC_CHANNEL_OILTEMP:
+		struct ADC_state state = ADC_state[channel];
+		switch(channel)
 		{
-			uint16_t adc = calibrated_adc_value(state.adc_value, SYSTEM_config.SENSORS_OILTEMP_CAL);
-			SENSORSFEED_feed[SENSORSFEED_FEEDID_OILTEMP] = PROGRAMDATA_get_ADC_lut_value(state.adc_lut_index, adc);
-		}
-		break;
-		case ADC_CHANNEL_INTAKETEMP:
-		{
-			uint16_t adc = calibrated_adc_value(state.adc_value, SYSTEM_config.SENSORS_INTAKETEMP_CAL);
-			SENSORSFEED_feed[SENSORSFEED_FEEDID_INTAKETEMP] = PROGRAMDATA_get_ADC_lut_value(state.adc_lut_index, adc);
-		}
-		break;
-		case ADC_CHANNEL_OUTTEMP:
-		{
-			uint16_t adc = calibrated_adc_value(state.adc_value, SYSTEM_config.SENSORS_OUTTEMP_CAL);
-			SENSORSFEED_feed[SENSORSFEED_FEEDID_OUTTEMP] = PROGRAMDATA_get_ADC_lut_value(state.adc_lut_index, adc);
-		}
-		break;
-		case ADC_CHANNEL_MAP:
-			SENSORSFEED_feed[SENSORSFEED_FEEDID_MAP] = interpolate_adc(
-				SYSTEM_config.SENSORS_MAP_MIN,
-				SYSTEM_config.SENSORS_MAP_MAX,
-				state.adc_value);
-		break;
-		case ADC_CHANNEL_FRP:
-			SENSORSFEED_feed[SENSORSFEED_FEEDID_FRP] = interpolate_adc(
-				SYSTEM_config.SENSORS_FRP_MIN,
-				SYSTEM_config.SENSORS_FRP_MAX,
-				state.adc_value);
-		break;
-		case ADC_CHANNEL_TANK:
-			SENSORSFEED_feed[SENSORSFEED_FEEDID_TANK] = interpolate_adc(
-				SYSTEM_config.SENSORS_TANK_MIN,
-				SYSTEM_config.SENSORS_TANK_MAX,
-				state.adc_value);
-		break;
-		case ADC_CHANNEL_EGT:
-			if(SYSTEM_config.SENSORS_EGT_INTERNAL)
-				break;
+			case ADC_CHANNEL_OILTEMP:
+			{
+				uint16_t adc = calibrated_adc_value(state.adc_value, SYSTEM_config.SENSORS_OILTEMP_CAL);
+				SENSORSFEED_feed[SENSORSFEED_FEEDID_OILTEMP] = PROGRAMDATA_get_ADC_lut_value(state.adc_lut_index, adc);
+			}
+			break;
+			case ADC_CHANNEL_INTAKETEMP:
+			{
+				uint16_t adc = calibrated_adc_value(state.adc_value, SYSTEM_config.SENSORS_INTAKETEMP_CAL);
+				SENSORSFEED_feed[SENSORSFEED_FEEDID_INTAKETEMP] = PROGRAMDATA_get_ADC_lut_value(state.adc_lut_index, adc);
+			}
+			break;
+			case ADC_CHANNEL_OUTTEMP:
+			{
+				uint16_t adc = calibrated_adc_value(state.adc_value, SYSTEM_config.SENSORS_OUTTEMP_CAL);
+				SENSORSFEED_feed[SENSORSFEED_FEEDID_OUTTEMP] = PROGRAMDATA_get_ADC_lut_value(state.adc_lut_index, adc);
+			}
+			break;
+			case ADC_CHANNEL_MAP:
+				SENSORSFEED_feed[SENSORSFEED_FEEDID_MAP] = interpolate_adc(
+					SYSTEM_config.SENSORS_MAP_MIN,
+					SYSTEM_config.SENSORS_MAP_MAX,
+					state.adc_value);
+			break;
+			case ADC_CHANNEL_FRP:
+				SENSORSFEED_feed[SENSORSFEED_FEEDID_FRP] = interpolate_adc(
+					SYSTEM_config.SENSORS_FRP_MIN,
+					SYSTEM_config.SENSORS_FRP_MAX,
+					state.adc_value);
+			break;
+			case ADC_CHANNEL_TANK:
+				SENSORSFEED_feed[SENSORSFEED_FEEDID_TANK] = interpolate_adc(
+					SYSTEM_config.SENSORS_TANK_MIN,
+					SYSTEM_config.SENSORS_TANK_MAX,
+					state.adc_value);
+			break;
+			case ADC_CHANNEL_EGT:
+				if(SYSTEM_config.SENSORS_EGT_INTERNAL)
+					break;
 
-			if(state.adc_value == 0 || state.adc_value >= ADC_MAX)
-			{
-				SENSORSFEED_EGT_status = SENSORSFEED_EGT_STATUS_UNKN;
-				SENSORSFEED_feed[SENSORSFEED_FEEDID_EGT] = 0;
-			}
-			else
-			{
-				SENSORSFEED_EGT_status = SENSORSFEED_EGT_STATUS_VALUE;
-				SENSORSFEED_feed[SENSORSFEED_FEEDID_EGT] = state.adc_value;
-			}
-		break;
+				if(state.adc_value == 0 || state.adc_value >= ADC_MAX)
+				{
+					SENSORSFEED_EGT_status = SENSORSFEED_EGT_STATUS_UNKN;
+					SENSORSFEED_feed[SENSORSFEED_FEEDID_EGT] = 0;
+				}
+				else
+				{
+					SENSORSFEED_EGT_status = SENSORSFEED_EGT_STATUS_VALUE;
+					SENSORSFEED_feed[SENSORSFEED_FEEDID_EGT] = state.adc_value;
+				}
+			break;
+			case ADC_CHANNEL_COUNT:
+			break;
+		}
 	}
 }
 

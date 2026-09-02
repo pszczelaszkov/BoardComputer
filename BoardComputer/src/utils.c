@@ -29,7 +29,6 @@ void i16toa(int16_t n, char s[])
 {
     uint8_t i = 0;
     uint8_t is_negative = 0;
-    uint16_t num;
 
     if (n < 0) {
         is_negative = 1;
@@ -53,7 +52,6 @@ void i32toa(int32_t n, char s[])
 {
     uint8_t i = 0;
     uint8_t is_negative = 0;
-    uint32_t num;
 
     if (n < 0) {
         is_negative = 1;
@@ -170,5 +168,6 @@ void rightnconcat_short(char* dest, int16_t value, uint8_t spacing, uint8_t n)
     length = strlen(temp);
     if(n > length)
         n = length;
-	memcpy(&dest[spacing-n],temp,n);
+
+    memcpy(&dest[spacing-n],temp,n);
 }

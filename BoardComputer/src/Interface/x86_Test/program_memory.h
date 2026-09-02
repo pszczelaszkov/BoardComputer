@@ -11,7 +11,7 @@
 #include <stdint.h>
 #include <string.h>
 
-inline uint8_t PROGRAM_MEMORY_read(const void* address, void* dest, uint16_t size)
+inline void PROGRAM_MEMORY_read(const void* address, void* dest, uint16_t size)
 {
     memcpy(dest, address, size);
 }

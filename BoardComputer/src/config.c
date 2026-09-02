@@ -93,6 +93,10 @@ void CONFIG_get_entry_min_max_values(CONFIG_Entry entry, CONFIG_maxdata_t* min, 
     if (entry < CONFIG_ENTRY_LAST) {
         switch(validator)
         {
+            case ENTRY_VALIDATOR_NONE:
+                *min = CONFIG_minvalue;
+                *max = CONFIG_maxvalue;
+            break;
             case ENTRY_VALIDATOR_BOOLEAN:
             case ENTRY_VALIDATOR_ENUM_2:
             case ENTRY_VALIDATOR_ENUM_3:
@@ -242,7 +246,7 @@ uint8_t CONFIG_read_entry(CONFIG_Config* config, CONFIG_Entry entry, CONFIG_maxd
     return size;
 }
 
-uint8_t CONFIG_factory_default_reset()
+void CONFIG_factory_default_reset()
 {
     CONFIG_maxdata_t default_value = 0;
     for(uint8_t i = 0; i < CONFIG_ENTRY_LAST; i++)

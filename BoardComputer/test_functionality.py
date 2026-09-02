@@ -406,13 +406,15 @@ class TestPreRun(TestParent):
         assert m.COUNTERSFEED_feed[m.COUNTERSFEED_FEEDID_SPEED_AVG] == expected_kph
 
     def test_USART(self):
-        write_usart(m, 0x01, b"PING")
+        write_usart(m, 0x66, bytes([m.NEXTION_get_pageid()]))
+        assert m.USART_RX_buffer_index == 0
+        assert m.USART_eot_counter == 3
+
+        assert m.USART_send(b"PONG", m.USART_FLUSH) == 1
         response = read_usart(m)
         assert response[:4] == b"PONG"
         m.USART_TX_clear()
-        assert m.USART_RX_buffer_index == 0
         assert m.USART_TX_buffer_index == m.USART_TX_BUFFER_SIZE
-        assert m.USART_eot_counter == 3
 
     def test_USART_passthrough_mode(self):
         write_usart(m, None, b"DRAKJHSUYDGBNCJHGJKSHBDN")

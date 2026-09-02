@@ -21,8 +21,6 @@ static volatile int8_t display_watchdog_counter;
 static NEXTION_page_control_callback page_control_callback;
 static const uint16_t MINIMAL_COMPAT_UIVERSION = 0x01;
 
-static const char str_bck[NEXTION_OBJNAME_LEN] = "bck";
-
 const uint16_t NEXTION_VERSION = 0x01;
 
 uint8_t NEXTION_selection_counter;
@@ -181,7 +179,7 @@ Nullptr safe.
 void NEXTION_set_component_select_status(NEXTION_Component* component, NEXTION_Component_select_status_t status)
 {
 	if(component){
-		uint16_t value;
+		uint16_t value = 0;
 		switch(status){
 			case NEXTION_COMPONENTSELECTSTATUS_SELECTED:
 				if(selected_component != component){
@@ -197,7 +195,7 @@ void NEXTION_set_component_select_status(NEXTION_Component* component, NEXTION_C
 		}
 
 		char buffer[16];
-		char* highlight_type;
+		char* highlight_type = NULL;
 		uint8_t iterator = 3;
 		uint8_t highlight_type_len;
 		memcpy(buffer,component->name,iterator);

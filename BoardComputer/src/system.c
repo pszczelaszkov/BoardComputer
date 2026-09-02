@@ -18,14 +18,13 @@ const SYSTEM_cycle_timestamp_t SYSTEM_fullcycle_rtc_steps = 128;
 static const uint8_t BEEP_DURATION = 4;
 static const uint16_t MINIMAL_COMPAT_SYSTEMVERSION = 0x01;
 static uint8_t shortbeep_counter;
-static SYSTEM_ALERT_SEVERITY resolve_alert_severity(SYSTEM_ALERT alert);
 static ALERT_PATTERN resolve_severity_pattern(SYSTEM_ALERT_SEVERITY severity);
 
 static SYSTEM_Alert_t active_alert;
 
 static ALERT_PATTERN resolve_severity_pattern(SYSTEM_ALERT_SEVERITY severity)
 {
-    ALERT_PATTERN pattern;
+    ALERT_PATTERN pattern = 0;
     switch(severity)
     {
         case SYSTEM_ALERT_SEVERITY_NOTIFICATION:

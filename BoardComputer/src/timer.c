@@ -121,6 +121,8 @@ void TIMER_format(TIMER_watch* timer, TIMER_FORMATED_t* formated, enum TIMER_FOR
             *formated->segments.cs = '0';
             rightconcat_short(formated->segments.cs,timer->timer.centiseconds>>1,2);
         break;
+        default:
+        break;
     }
 }
 

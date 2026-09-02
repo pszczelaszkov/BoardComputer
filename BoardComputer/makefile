@@ -16,9 +16,9 @@ HW_1_AVR_IDIR := $(IDIR)Interface/HW_1_AVR/
 # Flags
 TESTDEFINES 	:= -DTESTUSE=
 X86_HARDENING   := -fstack-protector-strong
-STANDALONEFLAGS	:= -O1 -g $(TESTDEFINES) $(X86_HARDENING)
-TESTFLAGS   	:= -O1 -fpic -g -D__DEBUG__ $(TESTDEFINES) $(X86_HARDENING)
-AVRFLAGS    	:= -std=gnu11 -O1 -mmcu=atmega324pb -DF_CPU=8000000 -fshort-enums $(TESTDEFINES)
+STANDALONEFLAGS	:= -Wall -O1 -g $(TESTDEFINES) $(X86_HARDENING)
+TESTFLAGS   	:= -Wall -O1 -fpic -g -D__DEBUG__ $(TESTDEFINES) $(X86_HARDENING)
+AVRFLAGS    	:= -Wall -std=gnu11 -O1 -mmcu=atmega324pb -DF_CPU=8000000 -fshort-enums $(TESTDEFINES)
 
 # Common sources
 COMMON_SRCS := USART.c input.c nextion.c timer.c sensorsfeed.c countersfeed.c utils.c \

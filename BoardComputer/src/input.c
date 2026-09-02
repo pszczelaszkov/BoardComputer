@@ -3,7 +3,6 @@
 #include "UI/numpad.h"
 #include "system_interface.h"
 
-static uint8_t pending_componentID;
 INPUT_Keystatus_t INPUT_keystatus[INPUT_KEY_LAST];
 INPUT_Userinput_Handler INPUT_userinput_handler = NULL;
 
