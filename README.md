@@ -1,8 +1,10 @@
 # BoardComputer
-Versatile device,capable of reading various sensors and controlling optional subsystems:</br>
-Summary:</br>
+Versatile firmware with custom HW, capable of reading various sensors and firing optional outputs.</br>
+Combined with Nextion HMI allows many deployments like Board/Trip computer or full dashboard.</br>
+Currently preferred display: <a href="https://nextion.tech/basic-series-introduction/">NX4024T032</a></br>
+
+Summary of HW_1:</br>
 µC: <a href="https://www.microchip.com/wwwproducts/en/ATmega324PB">ATMEGA324PB</a></br>
-Preferred display: <a href="https://nextion.tech/basic-series-introduction/">NX4024T032</a></br>
 Main connectors: 2x <a href="https://www.phoenixcontact.com/skedd">SKEDD</a></br>
 PCB size: 10cmx10cm</br>
 INPUT:</br>
@@ -20,12 +22,17 @@ Communication:</br>
 -TWI(Extensions)</br>
 -UART(Display)</br>
 -UART(Raw configuration)</br>
+
+# Testing
+Integration tests are done with help of custom framework backed with CFFI library and are written in python.</br>
+It is possible to build x86 standalone binary and fire it on Linux for faster manual testing.</br>
+
 # Instructions
 <a href="https://github.com/pszczelaszkov/BoardComputer/blob/master/BoardComputer/doc/index.md">Documentation</a></br>
 # Preview
 <b>Display Example:</b></br>
 ![Display](https://github.com/pszczelaszkov/BoardComputer/blob/master/Previews/DisplayPreview.png)
 </br>
-<b>Board Preview:</b></br>
+<b>HW1 Board Preview:</b></br>
 ![Board](https://github.com/pszczelaszkov/BoardComputer/blob/master/Previews/BoardComputerFront.png)
 ![Board](https://github.com/pszczelaszkov/BoardComputer/blob/master/Previews/BoardComputerBack.png)
