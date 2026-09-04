@@ -147,7 +147,7 @@ def scan_for_definitions(path: str) -> ParsedData:
     Scans file under given path for TESTUSE macro.
     Returns copied definitions with stripped TESTUSE.
     '''
-    macrodefinition = re.compile(r"#define \w* [\w* .\/]*\n")
+    macrodefinition = re.compile(r"#define \w* (?:\([\w* ]+\)\s*)?[\w* .\/]*\n")
     function = re.compile(r"(TESTUSE \w* ?\w+\** \w*\([\w,\[\]* &]*\))[\n;{]")
     variable = re.compile(r"(TESTUSE ?\w* ?\w* \w+\** [^()\n=;]+)(\s*=[^;]*)?;")
     enumeration = re.compile(r"TESTUSE \w* ?enum \w+")
