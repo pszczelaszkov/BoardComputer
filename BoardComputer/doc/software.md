@@ -5,4 +5,59 @@
 [It's not bug it's a feature](known-issues.md)</br>
 
 ### Simplified system design
-[![](https://mermaid.ink/img/eyJjb2RlIjoic3RhdGVEaWFncmFtLXYyXG5cblsqXSAtLT4gaW5pdGlhbGl6ZVxuaW5pdGlhbGl6ZSAtLT4gWypdXG5ydGMgLS0-IENvcmVcblsqXSAtLT4gcnRjXG5ydGMgLS0-IEVWRU5UX1RJTUVSX0lTUlxuZmx1c2ggLS0-WypdXG5cblxuc3RhdGUgSVJRe1xuVVNFUiAtLT4gSU5QVVRfdXNlcmlucHV0XG5ESUdJVEFMIC0tPiBDT1VOVEVSU0ZFRURcbiAgICBJTlBVVF91c2VyaW5wdXRcbiAgICBDT1VOVEVSU0ZFRURcbiAgICBFVkVOVF9USU1FUl9JU1JcbiAgICBub3RlIHJpZ2h0IG9mIElOUFVUX3VzZXJpbnB1dFxuICAgICAgICBXaGVuIHRpbWVyIGlzIGluIFNUT1BXQVRDSCBtb2RlXG4gICAgICAgIHJ1bnN0YXR1cyBpcyBjb250cm9sbGVkIGZyb20gdGhlcmUgdG8gYXNzdXJlIGluc3RhbnQgYWN0aW9uXG4gICAgZW5kIG5vdGUgXG59XG5cbnN0YXRlIFN5c3RlbXtcbiAgICBydGM6IFJUQ1xuICAgIHN0YXRlIENvcmV7XG4gICAgICAgIFsqXSAtLT4gdXBkYXRlXG4gICAgICAgIHVwZGF0ZTogVXBkYXRlIFN5c3RlbVxuICAgICAgICB1cGRhdGUgLS0-IGZsdXNoXG4gICAgICAgIGZsdXNoOiBGbHVzaCBVU0FSVFxuICAgICAgICBub3RlIHJpZ2h0IG9mIHVwZGF0ZVxuICAgICAgICAgICAgQWxsIHBvc3NpYmxlIG91dHB1dCBtdXN0IGJlIGR1bXBlZCB0byBVU0FSVCBidWZmZXJcbiAgICAgICAgZW5kIG5vdGUgIFxuICAgIH1cbiAgICBpbml0aWFsaXplOiBwcmVzdGFydF9yb3V0aW5lXG4gICAgbm90ZSBsZWZ0IG9mIHJ0Y1xuICAgICAgICBTeXN0ZW0gYmVhdCBpcyA4SHpcbiAgICBlbmQgbm90ZSAgXG59XG5cbiIsIm1lcm1haWQiOnsidGhlbWUiOiJkZWZhdWx0In0sInVwZGF0ZUVkaXRvciI6ZmFsc2V9)](https://mermaid-js.github.io/mermaid-live-editor/#/edit/eyJjb2RlIjoic3RhdGVEaWFncmFtLXYyXG5cblsqXSAtLT4gaW5pdGlhbGl6ZVxuaW5pdGlhbGl6ZSAtLT4gWypdXG5ydGMgLS0-IENvcmVcblsqXSAtLT4gcnRjXG5ydGMgLS0-IEVWRU5UX1RJTUVSX0lTUlxuZmx1c2ggLS0-WypdXG5cblxuc3RhdGUgSVJRe1xuVVNFUiAtLT4gSU5QVVRfdXNlcmlucHV0XG5ESUdJVEFMIC0tPiBDT1VOVEVSU0ZFRURcbiAgICBJTlBVVF91c2VyaW5wdXRcbiAgICBDT1VOVEVSU0ZFRURcbiAgICBFVkVOVF9USU1FUl9JU1JcbiAgICBub3RlIHJpZ2h0IG9mIElOUFVUX3VzZXJpbnB1dFxuICAgICAgICBXaGVuIHRpbWVyIGlzIGluIFNUT1BXQVRDSCBtb2RlXG4gICAgICAgIHJ1bnN0YXR1cyBpcyBjb250cm9sbGVkIGZyb20gdGhlcmUgdG8gYXNzdXJlIGluc3RhbnQgYWN0aW9uXG4gICAgZW5kIG5vdGUgXG59XG5cbnN0YXRlIFN5c3RlbXtcbiAgICBydGM6IFJUQ1xuICAgIHN0YXRlIENvcmV7XG4gICAgICAgIFsqXSAtLT4gdXBkYXRlXG4gICAgICAgIHVwZGF0ZTogVXBkYXRlIFN5c3RlbVxuICAgICAgICB1cGRhdGUgLS0-IGZsdXNoXG4gICAgICAgIGZsdXNoOiBGbHVzaCBVU0FSVFxuICAgICAgICBub3RlIHJpZ2h0IG9mIHVwZGF0ZVxuICAgICAgICAgICAgQWxsIHBvc3NpYmxlIG91dHB1dCBtdXN0IGJlIGR1bXBlZCB0byBVU0FSVCBidWZmZXJcbiAgICAgICAgZW5kIG5vdGUgIFxuICAgIH1cbiAgICBpbml0aWFsaXplOiBwcmVzdGFydF9yb3V0aW5lXG4gICAgbm90ZSBsZWZ0IG9mIHJ0Y1xuICAgICAgICBTeXN0ZW0gYmVhdCBpcyA4SHpcbiAgICBlbmQgbm90ZSAgXG59XG5cbiIsIm1lcm1haWQiOnsidGhlbWUiOiJkZWZhdWx0In0sInVwZGF0ZUVkaXRvciI6ZmFsc2V9)
+```mermaid
+stateDiagram-v2
+
+[*] --> initialize
+initialize --> [*]
+[*] --> rtc
+rtc --> EVENT_TIMER_ISR
+rtc --> Core
+flush --> [*]
+
+state IRQ {
+    USER --> INPUT_userinput
+    USART_RX --> INPUT_userinput
+    DIGITAL --> COUNTERSFEED
+    ADC --> SENSORSFEED
+    SPI --> EGT
+    USART_TX
+    EVENT_TIMER_ISR
+    note right of INPUT_userinput
+        ISR only queues the event with a cycle timestamp.
+        Stopwatch start/stop applies that delta in high_prio_core.
+    end note
+    note right of EVENT_TIMER_ISR
+        Wakes CPU, advances SYSTEM_event_timer 0..7,
+        sets SYSTEM_exec. Core does not run on other IRQs.
+    end note
+}
+
+state System {
+    rtc: RTC
+    initialize: ENTRY_ROUTINE
+    state Core {
+        [*] --> high_prio
+        high_prio --> update
+        update --> flush
+        high_prio: high_prio_core
+        update: core
+        flush: USART_flush
+        note right of high_prio
+            INPUT_update, INPUT_handle, TIMER_update.
+            INPUT only if SYSTEM_STATUS_OPERATIONAL.
+        end note
+        note right of update
+            If OPERATIONAL: COUNTERSFEED, SENSORSFEED, NEXTION.
+            Always: SYSTEM_update, USART_update.
+            All output must be dumped to the USART buffer here.
+        end note
+    }
+    note left of rtc
+        System beat is 8 Hz (async Timer2).
+        Between ticks the CPU sleeps.
+        post_irq_core runs on wake but must not touch USART.
+    end note
+}
+
+```
