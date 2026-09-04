@@ -1,4 +1,5 @@
 # BoardComputer
+![CI](https://github.com/pszczelaszkov/BoardComputer/actions/workflows/x86-test.yml/badge.svg) ![CI](https://github.com/pszczelaszkov/BoardComputer/actions/workflows/avr-hw1-size.yml/badge.svg)</br>
 Versatile firmware with custom HW, capable of reading various sensors and firing optional outputs.</br>
 Combined with Nextion HMI allows many deployments like Board/Trip computer or full dashboard.</br>
 Currently preferred display: <a href="https://nextion.tech/basic-series-introduction/">NX4024T032</a></br>
