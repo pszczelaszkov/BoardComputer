@@ -557,10 +557,10 @@ inline static void handle_userinput(INPUT_Event* input_event)
 	Callback on_click = NULL;
 	NEXTION_Component* component = NULL;
 	INPUT_Key_t key = input_event->key;
-    InputComponentID_t componentID = input_event->componentID;
+    InputComponentID_t componentID = (InputComponentID_t)input_event->componentID;
     INPUT_Keystatus_t keystatus = input_event->keystatus;
 
-	if(INPUT_KEYSTATUS_CLICK == keystatus)
+	if(INPUT_KEYSTATUS_CLICK == keystatus || INPUT_KEYSTATUS_HOLD == keystatus)
 	{
 		if(INPUT_KEY_DOWN == key)
 		{ 
