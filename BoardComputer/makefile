@@ -57,13 +57,15 @@ x86_test: clean prepare_dirs
 
 # List all .o objects for x86 Test
 X86_SRCS := $(addprefix $(TDIR), $(COMMON_SRCS) $(UI_SRCS)) \
-            $(TDIR)main.c
+            $(TDIR)main.c $(TDIR)cffi_testmodule.c
 X86_IFACE_SRCS := $(X86_TEST_IDIR)persistent_memory.c $(X86_TEST_IDIR)system_interface.c $(X86_TEST_IDIR)serial.c \
                   $(X86_TEST_IDIR)adc.c $(X86_TEST_IDIR)egt.c $(X86_TEST_IDIR)counters.c $(X86_TEST_IDIR)keys.c
 
 X86_OBJS := $(patsubst $(TDIR)%.c,$(BIN_DIR)%_.o,$(X86_SRCS)) \
              $(patsubst $(X86_TEST_IDIR)%.c,$(BIN_DIR)%_.o,$(X86_IFACE_SRCS))
 
+# Prefer elevated headers under test/ over originals under src/
+TEST_INCLUDES := -I$(TDIR) -I$(TDIR)Interface/x86_Test -I$(IDIR) -I$(X86_TEST_IDIR)
 
 $(BIN_DIR)testmodule.so: $(X86_OBJS)
 	$(call PRINTF,"Linking $@")
@@ -71,11 +73,11 @@ $(BIN_DIR)testmodule.so: $(X86_OBJS)
 
 $(BIN_DIR)%_.o: $(TDIR)%.c
 	$(call PRINTF,"Compiling $<")
-	$(CC_X86) $(TESTFLAGS) -I$(IDIR) -I$(X86_TEST_IDIR) $(PYTHON_INCLUDES) -c $< -o $@
+	$(CC_X86) $(TESTFLAGS) $(TEST_INCLUDES) $(PYTHON_INCLUDES) -c $< -o $@
 
 $(BIN_DIR)%_.o: $(X86_TEST_IDIR)%.c
 	$(call PRINTF,"Compiling $<")
-	$(CC_X86) $(TESTFLAGS) -I$(IDIR) -I$(X86_TEST_IDIR) -c $< -o $@
+	$(CC_X86) $(TESTFLAGS) $(TEST_INCLUDES) -c $< -o $@
 
 # -------------------------- X86 Standalone Build ----------------------------------------
 

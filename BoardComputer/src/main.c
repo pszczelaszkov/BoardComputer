@@ -4,25 +4,14 @@
  * Created: 2019-10-06 22:07:57
  * Author : pszczelaszkov
  */ 
-#include "main.h"
-#include "UI/numpad.h"
-#include "UI/board.h"
-#include "UI/config.h"
-#include "programdata.h"
-
 #include "system_interface.h"
 #include "USART.h"
 #include "sensorsfeed.h"
 #include "countersfeed.h"
-#include "average.h"
 #include "timer.h"
 #include "nextion.h"
 #include "input.h"
 #include "system.h"
-#include "config.h"
-#include "persistent_memory.h"
-#include "serial.h"
-#include "counters.h"
 
 void post_irq_core()
 {

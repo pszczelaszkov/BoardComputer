@@ -14,7 +14,8 @@ It makes 4 operations:
         -Creates setters/getters for variables in source file.
     2. Searches files for TESTUSE keyword(i.e TESTUSE int variable_name).
     3. Creates definitions headers for test usage.
-    4. Wraps main file with cffi for ease of importing.
+    4. Generates a dedicated CFFI wrapper TU (cffi_testmodule.c) whose
+       preamble includes all test-relevant headers.
 
 If object have static qualifier it will be elevated to extern.
 TESTPREFIX typname will evaluate into PATHWITHOUTSLASHES_typename,
@@ -273,13 +274,45 @@ def elevate_staticvars(path: str, testdirectorypath: str):
             source.writelines(setter + getter)
 
 
+# Interface trees that are not part of the x86 test build.
+INACTIVE_INTERFACE_MARKERS = (
+    "/Interface/HW_1_AVR/",
+    "/Interface/x86_Standalone/",
+)
+
+# Generated artefacts under the test tree must not be elevated or included.
+SKIP_PATH_MARKERS = INACTIVE_INTERFACE_MARKERS + (
+    "/generatedDefinitions/",
+)
+
+
+def should_skip_path(filepath: str) -> bool:
+    normalized = "/" + filepath.replace("\\", "/").lstrip("/")
+    return any(marker in normalized for marker in SKIP_PATH_MARKERS)
+
+
 def get_files(dirpath):
     for entry in os.scandir(dirpath):
         if entry.is_file() and (entry.name.endswith(".c") or
                                 entry.name.endswith(".h")):
-            yield entry.path
+            if not should_skip_path(entry.path):
+                yield entry.path
         elif entry.is_dir():
-            yield from get_files(entry.path)
+            if not should_skip_path(entry.path + "/"):
+                yield from get_files(entry.path)
+
+
+def get_test_headers(testdirectorypath: str) -> list:
+    '''
+    Headers that participate in CFFI cdef scanning and wrapper preamble.
+    Common + UI + Interface/x86_Test only.
+    '''
+    headers = [
+        path for path in get_files(testdirectorypath)
+        if path.endswith(".h")
+    ]
+    headers.sort()
+    return headers
 
 
 def elevate(testdirectorypath: str):
@@ -302,9 +335,8 @@ def elevate(testdirectorypath: str):
 
 def scan_files(testdirectorypath):
     parsed = ParsedData()
-    for filepath in get_files(testdirectorypath):
-        if(filepath.endswith('.h')):
-            parsed.extend(scan_for_definitions(filepath))
+    for filepath in get_test_headers(testdirectorypath):
+        parsed.extend(scan_for_definitions(filepath))
     return parsed
 
 
@@ -361,16 +393,31 @@ def create_definitions(path: str, parsed: ParsedData):
         definitions.writelines("%s\n" % line for line in parsed.functions)
 
 
+def build_cffi_preamble(testdirectory: str) -> str:
+    '''
+    Include every test-relevant header so CFFI wrappers see elevated
+    declarations without coupling to production main.c.
+    '''
+    lines = []
+    for headerpath in get_test_headers(testdirectory):
+        relative = os.path.relpath(headerpath, testdirectory).replace("\\", "/")
+        lines.append(f'#include "{relative}"')
+    # ENTRY_ROUTINE expands only at the definition site in main.c; declare
+    # it here so Python can call m.test() without stuffing main.c into the TU.
+    lines.append("void test();")
+    return "\n".join(lines) + "\n"
+
+
 def wrapmain(testdirectory, generateddirectory):
-    filepath = f'{testdirectory}/main.c'
+    filepath = f'{testdirectory}/cffi_testmodule.c'
     definitionspath = f"{generateddirectory}/definitions.h"
-    with open(filepath) as source:
-        with open(definitionspath) as definitions:
-            ffibuilder = FFI()
-            ffibuilder.cdef(definitions.read())
-            recompiler.make_c_source(
-                ffibuilder, "bin.testmodule", source.read(), filepath
-                )
+    preamble = build_cffi_preamble(testdirectory)
+    with open(definitionspath) as definitions:
+        ffibuilder = FFI()
+        ffibuilder.cdef(definitions.read())
+        recompiler.make_c_source(
+            ffibuilder, "bin.testmodule", preamble, filepath
+            )
 
 
 def main():
