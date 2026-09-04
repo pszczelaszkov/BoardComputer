@@ -32,6 +32,7 @@ It is possible to build x86 standalone binary and fire it on Linux for faster ma
 # Preview
 <b>Display Example:</b></br>
 ![Display](https://github.com/pszczelaszkov/BoardComputer/blob/master/Previews/DisplayPreview.png)
+![Config](https://github.com/pszczelaszkov/BoardComputer/blob/master/Previews/ConfigPreview.png)
 </br>
 <b>HW1 Board Preview:</b></br>
 ![Board](https://github.com/pszczelaszkov/BoardComputer/blob/master/Previews/BoardComputerFront.png)
