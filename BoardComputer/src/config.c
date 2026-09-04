@@ -113,21 +113,25 @@ void CONFIG_get_entry_min_max_values(CONFIG_Entry entry, CONFIG_maxdata_t* min, 
             break;
             case ENTRY_VALIDATOR_POSITIVE_EXCL_0:
                 *min = 1;
+            /*FALLTHROUGH*/
             case ENTRY_VALIDATOR_POSITIVE_INCL_0:
                 *max = CONFIG_maxvalue;
             break;
             case ENTRY_VALIDATOR_NEGATIVE_EXCL_0:
                 *max = -1;
+            /*FALLTHROUGH*/
             case ENTRY_VALIDATOR_NEGATIVE_INCL_0:
                 *min = CONFIG_minvalue;
             break;
             case ENTRY_VALIDATOR_POSITIVE_4DIGIT_EXCL_0:
                 *min = 1;
+            /*FALLTHROUGH*/
             case ENTRY_VALIDATOR_POSITIVE_4DIGIT_INCL_0:
                 *max = 9999;
             break;
             case ENTRY_VALIDATOR_NEGATIVE_4DIGIT_EXCL_0:
                 *max = -1;
+            /*FALLTHROUGH*/
             case ENTRY_VALIDATOR_NEGATIVE_4DIGIT_INCL_0:
                 *min = -9999;
             break;

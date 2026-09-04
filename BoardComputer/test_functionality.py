@@ -881,13 +881,13 @@ class TestTimer(TestParent):
 
         m.TIMER_set_watch(watchtype)
         m.TIMER_clear_active_watch()
-        m.TIMER_active_watch_toggle(0)
+        m.TIMER_active_watch_toggle()
         for i in range(ticks):
             m.TIMER_update()
         assert formated_time() == formatedresult
 
         m.TIMER_clear_active_watch()
-        m.TIMER_active_watch_toggle(0)
+        m.TIMER_active_watch_toggle()
 
     def test_watch_order(self):
         order = [
@@ -920,11 +920,11 @@ class TestTimer(TestParent):
         watch = m.TIMER_get_watch(targettype)
         assert watch.timer.watchstatus == m.TIMER_TIMERSTATUS_ZERO
 
-        m.TIMER_active_watch_toggle(0)
+        m.TIMER_active_watch_toggle()
         check_other_notaffected(watch)
         assert watch.timer.watchstatus == m.TIMER_TIMERSTATUS_COUNTING
 
-        m.TIMER_active_watch_toggle(0)
+        m.TIMER_active_watch_toggle()
         check_other_notaffected(watch)
         assert watch.timer.watchstatus == m.TIMER_TIMERSTATUS_STOP
 

@@ -164,7 +164,7 @@ inline static void handle_userinput(INPUT_Event* input_event)
 {
     const InputComponentID_t inputcomponent_it_current = inputcomponent_it;
     INPUT_Key_t key = input_event->key;
-    InputComponentID_t componentID = input_event->componentID;
+    InputComponentID_t componentID = (InputComponentID_t)input_event->componentID;
     INPUT_Keystatus_t keystatus = input_event->keystatus;
 
     if(INPUT_KEYSTATUS_CLICK == keystatus)
@@ -217,6 +217,7 @@ inline static void handle_userinput(INPUT_Event* input_event)
                     return;
                 break;
                 default:
+                break;
             }
         }
 
@@ -252,6 +253,7 @@ inline static void handle_userinput(INPUT_Event* input_event)
                 memcpy(&objname,"pad",sizeof(objname));
             break;
             default:
+            break;
         }
 
         //Always select, at least for refreshing counter.

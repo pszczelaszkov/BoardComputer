@@ -79,6 +79,7 @@ static void write_serial_byte(uint8_t byte)
 /*---------------- UART TX ISR THREAD ----------------*/
 static int tx_thread(void *arg)
 {
+    (void)arg;
     uint8_t byte;
 
     for (;;) {
@@ -102,6 +103,7 @@ static int tx_thread(void *arg)
 
 static int rx_thread(void *arg)
 {
+    (void)arg;
     uint8_t byte;
     struct pollfd pfd = { .fd = serial_fd, .events = POLLIN };
     int hangup_backoff = 0;

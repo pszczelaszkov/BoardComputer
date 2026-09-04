@@ -40,6 +40,7 @@ inline static void update()
 
 void UIINIT_page_control(NEXTION_page_control_t pagecontrol, void* data)
 {
+	(void)data;
 	switch(pagecontrol)
 	{
 		case NEXTION_PAGECONTROL_SETUP:

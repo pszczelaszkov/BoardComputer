@@ -56,7 +56,6 @@ static void renderer_md_lp100_avg();
 static void renderer_md_speed_avg();
 static void renderer_md_inj_t();
 static void renderer_md_range();
-static Visualalert visualalerts[];
 
 TESTUSE static void TESTADDPREFIX(update_EGT)();
 TESTUSE static void TESTADDPREFIX(update_watch)();

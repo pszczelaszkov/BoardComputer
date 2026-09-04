@@ -26,6 +26,7 @@ volatile uint16_t TCNT1, TCNT2;
 
 static int sysclk_thread(void* arg)
 {
+    (void)arg;
 	for(;;)
 		{
 		struct pollfd fd = { .fd = timer_fd, .events = POLLIN };

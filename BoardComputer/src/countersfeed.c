@@ -21,7 +21,7 @@ const uint16_t fixed_base = HIGH_PRECISION_BASE/0xffff;//16bit fixed point base.
 
     Multiply raw ticks by this value, then >> 8, to get fp16 8+8 injection time in ms. 
 */
-TESTUSE const static uint16_t injt_weight = ((HIGH_PRECISION_BASE * 1000ULL) / COUNTERS_FUELTICKSPERSECOND)/ fixed_base;
+TESTUSE static const uint16_t injt_weight = ((HIGH_PRECISION_BASE * 1000ULL) / COUNTERS_FUELTICKSPERSECOND)/ fixed_base;
 /* Multiply raw ticks by this value to get fp16 8+8 fuel amount in liters per hour. */
 TESTUSE static uint16_t fuelmodifier;
 /* Multiply raw pulses/s by this value to get fp16 8+8 speed in kph. */

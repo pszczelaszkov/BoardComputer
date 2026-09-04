@@ -25,7 +25,7 @@ const uint16_t NEXTION_VERSION = 0x01;
 
 uint8_t NEXTION_selection_counter;
 
-char NEXTION_eot[] = {0xff,0xff,0xff,0x00};
+char NEXTION_eot[] = {(char)0xff,(char)0xff,(char)0xff,(char)0x00};
 
 enum DISPLAYSTATUS
 {
@@ -72,7 +72,7 @@ static int8_t pagehistory_push(NEXTION_PageID_t pageID)
 {
 	if(pagehistory_depth < PAGEHISTORY_MAXDEPTH)
 	{
-		pagehistory[pagehistory_depth] = active_pageID;
+		pagehistory[pagehistory_depth] = pageID;
 		pagehistory_depth++;
 		return 1;
 	}
@@ -317,6 +317,7 @@ void NEXTION_update()
 		break;
 		case DISPLAYSTATUS_WRONGVERSION:
 			SYSTEM_raisealert(SYSTEM_ALERT_UI_INCOMPATIBLE);
+			/*FALLTHROUGH*/
 		case DISPLAYSTATUS_CONNECTED:
 			NEXTION_switch_page(NEXTION_PAGEID_INIT,0);
 			/*

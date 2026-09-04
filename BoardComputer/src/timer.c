@@ -111,12 +111,15 @@ void TIMER_format(TIMER_watch* timer, TIMER_FORMATED_t* formated, enum TIMER_FOR
         case FORMATFLAG_HOURS:
             *formated->segments.hh = ' ';
             rightconcat_short(formated->segments.hh,timer->timer.hours,2);
+        /*FALLTHROUGH*/
         case FORMATFLAG_MINUTES:
             *formated->segments.mm = '0';
             rightconcat_short(formated->segments.mm,timer->timer.minutes,2);
+        /*FALLTHROUGH*/
         case FORMATFLAG_SECONDS:
             *formated->segments.ss = '0';
             rightconcat_short(formated->segments.ss,timer->timer.seconds,2);
+        /*FALLTHROUGH*/
         case FORMATFLAG_CENTISECONDS:
             *formated->segments.cs = '0';
             rightconcat_short(formated->segments.cs,timer->timer.centiseconds>>1,2);
@@ -127,7 +130,7 @@ void TIMER_format(TIMER_watch* timer, TIMER_FORMATED_t* formated, enum TIMER_FOR
 }
 
 /*Toggle status of currently active watch*/
-void TIMER_active_watch_toggle(TIMER_centisecond_t time_offset)
+void TIMER_active_watch_toggle()
 {
     if(active_watch->timer.watchstatus == TIMER_TIMERSTATUS_COUNTING)
     {

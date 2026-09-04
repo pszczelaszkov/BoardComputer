@@ -33,9 +33,13 @@ static struct ADC_state{
 	uint16_t adc_value:10;
 	const uint8_t adc_lut_index:6;
 }ADC_state[ADC_CHANNEL_COUNT] = {
-	[0 ... ADC_CHANNEL_COUNT-1] = { .adc_value = 0, .adc_lut_index = PROGRAMDATA_ADC_LUT_LAST},// Initialize all channels LUT to invalid
-	[ADC_CHANNEL_OUTTEMP] = {.adc_lut_index = PROGRAMDATA_ADC_LUT_NTC_2200R25_2200RS_3950B},
-	[ADC_CHANNEL_INTAKETEMP] = {.adc_lut_index = PROGRAMDATA_ADC_LUT_NTC_2200R25_2200RS_3950B},
+	[ADC_CHANNEL_OILTEMP] = {.adc_lut_index = PROGRAMDATA_ADC_LUT_NTC_100000R25_12000RS_4066B},
+	[ADC_CHANNEL_OUTTEMP] = {.adc_lut_index = PROGRAMDATA_ADC_LUT_NTC_2200R25_2400RS_3930B},
+	[ADC_CHANNEL_INTAKETEMP] = {.adc_lut_index = PROGRAMDATA_ADC_LUT_NTC_2200R25_2400RS_3930B},
+	[ADC_CHANNEL_EGT] = {.adc_lut_index = PROGRAMDATA_ADC_LUT_LAST},
+	[ADC_CHANNEL_MAP] = {.adc_lut_index = PROGRAMDATA_ADC_LUT_LAST},
+	[ADC_CHANNEL_FRP] = {.adc_lut_index = PROGRAMDATA_ADC_LUT_LAST},
+	[ADC_CHANNEL_TANK] = {.adc_lut_index = PROGRAMDATA_ADC_LUT_LAST},
 };
 
 FP16_t SENSORSFEED_feed[SENSORSFEED_FEEDID_LAST];
@@ -73,7 +77,7 @@ TESTUSE static void TESTADDPREFIX(update_EGT)()
 	}
 }
 
-static int16_t interpolate_adc(int16_t min, int16_t max, int16_t adc_value)
+static int16_t interpolate_adc(int16_t min, int16_t max, uint16_t adc_value)
 {
 	int16_t result = SENSORSFEED_ADC_BAD_VALUE;
 	if(0 < adc_value && ADC_MAX > adc_value && min <= max)
@@ -87,7 +91,7 @@ static uint16_t calibrated_adc_value(uint16_t adc_value, int8_t calibration)
 {
 	/* Adjust adc value by calibration value. ADC is 10 bit so no overflow possible. */
 	int16_t adjusted = (int16_t)adc_value + calibration;
-	return (uint16_t)CLAMP(adjusted, 0, ADC_MAX);
+	return (uint16_t)CLAMP(adjusted, 0, (int16_t)ADC_MAX);
 }
 
 TESTUSE static void TESTADDPREFIX(set_ADC_channel_value)(ADC_CHANNEL_t channel, uint16_t value)

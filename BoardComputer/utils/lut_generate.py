@@ -95,7 +95,7 @@ def main():
     plt.savefig("ntc_analysis.png", dpi=300)
 
     with open("ntc_lut.txt", "w") as f:
-        f.write(f"[PROGRAMDATA_ADC_LUT_NTC_{args.r25}R25_{args.rseries}RS_{args.beta}B]{{")
+        f.write(f"[PROGRAMDATA_ADC_LUT_NTC_{args.r25}R25_{args.rseries}RS_{args.beta}B] = {{")
         for i, val in enumerate(temperature_table[::compression_step]):
             val = int(val)+args.offset if not np.isnan(val) else 0
             f.write(f"{val},")

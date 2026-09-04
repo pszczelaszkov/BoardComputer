@@ -107,9 +107,11 @@ void message_register(uint8_t message_size)
 		switch((NEXTIONMESSAGETYPE)USART_RX_buffer[0])
 		{	
 			case NEXTIONMESSAGETYPE_TOUCHINPUT:
+			{
 				INPUT_ComponentID_t componentID = (INPUT_ComponentID_t)(USART_RX_buffer[2]);
 				INPUT_Keystatus_t keystatus = USART_RX_buffer[3];
 				INPUT_userinput(keystatus, INPUT_KEY_ENTER, componentID);
+			}
 			break;
 			case NEXTIONMESSAGETYPE_PAGEID://Pinging purpose
 				NEXTION_handler_sendme(USART_RX_buffer[1]);
