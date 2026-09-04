@@ -1,4 +1,4 @@
-name: AVR HW1 size
+name: AVR HW1 Build Size
 
 on:
   push:
