@@ -15,7 +15,7 @@ volatile uint8_t SYSTEM_event_timer;//Represent fraction of second in values fro
 
 const uint16_t SYSTEM_VERSION = 0x01;
 const SYSTEM_cycle_timestamp_t SYSTEM_fullcycle_rtc_steps = 128;
-static const uint8_t BEEP_DURATION = 4;
+static const uint8_t BEEP_DURATION = 2;
 static const uint16_t MINIMAL_COMPAT_SYSTEMVERSION = 0x01;
 static uint8_t shortbeep_counter;
 static ALERT_PATTERN resolve_severity_pattern(SYSTEM_ALERT_SEVERITY severity);
@@ -76,7 +76,7 @@ SYSTEM_Alert_t SYSTEM_get_active_alert()
 void SYSTEM_raisealert(SYSTEM_ALERT alert)
 {
     SYSTEM_ALERT_SEVERITY severity = SYSTEM_resolve_alert_severity(alert);
-    if(active_alert.severity <= severity)
+    if(active_alert.severity < severity || active_alert.alert == SYSTEM_ALERT_NO_ALERT)
     {
         active_alert.alert = alert;
         active_alert.severity = severity;
@@ -95,13 +95,14 @@ void SYSTEM_resetalert()
 void SYSTEM_initialize()
 {
     SYSTEMINTERFACE_initialize_IO();
+    SYSTEMINTERFACE_watchdog_initialize();
 
     CONFIG_loadconfig(&SYSTEM_config);
     /*
         Check Config version compatibility.
         Config version must be between Minimal compatible and current system version.
     */
-    uint8_t config_version = SYSTEM_config.CONFIG_VERSION;
+    uint16_t config_version = SYSTEM_config.CONFIG_VERSION;
     if(MINIMAL_COMPAT_SYSTEMVERSION > config_version || SYSTEM_VERSION < config_version)
     {
         /*
@@ -139,6 +140,8 @@ void SYSTEM_trigger_short_beep()
 
 void SYSTEM_update()
 {
+    SYSTEMINTERFACE_watchdog_reset();
+
     if(!SYSTEM_config.SYSTEM_ALWAYS_ON)
     {        
         if(SYSTEM_STATUS_IDLE == SYSTEM_status && SYSTEMINTERFACE_is_board_enabled())

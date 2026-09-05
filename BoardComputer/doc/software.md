@@ -61,3 +61,5 @@ state System {
 }
 
 ```
+
+Hardware WDT is 1 s, enabled at boot and refreshed from `SYSTEM_update` each 8 Hz beat; BOD (4.3 V) is a fuse setting, not firmware.

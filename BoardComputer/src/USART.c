@@ -94,6 +94,20 @@ void USART_initialize()
 	SERIAL_init();
 }
 
+static uint8_t is_rx_message_start(uint8_t buffer)
+{
+	switch(buffer)
+	{
+		case NEXTIONMESSAGETYPE_TOUCHINPUT:
+		case NEXTIONMESSAGETYPE_PAGEID:
+		case NEXTIONMESSAGETYPE_INCOMINGDATA:
+		case NEXTIONMESSAGETYPE_DEVICEREADY:
+		case 'D':/* passthrough unlock string */
+			return 1;
+	}
+	return 0;
+}
+
 void message_register(uint8_t message_size)
 {
 	//Check for "DRAKJHSUYDGBNCJHGJKSHBDN", although more complex rule is not needed.
@@ -129,6 +143,10 @@ void message_register(uint8_t message_size)
 
 void handle_RX(uint8_t buffer)
 {
+	/* Nextion reboot / line noise prefixes 0x00/0xFF before 0x88. Drop until a real opcode. */
+	if(0 == USART_RX_buffer_index && !is_rx_message_start(buffer))
+		return;
+
 	if(USART_RX_buffer_index < USART_RX_BUFFER_SIZE)
 	{
 		USART_RX_buffer[USART_RX_buffer_index] = buffer;

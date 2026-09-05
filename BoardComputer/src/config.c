@@ -89,8 +89,10 @@ void CONFIG_get_entry_min_max_values(CONFIG_Entry entry, CONFIG_maxdata_t* min, 
     *min = 0;
     *max = 0;
 
-    ENTRY_VALIDATOR validator = entryinfo[entry].validator;
     if (entry < CONFIG_ENTRY_LAST) {
+        Entryinfo info;
+        PROGRAM_MEMORY_read(&entryinfo[entry], &info, sizeof(Entryinfo));
+        ENTRY_VALIDATOR validator = info.validator;
         switch(validator)
         {
             case ENTRY_VALIDATOR_NONE:

@@ -416,6 +416,16 @@ class TestPreRun(TestParent):
         m.USART_TX_clear()
         assert m.USART_TX_buffer_index == m.USART_TX_BUFFER_SIZE
 
+
+    def test_USART_rx_ignores_leading_garbage(self):
+        for byte in (0x00, 0xFF, 0x1A):
+            m.serial_service_in = byte
+            m.USART_read_service_byte()
+        assert m.USART_RX_buffer_index == 0
+        m.serial_service_in = 0x88
+        m.USART_read_service_byte()
+        assert m.USART_RX_buffer_index == 1
+
     def test_USART_passthrough_mode(self):
         write_usart(m, None, b"DRAKJHSUYDGBNCJHGJKSHBDN")
         # Manualy check two opposite registers

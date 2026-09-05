@@ -179,3 +179,6 @@ void SYSTEMINTERFACE_external_wakeup(void)
     uint64_t one = 1;
     write(wake_fd, &one, sizeof(one));
 }
+
+void SYSTEMINTERFACE_watchdog_initialize(void){}
+void SYSTEMINTERFACE_watchdog_reset(void){}

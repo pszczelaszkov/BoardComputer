@@ -36,7 +36,13 @@ PRINTF = @printf "$(GREEN)CC:$(RESET) %s\n" "$1"
 
 # --- Targets -----------------------------------------------------------------
 
-.PHONY: all clean flash x86_test HW_1 prepare_dirs
+.PHONY: all clean flash fuses fuses-read x86_test HW_1 prepare_dirs
+
+# ATmega324PB fuse targets (not part of default flash)
+LFUSE := 0xe2
+HFUSE := 0xd1
+EFUSE := 0xf4
+AVRDUDE := avrdude -p m324pb -c usbasp -C +"utils/324pb.conf"
 
 all: prepare_dirs HW_1 flash
 
@@ -137,7 +143,15 @@ $(BIN_DIR)%.o: $(HW_1_AVR_IDIR)%.c
 
 flash:
 	$(call PRINTF,"Flashing BoardComputer.hex")
-	avrdude -p m324pb -c usbasp -C +"utils/324pb.conf" -B 0.5 -U flash:w:"$(BIN_DIR)BoardComputer.hex":a
+	$(AVRDUDE) -B 0.5 -U flash:w:"$(BIN_DIR)BoardComputer.hex":a
+
+fuses-read:
+	$(call PRINTF,"Reading fuses")
+	$(AVRDUDE) -B 10 -U lfuse:r:-:h -U hfuse:r:-:h -U efuse:r:-:h
+
+fuses:
+	$(call PRINTF,"Writing fuses lfuse=$(LFUSE) hfuse=$(HFUSE) efuse=$(EFUSE)")
+	$(AVRDUDE) -B 10 -U lfuse:w:$(LFUSE):m -U hfuse:w:$(HFUSE):m -U efuse:w:$(EFUSE):m
 
 
 # -------------------------- Cleanup ------------------------------------------

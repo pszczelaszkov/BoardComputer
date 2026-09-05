@@ -18,6 +18,21 @@ Default method of flashing is using usbasp with avrdude and its done by typing:
 make flash
 ```
 
+## Fuses (ATmega324PB)
+Target values (HW_1, 5 V MCU from L7805):
+
+| Fuse | Value | Notes |
+|------|-------|-------|
+| lfuse | `0xe2` | Internal 8 MHz RC, `CKDIV8` off (`F_CPU=8000000`) |
+| hfuse | `0xd1` | JTAG off; SPIEN on; **EESAVE** on (EEPROM survives chip erase); **WDTON off** (software WDT) |
+| efuse | `0xf4` | BOD 4.3 V (`BODLEVEL=100`); CFD disabled (datasheet default). If a bad programmer/config forced CFD on, the chip may read `0xfc` until rewritten with a 4-bit efuse write. |
+
+Read / write (separate from `make flash`):
+```
+make fuses-read
+make fuses
+```
+
 # Testing
 ## Auto testing
 Tests are written in python with help of pytest and cffi library.</br>

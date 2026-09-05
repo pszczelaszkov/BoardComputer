@@ -25,4 +25,6 @@ inline void SYSTEMINTERFACE_beeper_off()
 
 void SYSTEMINTERFACE_sleep();
 void SYSTEMINTERFACE_external_wakeup();
+void SYSTEMINTERFACE_watchdog_initialize(void);
+void SYSTEMINTERFACE_watchdog_reset(void);
 #endif

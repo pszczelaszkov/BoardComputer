@@ -61,9 +61,9 @@ ENTRY_ROUTINE
 			SYSTEMINTERFACE_sleep();
 			post_irq_core();
 		}
+		SYSTEM_exec = 0;
 		high_prio_core();
 		core();
-		SYSTEM_exec = 0;
     }
 
 }

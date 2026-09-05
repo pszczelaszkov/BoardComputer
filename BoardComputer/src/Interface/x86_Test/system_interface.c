@@ -24,3 +24,5 @@ void SYSTEMINTERFACE_initialize_IO()
 
 void SYSTEMINTERFACE_start_system_clock(){}
 void SYSTEMINTERFACE_sleep(){}
+void SYSTEMINTERFACE_watchdog_initialize(void){}
+void SYSTEMINTERFACE_watchdog_reset(void){}
