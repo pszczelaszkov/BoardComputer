@@ -24,9 +24,8 @@ const uint16_t fixed_base = HIGH_PRECISION_BASE/0xffff;//16bit fixed point base.
 TESTUSE static const uint16_t injt_weight = ((HIGH_PRECISION_BASE * 1000ULL) / COUNTERS_FUELTICKSPERSECOND)/ fixed_base;
 /* Multiply raw ticks by this value to get fp16 8+8 fuel amount in liters per hour. */
 TESTUSE static uint16_t fuelmodifier;
-/* Multiply raw pulses/s by this value to get fp16 8+8 speed in kph. */
-static uint16_t speedmodifier;
-static uint16_t speed_max;
+/* Multiply raw pulses/s by this value, then >> 8, to get fp16 8+8 speed in kph. */
+TESTUSE static uint16_t speedmodifier;
 /*Public feed*/
 volatile uint16_t COUNTERSFEED_feed[COUNTERSFEED_FEED_SIZE];
 /*Internal feed for atomic operations*/
@@ -77,12 +76,15 @@ void COUNTERSFEED_initialize()
 	uint32_t fraction_representation = HIGH_PRECISION_BASE/ticks_per_lph;//Represent as 1/value form
 	fuelmodifier = fraction_representation/fixed_base;
 
-	//Calculate ticks for 1km, which in short is 360/ticksp100
-	//Result is in fp 8+8.
-	//As an addition speed_max is limiter to protect from overflow during further processing.
-	uint32_t base_fp16 = 360U << 8;//reduced from 3600sec
-	speedmodifier = base_fp16/SYSTEM_config.COUNTERS_SIGNAL_PER_100M;
-	speed_max = 0xffff/speedmodifier;
+	/*
+		Speed: same HIGH_PRECISION_BASE scale as fuel.
+		km/h = pulses/s × 360 / SIGNAL_PER_100M
+		speedmodifier ≈ 0xffff × 360 / SIGNAL_PER_100M
+		Then (pulses * speedmodifier) >> 8 yields fp 8+8 kph.
+	*/
+	fraction_representation =
+		(HIGH_PRECISION_BASE * 360ULL) / SYSTEM_config.COUNTERS_SIGNAL_PER_100M;
+	speedmodifier = fraction_representation/fixed_base;
 }
 
 void COUNTERSFEED_update()
@@ -114,10 +116,11 @@ void COUNTERSFEED_update()
         COUNTERSFEED_feed[COUNTERSFEED_FEEDID_LPH] = liters;
         fuelticks_per_second = 0;
 
-        speed = speed_pulses_per_second;
-        if(speed > speed_max)
-            speed = speed_max;
-        speed = speed * speedmodifier;
+        uint32_t speed32 =
+            ((uint32_t)speed_pulses_per_second * speedmodifier) >> 8;
+        if(speed32 > 0xffff)
+            speed32 = 0xffff;
+        speed = (uint16_t)speed32;
         COUNTERSFEED_feed[COUNTERSFEED_FEEDID_SPEED_KPH] = speed;
         speed_pulses_per_second = 0;
 

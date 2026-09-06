@@ -56,6 +56,8 @@ static void renderer_md_lp100_avg();
 static void renderer_md_speed_avg();
 static void renderer_md_inj_t();
 static void renderer_md_range();
+static void snap_live_consumption_mode();
+static void update_maindisplay_picture();
 
 TESTUSE static void TESTADDPREFIX(update_EGT)();
 TESTUSE static void TESTADDPREFIX(update_watch)();
@@ -238,12 +240,14 @@ static void renderer_md_lph()
 	NEXTION_instruction_compose("mdv","txt",instruction);
 	NEXTION_quote_payloadbuffer(payload,payload_length);
 
-	uint16_t speed = COUNTERSFEED_feed[COUNTERSFEED_FEEDID_SPEED_KPH];
-	uint16_t lph = COUNTERSFEED_feed[COUNTERSFEED_FEEDID_LPH];
-
-	if(speed)
+	if(COUNTERSFEED_feed[COUNTERSFEED_FEEDID_SPEED_KPH])
+	{
 		UIBOARD_maindisplay_activecomponent = &UIBOARD_maindisplay_components[UIBOARD_MD_LP100];
+		update_maindisplay_picture();
+		return;
+	}
 
+	uint16_t lph = COUNTERSFEED_feed[COUNTERSFEED_FEEDID_LPH];
 	lph = MIN(lph,MD_MAX_VALUE);
 	fp16toa(lph,&buffer[9],2,1);
 	NEXTION_send(buffer, USART_HOLD);
@@ -255,14 +259,14 @@ static void renderer_md_lp100()
 	NEXTION_instruction_compose("mdv","txt",instruction);
 	NEXTION_quote_payloadbuffer(payload,payload_length);
 
-	uint16_t lp100 = COUNTERSFEED_feed[COUNTERSFEED_FEEDID_LP100];
-	uint16_t speed = COUNTERSFEED_feed[COUNTERSFEED_FEEDID_SPEED_KPH];
-
-	if(!speed)
+	if(!COUNTERSFEED_feed[COUNTERSFEED_FEEDID_SPEED_KPH])
 	{
 		UIBOARD_maindisplay_activecomponent = &UIBOARD_maindisplay_components[UIBOARD_MD_LPH];
+		update_maindisplay_picture();
 		return;
 	}
+
+	uint16_t lp100 = COUNTERSFEED_feed[COUNTERSFEED_FEEDID_LP100];
 	lp100 = MIN(lp100,MD_MAX_VALUE);
 	fp16toa(lp100,&buffer[9],2,1);
 	NEXTION_send(buffer, USART_HOLD);
@@ -514,9 +518,25 @@ static void switch_page_to_config()
 	NEXTION_switch_page(NEXTION_PAGEID_BOARDCONFIG, 1);
 }
 
+static void snap_live_consumption_mode()
+{
+	UIBOARD_MDComponent* lph = &UIBOARD_maindisplay_components[UIBOARD_MD_LPH];
+	UIBOARD_MDComponent* lp100 = &UIBOARD_maindisplay_components[UIBOARD_MD_LP100];
+
+	if(UIBOARD_maindisplay_activecomponent != lph
+		&& UIBOARD_maindisplay_activecomponent != lp100)
+	{
+		return;
+	}
+
+	UIBOARD_maindisplay_activecomponent =
+		COUNTERSFEED_feed[COUNTERSFEED_FEEDID_SPEED_KPH] ? lp100 : lph;
+}
+
 static void switch_maindisplay()
 {
 	UIBOARD_maindisplay_activecomponent = UIBOARD_maindisplay_activecomponent->nextComponent;
+	snap_live_consumption_mode();
 }
 
 static void clear_maindisplay_values()
@@ -530,7 +550,12 @@ static void clear_maindisplay_values()
 static void update_maindisplay_picture()
 {
 	NEXTION_Component* component = (NEXTION_Component*)UIBOARD_maindisplay_activecomponent;
-	NEXTION_set_component_select_status(component, NEXTION_COMPONENTSELECTSTATUS_DEFAULT);
+	NEXTION_Component_select_status_t status = NEXTION_COMPONENTSELECTSTATUS_DEFAULT;
+	if(NEXTION_selection_counter)
+	{
+		status = NEXTION_COMPONENTSELECTSTATUS_SELECTED;
+	}
+	NEXTION_set_component_select_status(component, status);
 }
 
 inline static void setup()

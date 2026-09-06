@@ -345,14 +345,12 @@ class TestPreRun(TestParent):
         assert m.COUNTERSFEED_feed[fuelindex] == ((fuel_value * m.fuelmodifier) >> 8) & 0xFFFF
 
     def test_countersfeed_speed_publishes_once_per_second(self):
-        signal_per_100m = 10
-        pulses = 5  # must stay <= speed_max (0xffff / speedmodifier)
-        speedmodifier = (360 << 8) // signal_per_100m
-        expected_kph = (pulses * speedmodifier) & 0xFFFF
-
+        signal_per_100m = 2132
+        pulses = 592
         m.SYSTEM_config.COUNTERS_SIGNAL_PER_100M = signal_per_100m
         m.SYSTEM_config.COUNTERS_INJECTORS_CCM = 250
         m.COUNTERSFEED_initialize()
+        expected_kph = ((pulses * m.speedmodifier) >> 8) & 0xFFFF
         m.AVERAGE_clear(m.AVERAGE_BUFFER_SPEED)
         m.AVERAGE_clear(m.AVERAGE_BUFFER_LP100)
         m.COUNTERSFEED_feed[m.COUNTERSFEED_FEEDID_SPEED_KPH] = 0
@@ -374,15 +372,14 @@ class TestPreRun(TestParent):
         assert m.COUNTERSFEED_feed[m.COUNTERSFEED_FEEDID_SPEED_AVG] == expected_kph
 
     def test_countersfeed_lp100_from_lph_and_speed(self):
-        signal_per_100m = 10
-        pulses = 5  # must stay <= speed_max (0xffff / speedmodifier)
-        speedmodifier = (360 << 8) // signal_per_100m
-        expected_kph = (pulses * speedmodifier) & 0xFFFF
+        signal_per_100m = 2132
+        pulses = 592
         fuel_ticks = 1000
 
         m.SYSTEM_config.COUNTERS_SIGNAL_PER_100M = signal_per_100m
         m.SYSTEM_config.COUNTERS_INJECTORS_CCM = 250
         m.COUNTERSFEED_initialize()
+        expected_kph = ((pulses * m.speedmodifier) >> 8) & 0xFFFF
         m.AVERAGE_clear(m.AVERAGE_BUFFER_SPEED)
         m.AVERAGE_clear(m.AVERAGE_BUFFER_LP100)
         m.COUNTERSFEED_feed[m.COUNTERSFEED_FEEDID_SPEED_KPH] = 0

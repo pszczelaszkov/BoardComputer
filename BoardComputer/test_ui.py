@@ -258,6 +258,89 @@ class TestBoardUI:
         output = read_nextion_output(m, ffi)
         assert int(output["mds.pic"]) == expected_pic
 
+    def test_lph_lp100_autoswitch_updates_mds_picture(self):
+        lph = m.UIBOARD_maindisplay_components[m.UIBOARD_MD_LPH]
+        lp100 = m.UIBOARD_maindisplay_components[m.UIBOARD_MD_LP100]
+        lph_pic = lph.executable_component.component.value_default
+        lp100_pic = lp100.executable_component.component.value_default
+
+        m.UIBOARD_maindisplay_activecomponent = ffi.addressof(lph)
+        m.COUNTERSFEED_feed[m.COUNTERSFEED_FEEDID_SPEED_KPH] = 1
+        lph.executable_component.execute()
+        output = read_nextion_output(m, ffi)
+        assert m.UIBOARD_maindisplay_activecomponent == ffi.addressof(lp100)
+        assert int(output["mds.pic"]) == lp100_pic
+
+        m.COUNTERSFEED_feed[m.COUNTERSFEED_FEEDID_SPEED_KPH] = 0
+        lp100.executable_component.execute()
+        output = read_nextion_output(m, ffi)
+        assert m.UIBOARD_maindisplay_activecomponent == ffi.addressof(lph)
+        assert int(output["mds.pic"]) == lph_pic
+
+    def _click_maindisplay(self):
+        touch_event = ffi.new("INPUT_Event*")
+        touch_event.key = m.INPUT_KEY_ENTER
+        touch_event.keystatus = m.INPUT_KEYSTATUS_CLICK
+        touch_event.componentID = self.INPUTCOMPONENT_MAINDISPLAY
+        m.UIBOARD_page_control(m.NEXTION_PAGECONTROL_USERINPUT, cast_void(touch_event))
+
+    def test_maindisplay_click_snaps_to_lp100_when_moving(self):
+        range_md = m.UIBOARD_maindisplay_components[m.UIBOARD_MD_RANGE]
+        lph = m.UIBOARD_maindisplay_components[m.UIBOARD_MD_LPH]
+        lp100 = m.UIBOARD_maindisplay_components[m.UIBOARD_MD_LP100]
+        lp100_selected = lp100.executable_component.component.value_selected
+        lp100_default = lp100.executable_component.component.value_default
+        lph_selected = lph.executable_component.component.value_selected
+        lph_default = lph.executable_component.component.value_default
+
+        m.UIBOARD_maindisplay_activecomponent = ffi.addressof(range_md)
+        m.COUNTERSFEED_feed[m.COUNTERSFEED_FEEDID_SPEED_KPH] = 1
+        self._click_maindisplay()
+        output = read_nextion_output(m, ffi)
+        assert m.UIBOARD_maindisplay_activecomponent == ffi.addressof(lp100)
+        assert int(output["mds.pic"]) == lp100_selected
+
+        for _ in range(m.NEXTION_SELECT_DECAY_TICKS):
+            m.NEXTION_update_select_decay()
+        output = read_nextion_output(m, ffi)
+        assert int(output["mds.pic"]) == lp100_default
+
+        m.COUNTERSFEED_feed[m.COUNTERSFEED_FEEDID_SPEED_KPH] = 0
+        m.UIBOARD_maindisplay_activecomponent = ffi.addressof(range_md)
+        self._click_maindisplay()
+        output = read_nextion_output(m, ffi)
+        assert m.UIBOARD_maindisplay_activecomponent == ffi.addressof(lph)
+        assert int(output["mds.pic"]) == lph_selected
+
+        for _ in range(m.NEXTION_SELECT_DECAY_TICKS):
+            m.NEXTION_update_select_decay()
+        output = read_nextion_output(m, ffi)
+        assert int(output["mds.pic"]) == lph_default
+
+    def test_lph_lp100_autoswitch_retargets_mds_selection(self):
+        lph = m.UIBOARD_maindisplay_components[m.UIBOARD_MD_LPH]
+        lp100 = m.UIBOARD_maindisplay_components[m.UIBOARD_MD_LP100]
+        lp100_selected = lp100.executable_component.component.value_selected
+        lp100_default = lp100.executable_component.component.value_default
+
+        m.UIBOARD_maindisplay_activecomponent = ffi.addressof(lph)
+        m.NEXTION_set_component_select_status(
+            cast_void(ffi.addressof(lph)),
+            m.NEXTION_COMPONENTSELECTSTATUS_SELECTED,
+        )
+        m.USART_TX_clear()
+        m.COUNTERSFEED_feed[m.COUNTERSFEED_FEEDID_SPEED_KPH] = 1
+        lph.executable_component.execute()
+        output = read_nextion_output(m, ffi)
+        assert m.UIBOARD_maindisplay_activecomponent == ffi.addressof(lp100)
+        assert int(output["mds.pic"]) == lp100_selected
+
+        for _ in range(m.NEXTION_SELECT_DECAY_TICKS):
+            m.NEXTION_update_select_decay()
+        output = read_nextion_output(m, ffi)
+        assert int(output["mds.pic"]) == lp100_default
+        m.COUNTERSFEED_feed[m.COUNTERSFEED_FEEDID_SPEED_KPH] = 0
+
     @pytest.mark.parametrize(
         "status,expectedstring",
         [
