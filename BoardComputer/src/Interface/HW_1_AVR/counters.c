@@ -3,18 +3,22 @@
 #include <avr/io.h>
 #include <avr/interrupt.h>
 
+#if (F_CPU / 64UL) != COUNTERS_FUELTICKSPERSECOND
+#error "Timer1 clk/64 must match COUNTERS_FUELTICKSPERSECOND"
+#endif
+
 #define isRising(PIN, input) ((PIN & input) == input)
 
 enum COUNTERSFEED_INPUT
 {
-    INPUT_INJECTOR = 1,
-    INPUT_SPEED = 2
+    INPUT_SPEED = (1 << PD5) /* DIN1 */
 };
 
-enum Direction
+/* Opto inverts: high on connector → low on MCU. Pulse open = MCU falling. */
+enum PulseEdge
 {
-    FALLING = 0,
-    RISING = 1
+    PULSE_END = 0,
+    PULSE_START = 1
 };
 
 enum COUNTERS_TIMESTAMP
@@ -24,14 +28,14 @@ enum COUNTERS_TIMESTAMP
 };
 
 static uint16_t timestamps[COUNTERS_TIMESTAMP_LAST];
-static uint8_t last_PINB_state;
+static uint8_t last_PIND_state;
 
-static void measure_fuel_pulse(enum Direction direction)
+static void measure_fuel_pulse(enum PulseEdge edge)
 {
     uint16_t result;
-    uint16_t timestamp = TCNT1;
+    uint16_t timestamp = ICR1;
     uint16_t* last_timestamp = &timestamps[COUNTERS_TIMESTAMP_FUELTIME];
-    if(direction == RISING)
+    if(edge == PULSE_START)
     {
         *last_timestamp = timestamp;
     }
@@ -47,15 +51,29 @@ static void measure_fuel_pulse(enum Direction direction)
 
 void COUNTERS_init(void)
 {
-    last_PINB_state = PINB;
+    last_PIND_state = PIND;
+    TCCR1A = 0; /* Normal mode, OC1A/OC1B disconnected */
+    TCCR1B = (1 << ICNC1) | (1 << ICES1) | (1 << CS11) | (1 << CS10);
+        /* noise cancel, capture rising first, clkI/O / 64 */
+    TIMSK1 = (1 << ICIE1);
+    PCMSK3 = INPUT_SPEED;
+    PCICR |= (1 << PCIE3);
 }
 
-ISR(PCINT0_vect)
+ISR(TIMER1_CAPT_vect)
 {
-    uint8_t changed_pins = last_PINB_state ^ PINB;
-    last_PINB_state = PINB;
-    if(changed_pins & INPUT_INJECTOR)
-        measure_fuel_pulse(isRising(PINB, INPUT_INJECTOR));
-    if(changed_pins & INPUT_SPEED)
+    uint8_t rising = TCCR1B & (1 << ICES1);
+    /* MCU rising = start, MCU falling = end */
+    measure_fuel_pulse(rising ? PULSE_START : PULSE_END);
+    TCCR1B ^= (1 << ICES1);
+    TIFR1 = (1 << ICF1);
+}
+
+ISR(PCINT3_vect)
+{
+    uint8_t changed_pins = last_PIND_state ^ PIND;
+    last_PIND_state = PIND;
+    /* MCU falling = vehicle pulse high (opto inverted); one edge per pulse */
+    if((changed_pins & INPUT_SPEED) && !isRising(PIND, INPUT_SPEED))
         COUNTERSFEED_count_speed(1);
 }
