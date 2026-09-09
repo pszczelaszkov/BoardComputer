@@ -197,18 +197,18 @@ class TestBasicUIBOARD:
 
 class TestBasicTimer:
     @pytest.mark.parametrize("centiseconds,result,expected_format_flag",[
-        (0,"0:0:0:0",m.FORMATFLAG_NONE),
-        (100,"0:0:0:100",m.FORMATFLAG_CENTISECONDS),
-        (200,"0:0:1:0",m.FORMATFLAG_SECONDS),
-        (200*60,"0:1:0:0",m.FORMATFLAG_MINUTES),
-        (200*3600,"1:0:0:0",m.FORMATFLAG_HOURS),
-        (200*86399,"23:59:59:0",m.FORMATFLAG_HOURS),
-        (200*86399+100,"23:59:59:100",m.FORMATFLAG_HOURS),
-        (200*86400,"0:0:0:0",m.FORMATFLAG_HOURS),
+        (0,"0:0:0:0",m.TIMER_FORMATFLAG_NONE),
+        (100,"0:0:0:100",m.TIMER_FORMATFLAG_CENTISECONDS),
+        (200,"0:0:1:0",m.TIMER_FORMATFLAG_SECONDS),
+        (200*60,"0:1:0:0",m.TIMER_FORMATFLAG_MINUTES),
+        (200*3600,"1:0:0:0",m.TIMER_FORMATFLAG_HOURS),
+        (200*86399,"23:59:59:0",m.TIMER_FORMATFLAG_HOURS),
+        (200*86399+100,"23:59:59:100",m.TIMER_FORMATFLAG_HOURS),
+        (200*86400,"0:0:0:0",m.TIMER_FORMATFLAG_HOURS),
     ])
     def test_timer_increment(self,centiseconds,result,expected_format_flag):
         watch = ffi.new("TIMER_watch*")
-        resultformatflag = m.FORMATFLAG_NONE
+        resultformatflag = m.TIMER_FORMATFLAG_NONE
         while True:
             clipped_centiseconds = min(centiseconds,0xff)
             resultformatflag = resultformatflag | m.TIMER_increment(ffi.cast("void*",watch), clipped_centiseconds)
@@ -221,20 +221,20 @@ class TestBasicTimer:
         assert expected_format_flag == resultformatflag
 
     @pytest.mark.parametrize("centiseconds,result,expected_format_flag",[
-        (0,"23:59:59:200",m.FORMATFLAG_NONE),
-        (100,"23:59:59:100",m.FORMATFLAG_CENTISECONDS),
-        (200,"23:59:59:0",m.FORMATFLAG_CENTISECONDS),
-        (201,"23:59:58:199",m.FORMATFLAG_SECONDS),
-        (200*60,"23:59:0:0",m.FORMATFLAG_SECONDS),
-        (200*3600,"23:0:0:0",m.FORMATFLAG_MINUTES),
-        (200*86399,"0:0:1:0",m.FORMATFLAG_HOURS),
-        (200*86399+100,"0:0:0:100",m.FORMATFLAG_HOURS),
-        (200*86400,"0:0:0:0",m.FORMATFLAG_HOURS),
+        (0,"23:59:59:200",m.TIMER_FORMATFLAG_NONE),
+        (100,"23:59:59:100",m.TIMER_FORMATFLAG_CENTISECONDS),
+        (200,"23:59:59:0",m.TIMER_FORMATFLAG_CENTISECONDS),
+        (201,"23:59:58:199",m.TIMER_FORMATFLAG_SECONDS),
+        (200*60,"23:59:0:0",m.TIMER_FORMATFLAG_SECONDS),
+        (200*3600,"23:0:0:0",m.TIMER_FORMATFLAG_MINUTES),
+        (200*86399,"0:0:1:0",m.TIMER_FORMATFLAG_HOURS),
+        (200*86399+100,"0:0:0:100",m.TIMER_FORMATFLAG_HOURS),
+        (200*86400,"0:0:0:0",m.TIMER_FORMATFLAG_HOURS),
     ])
     def test_timer_decrement(self,centiseconds,result,expected_format_flag):
         watch = ffi.new("TIMER_watch*")
         watch.timer=[23,59,59,200,0]
-        resultformatflag = m.FORMATFLAG_NONE
+        resultformatflag = m.TIMER_FORMATFLAG_NONE
         while True:
             clipped_centiseconds = min(centiseconds,0xff)
             resultformatflag = resultformatflag | m.TIMER_decrement(ffi.cast("void*",watch), clipped_centiseconds)
@@ -248,22 +248,22 @@ class TestBasicTimer:
 
     @pytest.mark.parametrize("timer_value,format_flag,expected_formated_str",
     [
-      ([0,0,0,0],m.FORMATFLAG_NONE,b"  :  :  :  "),
-      ([0,0,0,0],m.FORMATFLAG_CENTISECONDS,b"  :  :  :00"),
-      ([0,0,0,0],m.FORMATFLAG_SECONDS,b"  :  :00:00"),
-      ([0,0,0,0],m.FORMATFLAG_MINUTES,b"  :00:00:00"),
-      ([0,0,0,0],m.FORMATFLAG_HOURS,b" 0:00:00:00"),
-      ([5,5,5,5<<1],m.FORMATFLAG_HOURS,b" 5:05:05:05"),
-      ([10,10,10,10<<1],m.FORMATFLAG_HOURS,b"10:10:10:10"),
-      ([12,34,56,78<<1],m.FORMATFLAG_HOURS,b"12:34:56:78"),
+      ([0,0,0,0],m.TIMER_FORMATFLAG_NONE,b"  :  :  :  "),
+      ([0,0,0,0],m.TIMER_FORMATFLAG_CENTISECONDS,b"  :  :  :00"),
+      ([0,0,0,0],m.TIMER_FORMATFLAG_SECONDS,b"  :  :00:00"),
+      ([0,0,0,0],m.TIMER_FORMATFLAG_MINUTES,b"  :00:00:00"),
+      ([0,0,0,0],m.TIMER_FORMATFLAG_HOURS,b" 0:00:00:00"),
+      ([5,5,5,5<<1],m.TIMER_FORMATFLAG_HOURS,b" 5:05:05:05"),
+      ([10,10,10,10<<1],m.TIMER_FORMATFLAG_HOURS,b"10:10:10:10"),
+      ([12,34,56,78<<1],m.TIMER_FORMATFLAG_HOURS,b"12:34:56:78"),
     ])
     def test_timer_format(self,timer_value,format_flag,expected_formated_str):
-        timer_formated = ffi.new("TIMER_FORMATED_t*")
-        timer_formated.c_str = b"  :  :  :  "
+        watch_formated = ffi.new("TIMER_watch_formated*")
+        watch_formated.c_str = b"  :  :  :  "
         watch = ffi.new("TIMER_watch*")
 
         timer = watch.timer
         timer.hours, timer.minutes, timer.seconds, timer.centiseconds = timer_value
 
-        m.TIMER_format(ffi.cast("void*",watch),ffi.cast("void*",timer_formated),format_flag)
-        assert ffi.unpack(timer_formated.c_str,11) == expected_formated_str
+        m.TIMER_format(ffi.cast("void*",watch),ffi.cast("void*",watch_formated),format_flag)
+        assert ffi.unpack(watch_formated.c_str,11) == expected_formated_str

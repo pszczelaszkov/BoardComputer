@@ -498,10 +498,10 @@ static void update_watch()
 	NEXTION_INSTRUCTION_BUFFER_BLOCK(10)
 	NEXTION_instruction_compose("wtd","txt",instruction);
 	NEXTION_quote_payloadbuffer(payload,payload_length);
-	if(TIMER_active_timertype == TIMER_TIMERTYPE_WATCH)
+	if(TIMER_active_watchtype == TIMER_WATCHTYPE_WATCH)
 	{
 		memcpy(&payload[3],TIMER_active_watch_formated.c_str,5);
-		if(TIMER_TIMERSTATUS_COUNTING != TIMER_get_watch(TIMER_TIMERTYPE_WATCH)->timer.watchstatus)
+		if(TIMER_WATCHSTATUS_COUNTING != TIMER_get_watch(TIMER_WATCHTYPE_WATCH)->timer.watchstatus)
 		{
 			raisevisualalert(VISUALALERTID_WATCHDISPLAY, VISUALALERT_SEVERITY_WARNING);
 		}

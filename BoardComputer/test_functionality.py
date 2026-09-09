@@ -873,12 +873,12 @@ class TestTimer(TestParent):
     @pytest.mark.parametrize(
         "watchtype,formatedresult,ticks",
         [
-            (m.TIMER_TIMERTYPE_STOPWATCH,b" 0:00:00:62",5,),
-            (m.TIMER_TIMERTYPE_WATCH, b" 0:00:00:62",5,),
-            (m.TIMER_TIMERTYPE_STOPWATCH, b"23:59:59:00", 86399 * 8),
-            (m.TIMER_TIMERTYPE_WATCH, b"23:59:59:00", 86399 * 8),
-            (m.TIMER_TIMERTYPE_STOPWATCH, b" 0:00:00:00", 86400 * 8),
-            (m.TIMER_TIMERTYPE_WATCH, b" 0:00:00:00", 86400 * 8),
+            (m.TIMER_WATCHTYPE_STOPWATCH,b" 0:00:00:62",5,),
+            (m.TIMER_WATCHTYPE_WATCH, b" 0:00:00:62",5,),
+            (m.TIMER_WATCHTYPE_STOPWATCH, b"23:59:59:00", 86399 * 8),
+            (m.TIMER_WATCHTYPE_WATCH, b"23:59:59:00", 86399 * 8),
+            (m.TIMER_WATCHTYPE_STOPWATCH, b" 0:00:00:00", 86400 * 8),
+            (m.TIMER_WATCHTYPE_WATCH, b" 0:00:00:00", 86400 * 8),
         ],
     )
     def test_watches_update(self, watchtype, formatedresult, ticks):
@@ -898,9 +898,9 @@ class TestTimer(TestParent):
 
     def test_watch_order(self):
         order = [
-            m.TIMER_TIMERTYPE_WATCH,
-            m.TIMER_TIMERTYPE_STOPWATCH,
-            m.TIMER_TIMERTYPE_WATCH,
+            m.TIMER_WATCHTYPE_WATCH,
+            m.TIMER_WATCHTYPE_STOPWATCH,
+            m.TIMER_WATCHTYPE_WATCH,
         ]
 
         for watchtype in order:
@@ -910,34 +910,34 @@ class TestTimer(TestParent):
             m.TIMER_next_watch()
 
     @pytest.mark.parametrize(
-        "targettype", [(m.TIMER_TIMERTYPE_WATCH), (m.TIMER_TIMERTYPE_STOPWATCH)]
+        "targettype", [(m.TIMER_WATCHTYPE_WATCH), (m.TIMER_WATCHTYPE_STOPWATCH)]
     )
     def test_activewatch_toggle_while_other_not_affected(self, targettype):
         def check_other_notaffected(target):
-            for watchtype in range(m.TIMER_TIMERTYPE_LAST):
+            for watchtype in range(m.TIMER_WATCHTYPE_LAST):
                 watch = m.TIMER_get_watch(watchtype)
                 if watch != target:
-                    assert watch.timer.watchstatus == m.TIMER_TIMERSTATUS_ZERO
+                    assert watch.timer.watchstatus == m.TIMER_WATCHSTATUS_ZERO
 
-        for watchtype in range(m.TIMER_TIMERTYPE_LAST):
+        for watchtype in range(m.TIMER_WATCHTYPE_LAST):
             m.TIMER_set_watch(watchtype)
             m.TIMER_clear_active_watch()
 
         m.TIMER_set_watch(targettype)
         watch = m.TIMER_get_watch(targettype)
-        assert watch.timer.watchstatus == m.TIMER_TIMERSTATUS_ZERO
+        assert watch.timer.watchstatus == m.TIMER_WATCHSTATUS_ZERO
 
         m.TIMER_active_watch_toggle()
         check_other_notaffected(watch)
-        assert watch.timer.watchstatus == m.TIMER_TIMERSTATUS_COUNTING
+        assert watch.timer.watchstatus == m.TIMER_WATCHSTATUS_COUNTING
 
         m.TIMER_active_watch_toggle()
         check_other_notaffected(watch)
-        assert watch.timer.watchstatus == m.TIMER_TIMERSTATUS_STOP
+        assert watch.timer.watchstatus == m.TIMER_WATCHSTATUS_STOP
 
     def test_watch_setup_goes_back_to_normal_state(self):
-        m.TIMER_set_watch(m.TIMER_TIMERTYPE_WATCH);
-        watch_timer = m.TIMER_get_watch(m.TIMER_TIMERTYPE_WATCH).timer
+        m.TIMER_set_watch(m.TIMER_WATCHTYPE_WATCH);
+        watch_timer = m.TIMER_get_watch(m.TIMER_WATCHTYPE_WATCH).timer
         touch_event = ffi.new("INPUT_Event*")
         touch_event.key = m.INPUT_KEY_ENTER
         touch_event.keystatus = m.INPUT_KEYSTATUS_HOLD
@@ -946,18 +946,18 @@ class TestTimer(TestParent):
         m.TIMER_userinput_handle_watch(cast_void(ffi,touch_event))
         # Wait for for 8*5 ticks(5 seconds)
         for _ in range(8*5):
-            assert m.TIMER_TIMERSTATUS_STOP == watch_timer.watchstatus
+            assert m.TIMER_WATCHSTATUS_STOP == watch_timer.watchstatus
             m.TIMER_update()
 
         #Watch should return to counting state
-        assert m.TIMER_TIMERSTATUS_COUNTING == watch_timer.watchstatus
+        assert m.TIMER_WATCHSTATUS_COUNTING == watch_timer.watchstatus
         
     @pytest.mark.parametrize(
         "keystatus", [(m.INPUT_KEYSTATUS_HOLD), (m.INPUT_KEYSTATUS_CLICK)]
     )
     def test_watch_setup_refresh_and_go_back_to_normal(self, keystatus):
-        m.TIMER_set_watch(m.TIMER_TIMERTYPE_WATCH);
-        watch_timer = m.TIMER_get_watch(m.TIMER_TIMERTYPE_WATCH).timer
+        m.TIMER_set_watch(m.TIMER_WATCHTYPE_WATCH);
+        watch_timer = m.TIMER_get_watch(m.TIMER_WATCHTYPE_WATCH).timer
         touch_event = ffi.new("INPUT_Event*")
         touch_event.key = m.INPUT_KEY_ENTER
         touch_event.keystatus = m.INPUT_KEYSTATUS_HOLD
@@ -968,7 +968,7 @@ class TestTimer(TestParent):
         touch_event.keystatus = keystatus
         #Check if watch is stopped for 4 seconds
         for _ in range(8*4):
-            assert m.TIMER_TIMERSTATUS_STOP == watch_timer.watchstatus
+            assert m.TIMER_WATCHSTATUS_STOP == watch_timer.watchstatus
             m.TIMER_update()
     
         #Provide user input to restart setup counter
@@ -977,15 +977,15 @@ class TestTimer(TestParent):
 
         #It should remain stopped for 5 seconds
         for _ in range(8*5):
-            assert m.TIMER_TIMERSTATUS_STOP == watch_timer.watchstatus
+            assert m.TIMER_WATCHSTATUS_STOP == watch_timer.watchstatus
             m.TIMER_update()
 
         #Watch should return to counting state
-        assert m.TIMER_TIMERSTATUS_COUNTING == watch_timer.watchstatus
+        assert m.TIMER_WATCHSTATUS_COUNTING == watch_timer.watchstatus
 
     def test_watch_wont_setup_if_not_active(self):
-        m.TIMER_set_watch(m.TIMER_TIMERTYPE_STOPWATCH);
-        watch_timer = m.TIMER_get_watch(m.TIMER_TIMERTYPE_WATCH).timer
+        m.TIMER_set_watch(m.TIMER_WATCHTYPE_STOPWATCH);
+        watch_timer = m.TIMER_get_watch(m.TIMER_WATCHTYPE_WATCH).timer
         touch_event = ffi.new("INPUT_Event*")
         touch_event.key = m.INPUT_KEY_ENTER
         touch_event.keystatus = m.INPUT_KEYSTATUS_HOLD
@@ -994,14 +994,14 @@ class TestTimer(TestParent):
         m.TIMER_userinput_handle_watch(cast_void(ffi,touch_event))
 
         #Watch should remain in counting state
-        assert m.TIMER_TIMERSTATUS_COUNTING == watch_timer.watchstatus
+        assert m.TIMER_WATCHSTATUS_COUNTING == watch_timer.watchstatus
 
-        m.TIMER_set_watch(m.TIMER_TIMERTYPE_WATCH);
+        m.TIMER_set_watch(m.TIMER_WATCHTYPE_WATCH);
 
 
     def test_watch_setup_wont_increment_without_key_release(self):
-        m.TIMER_set_watch(m.TIMER_TIMERTYPE_WATCH);
-        watch_timer = m.TIMER_get_watch(m.TIMER_TIMERTYPE_WATCH).timer
+        m.TIMER_set_watch(m.TIMER_WATCHTYPE_WATCH);
+        watch_timer = m.TIMER_get_watch(m.TIMER_WATCHTYPE_WATCH).timer
         #Prepare initial values for watch
         watch_timer.minutes = 1
         watch_timer.seconds = 30
@@ -1023,8 +1023,8 @@ class TestTimer(TestParent):
         "keystatus, minutes_forward", [(m.INPUT_KEYSTATUS_HOLD,5), (m.INPUT_KEYSTATUS_CLICK,1)]
     )
     def test_watch_setup_increment(self,keystatus, minutes_forward):
-        m.TIMER_set_watch(m.TIMER_TIMERTYPE_WATCH);
-        watch_timer = m.TIMER_get_watch(m.TIMER_TIMERTYPE_WATCH).timer
+        m.TIMER_set_watch(m.TIMER_WATCHTYPE_WATCH);
+        watch_timer = m.TIMER_get_watch(m.TIMER_WATCHTYPE_WATCH).timer
         #Prepare initial values for watch
         watch_timer.minutes = 1
         watch_timer.seconds = 30

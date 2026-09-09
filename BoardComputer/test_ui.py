@@ -504,8 +504,8 @@ class TestBoardUI:
     @pytest.mark.parametrize(
         "watchtype,expectedstring",
         [
-            (m.TIMER_TIMERTYPE_WATCH, "  12:34 "),
-            (m.TIMER_TIMERTYPE_STOPWATCH, "34:56:78"),
+            (m.TIMER_WATCHTYPE_WATCH, "  12:34 "),
+            (m.TIMER_WATCHTYPE_STOPWATCH, "34:56:78"),
         ],
     )
     def test_watch(self, watchtype, expectedstring):
@@ -519,19 +519,19 @@ class TestBoardUI:
     Test setting up watch was triggered on hold 
     '''
     def test_uiboard_trigger_setup_watch(self):
-        watch = m.TIMER_get_watch(m.TIMER_TIMERTYPE_WATCH)
-        m.TIMER_set_watch(m.TIMER_TIMERTYPE_WATCH)
+        watch = m.TIMER_get_watch(m.TIMER_WATCHTYPE_WATCH)
+        m.TIMER_set_watch(m.TIMER_WATCHTYPE_WATCH)
         touch_event = ffi.new("INPUT_Event*")
         touch_event.key = m.INPUT_KEY_ENTER
         touch_event.keystatus = m.INPUT_KEYSTATUS_HOLD
         touch_event.componentID = self.INPUTCOMPONENT_WATCH
 
         m.NEXTION_switch_page(m.NEXTION_PAGEID_BOARD,0)
-        assert watch.timer.watchstatus == m.TIMER_TIMERSTATUS_COUNTING
+        assert watch.timer.watchstatus == m.TIMER_WATCHSTATUS_COUNTING
         m.UIBOARD_page_control(m.NEXTION_PAGECONTROL_USERINPUT, cast_void(touch_event))
         m.UIBOARD_page_control(m.NEXTION_PAGECONTROL_UPDATE, ffi.NULL)
         #Watch is stopped and blinking as notification alert is raised
-        assert m.TIMER_TIMERSTATUS_STOP == watch.timer.watchstatus
+        assert m.TIMER_WATCHSTATUS_STOP == watch.timer.watchstatus
         assert m.VISUALALERT_SEVERITY_WARNING == int(read_nextion_output(m, ffi)[f"al{m.VISUALALERTID_WATCHDISPLAY}.val"])
 
     def test_uiboard_hold_clears_maindisplay_averages(self):
