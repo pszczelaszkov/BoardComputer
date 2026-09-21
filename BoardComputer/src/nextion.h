@@ -41,6 +41,14 @@ TESTUSE typedef enum NEXTION_PAGECONTROL
 	NEXTION_PAGECONTROL_HMIRESPONSE/* When additional no standard HMI response is received */
 }NEXTION_page_control_t;
 
+TESTUSE typedef enum NEXTION_MESSAGEHEADER
+{
+	NEXTION_MESSAGEHEADER_TOUCHINPUT = 0x65,
+	NEXTION_MESSAGEHEADER_PAGEID = 0x66,
+	NEXTION_MESSAGEHEADER_INCOMINGDATA = 0x71,
+	NEXTION_MESSAGEHEADER_DEVICEREADY = 0x88,
+}NEXTION_MESSAGEHEADER;
+
 TESTUSE typedef enum NEXTION_PAGEID
 {
 	NEXTION_PAGEID_INIT = 0,
@@ -84,13 +92,12 @@ TESTUSE typedef struct NEXTION_Executable_Component
 TESTUSE extern const uint16_t NEXTION_VERSION;
 
 TESTUSE extern NEXTION_Component NEXTION_common_bckcomponent;
-TESTUSE extern char NEXTION_eot[];
 extern uint8_t NEXTION_selection_counter;
 
 TESTUSE void NEXTION_incomingdata_handler(void* data);
 TESTUSE void NEXTION_handler_ready(uint16_t display_version);
 TESTUSE void NEXTION_handler_sendme(NEXTION_PageID_t pageid);
-uint8_t NEXTION_send(char data[], uint8_t flush);
+uint8_t NEXTION_send(char data[]);
 void NEXTION_update();
 TESTUSE int8_t NEXTION_switch_page(NEXTION_PageID_t pageID, uint8_t push_to_history);
 TESTUSE NEXTION_PageID_t NEXTION_get_pageid();

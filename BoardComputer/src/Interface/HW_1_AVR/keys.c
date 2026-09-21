@@ -15,11 +15,13 @@ void KEYS_init(void)
 ISR(INT0_vect)
 {
 	uint8_t keystatus = !READ(PIND, BIT2);
-	INPUT_userinput((INPUT_Keystatus_t)keystatus, INPUT_KEY_ENTER, INPUT_COMPONENT_NONE);
+	INPUT_userinput((INPUT_Keystatus_t)keystatus, INPUT_KEY_ENTER,
+	                INPUT_COMPONENT_NONE, SYSTEM_get_cycle_timestamp());
 }
 
 ISR(INT1_vect)
 {
 	uint8_t keystatus = !READ(PIND, BIT3);
-	INPUT_userinput((INPUT_Keystatus_t)keystatus, INPUT_KEY_DOWN, INPUT_COMPONENT_NONE);
+	INPUT_userinput((INPUT_Keystatus_t)keystatus, INPUT_KEY_DOWN,
+	                INPUT_COMPONENT_NONE, SYSTEM_get_cycle_timestamp());
 }

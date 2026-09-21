@@ -8,7 +8,9 @@ INPUT_Userinput_Handler INPUT_userinput_handler = NULL;
 
 static volatile INPUT_Event input_event;
 //Called from ISR, keep fit
-void INPUT_userinput(INPUT_Keystatus_t keystatus, INPUT_Key_t key, INPUT_ComponentID_t componentID)
+void INPUT_userinput(INPUT_Keystatus_t keystatus, INPUT_Key_t key,
+					 INPUT_ComponentID_t componentID,
+					 SYSTEM_cycle_timestamp_t timestamp)
 {	
 	if(INPUT_KEYSTATUS_RELEASED == keystatus)
 	{
@@ -21,7 +23,7 @@ void INPUT_userinput(INPUT_Keystatus_t keystatus, INPUT_Key_t key, INPUT_Compone
 	INPUT_keystatus[key] = keystatus;
 	if(!input_event.next_handler)
 	{
-		input_event.timestamp = SYSTEM_get_cycle_timestamp();
+		input_event.timestamp = timestamp;
 		input_event.componentID = componentID;
 		input_event.key = key;
 		input_event.keystatus = keystatus;

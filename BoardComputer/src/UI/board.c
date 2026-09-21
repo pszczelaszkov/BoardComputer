@@ -3,7 +3,6 @@
 #include "../countersfeed.h"
 #include "../average.h"
 #include "timer.h"
-#include "../USART.h"
 #include "../system.h"
 #include "programdata.h"
 typedef enum INPUTCOMPONENTID
@@ -250,7 +249,7 @@ static void renderer_md_lph()
 	uint16_t lph = COUNTERSFEED_feed[COUNTERSFEED_FEEDID_LPH];
 	lph = MIN(lph,MD_MAX_VALUE);
 	fp16toa(lph,&buffer[9],2,1);
-	NEXTION_send(buffer, USART_HOLD);
+	NEXTION_send(buffer);
 }
 /*Display realtime liters per 100km, if not in motion fallback to liters per hour*/
 static void renderer_md_lp100()
@@ -269,7 +268,7 @@ static void renderer_md_lp100()
 	uint16_t lp100 = COUNTERSFEED_feed[COUNTERSFEED_FEEDID_LP100];
 	lp100 = MIN(lp100,MD_MAX_VALUE);
 	fp16toa(lp100,&buffer[9],2,1);
-	NEXTION_send(buffer, USART_HOLD);
+	NEXTION_send(buffer);
 }
 /*Display average liters per 100km*/
 static void renderer_md_lp100_avg()
@@ -281,7 +280,7 @@ static void renderer_md_lp100_avg()
 
 	lp100 = MIN(lp100,MD_MAX_VALUE);
 	fp16toa(lp100,&buffer[9],2,1);
-	NEXTION_send(buffer, USART_HOLD);
+	NEXTION_send(buffer);
 }
 
 /*Display average speed*/
@@ -292,7 +291,7 @@ static void renderer_md_speed_avg()
 	NEXTION_quote_payloadbuffer(payload,payload_length);
 	uint16_t speed = COUNTERSFEED_feed[COUNTERSFEED_FEEDID_SPEED_AVG] >> 8;
 	rightconcat_short(&payload[1], speed, 4);
-	NEXTION_send(buffer, USART_HOLD);
+	NEXTION_send(buffer);
 }
 
 
@@ -306,7 +305,7 @@ static void renderer_md_inj_t()
 
 	fuel_time = MIN(fuel_time,MD_MAX_VALUE);
 	fp16toa(fuel_time,&buffer[9],2,1);
-	NEXTION_send(buffer, USART_HOLD);
+	NEXTION_send(buffer);
 }
 
 static void renderer_md_range()
@@ -325,7 +324,7 @@ static void renderer_md_range()
 
 	range = MIN(range,9999);
 	rightconcat_short(&payload[1], range, 4);
-	NEXTION_send(buffer, USART_HOLD);
+	NEXTION_send(buffer);
 }
 
 static void update_EGT()
@@ -347,7 +346,7 @@ static void update_EGT()
 		case SENSORSFEED_EGT_STATUS_VALUE:
 			rightconcat_short(&payload[1],SENSORSFEED_feed[SENSORSFEED_FEEDID_EGT], 4);
 	}
-	NEXTION_send(buffer,USART_HOLD);
+	NEXTION_send(buffer);
 	if(alert)
 	{
 		raisevisualalert(VISUALALERTID_EGT,VISUALALERT_SEVERITY_BADVALUE);
@@ -359,7 +358,7 @@ static void initialize_FMS()
 	NEXTION_INSTRUCTION_BUFFER_BLOCK(1)
 	NEXTION_instruction_compose("dt0","val",instruction);
 	payload[0] = '0' + (char)SYSTEM_config.BOARD_DELTA_THRESHOLD;
-	NEXTION_send(buffer,USART_HOLD);
+	NEXTION_send(buffer);
 }
 
 static void update_sensorgroup_bottom()
@@ -382,7 +381,7 @@ static void update_sensorgroup_bottom()
 		raisevisualalert(VISUALALERTID_OUTSIDE,VISUALALERT_SEVERITY_BADVALUE);
 		memset(&payload[1], '-', num_of_digits);
 	}
-	NEXTION_send(buffer,USART_HOLD);
+	NEXTION_send(buffer);
 	memset(&payload[1],' ',num_of_digits);
 
 	memcpy(buffer,"int",3);
@@ -395,7 +394,7 @@ static void update_sensorgroup_bottom()
 		raisevisualalert(VISUALALERTID_INTAKE,VISUALALERT_SEVERITY_BADVALUE);
 		memset(&payload[1], '-', num_of_digits);
 	}
-	NEXTION_send(buffer,USART_HOLD);
+	NEXTION_send(buffer);
 	memset(&payload[1],' ', num_of_digits);
 
 	memcpy(buffer,"oil", 3);
@@ -408,7 +407,7 @@ static void update_sensorgroup_bottom()
 		raisevisualalert(VISUALALERTID_OIL,VISUALALERT_SEVERITY_BADVALUE);
 		memset(&payload[1], '-', num_of_digits);
 	}
-	NEXTION_send(buffer,USART_HOLD);
+	NEXTION_send(buffer);
 }
 
 static void update_sensorgroup_pressure()
@@ -426,7 +425,7 @@ static void update_sensorgroup_pressure()
 	}
 	i16toa(manifoldpressure,payload);
 
-	NEXTION_send(buffer,USART_HOLD);
+	NEXTION_send(buffer);
 	memset(payload,' ',payload_length);
 	memcpy(buffer,"frp",3);
 	///
@@ -436,7 +435,7 @@ static void update_sensorgroup_pressure()
 		fuelrailpressure = 0;
 	}
 	i16toa(fuelrailpressure,payload);
-	NEXTION_send(buffer,USART_HOLD);
+	NEXTION_send(buffer);
 	memset(payload,' ',payload_length);
 	NEXTION_instruction_compose("fmd","val",instruction);
 	/// 
@@ -444,7 +443,7 @@ static void update_sensorgroup_pressure()
 	//Delta has resolution of 1Bar(100kPa) which covers progress bar range 0-100.
 	i16toa(deltapressure, payload);
 	
-	NEXTION_send(buffer,USART_HOLD);
+	NEXTION_send(buffer);
 }
 
 static void update_visual_alert()
@@ -467,7 +466,7 @@ static void update_visual_alert()
 			if(!visualalert->alert_sent)
 			{
 				payload[0] = '0' + (char)visualalert->severity;
-				if(NEXTION_send(buffer,USART_HOLD))
+				if(NEXTION_send(buffer))
 				{
 					alerts_sent++;
 					visualalert->alert_sent = 1;
@@ -479,7 +478,7 @@ static void update_visual_alert()
 			if(VISUALALERT_SEVERITY_NONE != visualalert->severity)
 			{				
 				payload[0] = '0';
-				if(NEXTION_send(buffer,USART_HOLD))
+				if(NEXTION_send(buffer))
 				{
 					alerts_sent++;
 					visualalert->severity = VISUALALERT_SEVERITY_NONE;
@@ -510,7 +509,7 @@ static void update_watch()
 	{
 		memcpy(&payload[1],&TIMER_active_watch_formated.segments.mm,8);
 	}
-	NEXTION_send(buffer,USART_HOLD);
+	NEXTION_send(buffer);
 }
 
 static void switch_page_to_config()

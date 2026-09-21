@@ -29,13 +29,6 @@ class testInit(unittest.TestCase):
         self.assertTrue(m.INPUT_KEYSTATUS_HOLD > m.INPUT_KEYSTATUS_PRESSED)
         self.assertTrue(m.INPUT_KEYSTATUS_CLICK > m.INPUT_KEYSTATUS_HOLD)
 
-    def test_nextion(self):
-        # EOT must be null-terminated triple 0xff
-        eot = ffi.unpack(m.NEXTION_eot, 4)
-        for byte in eot[0:3]:
-            self.assertEqual(byte, 0xFF)
-        self.assertEqual(eot[3], 0)
-
     #move?
     def test_uiboard_maindisplay_order(self):
         # Must have default component and be circular

@@ -60,17 +60,17 @@ static uint8_t send_configpointer_to_nextion()
     CONFIG_get_entry_min_max_values(configvariable_it,&min,&max);
     NEXTION_instruction_compose("ptr","val",instruction);
     u16toa(configvariable_it, payload);
-    result &= NEXTION_send(buffer,0);
+    result &= NEXTION_send(buffer);
 
     NEXTION_instruction_compose("min","val",instruction);
     i32toa(min, payload);
-    result &= NEXTION_send(buffer,0);
+    result &= NEXTION_send(buffer);
 
     NEXTION_instruction_compose("max","val",instruction);
     i32toa(max, payload);
-    result &= NEXTION_send(buffer,0);
+    result &= NEXTION_send(buffer);
 
-    result &= NEXTION_send("rfp.en=1",0);
+    result &= NEXTION_send("rfp.en=1");
 
     return result;
 }
@@ -84,7 +84,7 @@ static uint8_t send_configvalue_to_nextion()
     */
     NEXTION_instruction_compose("vlh","val",instruction);
     i32toa(configvariable_value, payload);
-    return NEXTION_send(buffer,0);
+    return NEXTION_send(buffer);
 }
 
 /*
@@ -104,7 +104,7 @@ static uint8_t check_configvalue_is_valid()
         NEXTION_INSTRUCTION_BUFFER_BLOCK(3)
         NEXTION_instruction_compose("res","val",instruction);
         i16toa(validator_result.verdict, payload);
-        NEXTION_send(buffer,0);
+        NEXTION_send(buffer);
 
         configvariable_value = validator_result.value;
         return 0;

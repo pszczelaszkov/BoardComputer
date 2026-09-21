@@ -32,7 +32,9 @@ class TestBoardUI:
         for i in range(m.VISUALALERTID_LAST):
             m.UIBOARD_update_visual_alert()
         m.NEXTION_handler_ready(m.NEXTION_VERSION)
-        m.USART_TX_clear()
+        m.UART_init()
+        m.SERIAL_NEXTION_OUT_status = m.SERIAL_OUT_STATUS_IDLE
+        m.SERIAL_SERVICE_OUT_status = m.SERIAL_OUT_STATUS_IDLE
 
     @pytest.mark.parametrize(
         "component,countersdata,sensorsdata,expectedstring",
@@ -328,7 +330,7 @@ class TestBoardUI:
             cast_void(ffi.addressof(lph)),
             m.NEXTION_COMPONENTSELECTSTATUS_SELECTED,
         )
-        m.USART_TX_clear()
+        read_nextion_output(m, ffi)
         m.COUNTERSFEED_feed[m.COUNTERSFEED_FEEDID_SPEED_KPH] = 1
         lph.executable_component.execute()
         output = read_nextion_output(m, ffi)
@@ -627,9 +629,11 @@ class TestNumpadUI:
     def clear(self):
         m.NEXTION_clear_selected_component()
         m.UINUMPAD_reset()
-        m.USART_TX_clear()
         m.SYSTEM_resetalert()
         m.NEXTION_handler_ready(m.NEXTION_VERSION)
+        m.UART_init()
+        m.SERIAL_NEXTION_OUT_status = m.SERIAL_OUT_STATUS_IDLE
+        m.SERIAL_SERVICE_OUT_status = m.SERIAL_OUT_STATUS_IDLE
 
     @pytest.mark.parametrize(
         "testvalue,expectedvalue",
@@ -794,7 +798,9 @@ class TestConfigUI:
         m.CONFIG_loadconfig(ffi.addressof(m.SYSTEM_config))
         m.SYSTEM_resetalert()
         m.UICONFIG_page_control(m.NEXTION_PAGECONTROL_SETUP, ffi.NULL)
-        m.USART_TX_clear()
+        m.UART_init()
+        m.SERIAL_NEXTION_OUT_status = m.SERIAL_OUT_STATUS_IDLE
+        m.SERIAL_SERVICE_OUT_status = m.SERIAL_OUT_STATUS_IDLE
         m.SYSTEM_config.SYSTEM_FACTORY_RESET = 0
 
     def test_setup(self):
@@ -1004,7 +1010,7 @@ class TestConfigUI:
         m.UINUMPAD_page_control(m.NEXTION_PAGECONTROL_USERINPUT,cast_void(touch_event))
         touch_event.componentID = TestNumpadUI.INPUTCOMPONENT_NUMPADMINUS
         m.UINUMPAD_page_control(m.NEXTION_PAGECONTROL_USERINPUT,cast_void(touch_event))
-        m.USART_TX_clear() #Clear not needed variables(For test purpose)
+        read_nextion_output(m, ffi)  # Clear not needed variables (For test purpose)
         touch_event.componentID = TestNumpadUI.INPUTCOMPONENT_NUMPADSEND
         m.UINUMPAD_page_control(m.NEXTION_PAGECONTROL_USERINPUT,cast_void(touch_event))
         output = read_nextion_output(m, ffi)

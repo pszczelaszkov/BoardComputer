@@ -1,6 +1,5 @@
 #include "numpad.h"
 #include "../nextion.h"
-#include "../USART.h"
 
 typedef enum INPUTCOMPONENTID
 {
@@ -126,7 +125,7 @@ inline static void update()
     NEXTION_instruction_compose("dsp","txt",instruction);
 	NEXTION_quote_payloadbuffer(payload,payload_length);
     memcpy(payload+1, stringvalue, max_length);
-    NEXTION_send(buffer, USART_HOLD);
+    NEXTION_send(buffer);
 }
 
 /*The only safe way to trigger numpad*/

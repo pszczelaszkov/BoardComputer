@@ -1,5 +1,5 @@
 #include "nextion.h"
-#include "USART.h"
+#include "UART.h"
 #include "sensorsfeed.h"
 #include "programdata.h"
 #include "timer.h"
@@ -24,8 +24,6 @@ static const uint16_t MINIMAL_COMPAT_UIVERSION = 0x01;
 const uint16_t NEXTION_VERSION = 0x01;
 
 uint8_t NEXTION_selection_counter;
-
-char NEXTION_eot[] = {(char)0xff,(char)0xff,(char)0xff,(char)0x00};
 
 enum DISPLAYSTATUS
 {
@@ -98,7 +96,7 @@ Ping device with request to actual pageid.
 */
 static void check_display_alive()
 {	
-	NEXTION_send("sendme",USART_HOLD);		
+	NEXTION_send("sendme");		
 	if(1 == display_watchdog_counter)
 		displaystatus = DISPLAYSTATUS_DISCONNECTED;
 }
@@ -159,12 +157,11 @@ void NEXTION_handler_sendme(NEXTION_PageID_t pageid)
 		display_watchdog_counter = WATCHDOG_THRESHOLD;
 }
 
-uint8_t NEXTION_send(char data[], uint8_t flush)
+uint8_t NEXTION_send(char data[])
 {
 	if(DISPLAYSTATUS_DISCONNECTED != displaystatus)
 	{	
-		if(USART_send(data,USART_HOLD))
-			return USART_send(NEXTION_eot,USART_FLUSH & flush);
+		return UART_write_message(UART_CHANNEL_NEXTION, (uint8_t*)data, strlen(data));
 	}	
 	return 0;
 }
@@ -225,7 +222,7 @@ void NEXTION_set_component_select_status(NEXTION_Component* component, NEXTION_C
 		iterator++;
 
 		u16toa(value,&buffer[iterator]);
-		NEXTION_send(buffer,USART_HOLD);
+		NEXTION_send(buffer);
 	}
 }
 
@@ -257,7 +254,7 @@ int8_t NEXTION_switch_page(NEXTION_PageID_t pageID, uint8_t push_to_history)
 	NEXTION_clear_selected_component();
 
 	i16toa(pageID, &buffer[5]);//5th position right after "page"
-	if(NEXTION_send(buffer,USART_HOLD))
+	if(NEXTION_send(buffer))
 	{	
 		/*Continue only if message to HMI was scheduled to send*/
 		if(push_to_history)
@@ -287,7 +284,7 @@ void NEXTION_set_brightness(uint8_t brightness)
 {
 	char buffer[] = "dim=   ";
 	u16toa(brightness,&buffer[4]);
-	NEXTION_send(buffer,USART_HOLD);
+	NEXTION_send(buffer);
 }
 
 void NEXTION_send_activealert()
@@ -296,7 +293,7 @@ void NEXTION_send_activealert()
 	if(DISPLAYSTATUS_DISCONNECTED != displaystatus)
 	{
 		u16toa(SYSTEM_get_active_alert().alert,&buffer[4]);
-		NEXTION_send(buffer,USART_HOLD);
+		NEXTION_send(buffer);
 	}
 }
 
@@ -333,7 +330,7 @@ void NEXTION_update()
 				case 0://start with reset
 					NEXTION_reset();
 				break;
-				case -16://after 16 cycles(2 seconds) jump to beginning and raise alert.
+				case -24://after 24 cycles(3 seconds) jump to beginning and raise alert.
 					display_watchdog_counter = 1;
 					SYSTEM_raisealert(SYSTEM_ALERT_NEXTION_TIMEOUT);
 				break;
@@ -355,10 +352,7 @@ void NEXTION_reset()
 	/*Set disconneted status to prevent further message creation towards display*/
 	displaystatus = DISPLAYSTATUS_DISCONNECTED;
 	NEXTION_clear_selected_component();
-	//RESET command sends message directly to bypass disconnected condition.
-	USART_TX_clear();
-	//Wrap in eot to close any leftover command on display side.
-	USART_send(NEXTION_eot,USART_HOLD);
-	USART_send("rest",USART_HOLD);
-	USART_send(NEXTION_eot,USART_FLUSH);
+	/* RESET bypasses disconnected condition; UART appends EOT on each write. */
+	UART_write_message(UART_CHANNEL_NEXTION, NULL, 0);
+	UART_write_message(UART_CHANNEL_NEXTION, (uint8_t*)"rest", strlen("rest"));
 }

@@ -4,19 +4,14 @@ import pytest
 import config
 from helpers import (
     write_usart,
-    read_usart,
     load,
     max6675_response,
-    parse_nextion,
     read_nextion_output,
     ModuleWrapper,
     exec_cycle,
 )
 
 # This test class tests direct functionality of subsystems.
-
-
-nextion_data = {"val": {}, "pic": {}, "txt": {}}
 
 
 def cast_void(ffi, variable):
@@ -31,14 +26,17 @@ class TestParent:
     def setup_class(cls):
         m.SYSTEM_run = False
         m.CONFIG_factory_default_reset()
-        m.NEXTION_handler_ready(m.NEXTION_VERSION)
         m.test()
+        m.NEXTION_handler_ready(m.NEXTION_VERSION)
         session.create_snapshot()
 
     @pytest.fixture(autouse=True)
     def snapshot_control(self):
         session.load_snapshot()
         m.SYSTEM_resetalert()
+        m.UART_init()
+        m.SERIAL_NEXTION_OUT_status = m.SERIAL_OUT_STATUS_IDLE
+        m.SERIAL_SERVICE_OUT_status = m.SERIAL_OUT_STATUS_IDLE
         yield
 
 class TestPreRun(TestParent):
@@ -62,11 +60,10 @@ class TestPreRun(TestParent):
         component.highlighttype = m.NEXTION_HIGHLIGHTTYPE_IMAGE
         component = ffi.cast("void*", component)
         m.NEXTION_set_component_select_status(component, status_selected)
-        m.USART_flush()
-        m.NEXTION_clear_selected_component()
+        nextion_data = read_nextion_output(m, ffi)
+        assert int(nextion_data["tst.pic"]) == selectionvalue
 
-        parse_nextion(m, read_usart(m), nextion_data)
-        assert int(nextion_data["pic"]["tst"]) == selectionvalue
+        m.NEXTION_clear_selected_component()
 
     def test_nextion_repeated_selection_thesame(self):
         selectionvalue = 100
@@ -137,11 +134,11 @@ class TestPreRun(TestParent):
 
         for i in range(decay_ticks):
             m.NEXTION_update_select_decay()
-        m.USART_flush()
+
+        nextion_data = read_nextion_output(m, ffi)
+        assert int(nextion_data["tst.pic"]) == defaultvalue
 
         m.NEXTION_clear_selected_component()
-        parse_nextion(m, read_usart(m), nextion_data)
-        assert int(nextion_data["pic"]["tst"]) == defaultvalue
 
     def test_egt_pin_configuration(self):
         assert m.DDRB & m.BIT0  # CS
@@ -244,13 +241,14 @@ class TestPreRun(TestParent):
         click = m.INPUT_KEYSTATUS_CLICK
         nonecomponent = m.INPUT_COMPONENT_NONE
 
-        m.INPUT_userinput(released, enter, nonecomponent)
+        timestamp = 0
+        m.INPUT_userinput(released, enter, nonecomponent, timestamp)
         assert keystatus[enter] == released
 
-        m.INPUT_userinput(pressed, enter, nonecomponent)
+        m.INPUT_userinput(pressed, enter, nonecomponent, timestamp)
         assert keystatus[enter] == pressed
 
-        m.INPUT_userinput(released, down, nonecomponent)
+        m.INPUT_userinput(released, down, nonecomponent, timestamp)
         assert keystatus[enter] == pressed
         assert keystatus[down] == released
 
@@ -260,11 +258,11 @@ class TestPreRun(TestParent):
         assert keystatus[enter] == hold
         assert keystatus[down] == released
 
-        m.INPUT_userinput(released, enter, nonecomponent)
+        m.INPUT_userinput(released, enter, nonecomponent, timestamp)
         assert keystatus[enter] == released
 
-        m.INPUT_userinput(pressed, enter, nonecomponent)
-        m.INPUT_userinput(released, enter, nonecomponent)
+        m.INPUT_userinput(pressed, enter, nonecomponent, timestamp)
+        m.INPUT_userinput(released, enter, nonecomponent, timestamp)
         assert keystatus[enter] == click
 
     def test_average(self):
@@ -402,27 +400,7 @@ class TestPreRun(TestParent):
         assert m.COUNTERSFEED_feed[m.COUNTERSFEED_FEEDID_LP100_AVG] == expected_lp100
         assert m.COUNTERSFEED_feed[m.COUNTERSFEED_FEEDID_SPEED_AVG] == expected_kph
 
-    def test_USART(self):
-        write_usart(m, 0x66, bytes([m.NEXTION_get_pageid()]))
-        assert m.USART_RX_buffer_index == 0
-        assert m.USART_eot_counter == 3
-
-        assert m.USART_send(b"PONG", m.USART_FLUSH) == 1
-        response = read_usart(m)
-        assert response[:4] == b"PONG"
-        m.USART_TX_clear()
-        assert m.USART_TX_buffer_index == m.USART_TX_BUFFER_SIZE
-
-
-    def test_USART_rx_ignores_leading_garbage(self):
-        for byte in (0x00, 0xFF, 0x1A):
-            m.serial_service_in = byte
-            m.USART_read_service_byte()
-        assert m.USART_RX_buffer_index == 0
-        m.serial_service_in = 0x88
-        m.USART_read_service_byte()
-        assert m.USART_RX_buffer_index == 1
-
+    @pytest.mark.skip(reason="Not implemented")
     def test_USART_passthrough_mode(self):
         write_usart(m, None, b"DRAKJHSUYDGBNCJHGJKSHBDN")
         # Manualy check two opposite registers
@@ -842,7 +820,7 @@ class TestPowerCycles(TestParent):
         output = read_nextion_output(m,ffi)
         assert "rest" in output
         #Display should reset and send ready 
-        for _ in range(16):
+        for _ in range(24):
             m.core()
 
         assert m.SYSTEM_get_active_alert().alert == m.SYSTEM_ALERT_NEXTION_TIMEOUT

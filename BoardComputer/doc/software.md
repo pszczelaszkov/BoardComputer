@@ -1,65 +1,54 @@
 # Software
- 
-</br>
 
-[It's not bug it's a feature](known-issues.md)</br>
+[It's not bug it's a feature](known-issues.md)
 
 ### Simplified system design
 ```mermaid
-stateDiagram-v2
+flowchart TD
+    init["ENTRY_ROUTINE: initialize modules"]
+    sleep[SYSTEMINTERFACE_sleep]
+    postIrq["post_irq_core: process UART messages"]
+    timerIrq["Timer IRQ: set SYSTEM_exec"]
+    highPrio["high_prio_core: UART, input, timer"]
+    core["core: counters, sensors, Nextion, system"]
 
-[*] --> initialize
-initialize --> [*]
-[*] --> rtc
-rtc --> EVENT_TIMER_ISR
-rtc --> Core
-flush --> [*]
+    init --> sleep
+    sleep --> postIrq
+    postIrq -->|"SYSTEM_exec is false"| sleep
+    postIrq -->|"SYSTEM_exec is true"| highPrio
+    timerIrq --> highPrio
+    highPrio --> core
+    core --> sleep
 
-state IRQ {
-    USER --> INPUT_userinput
-    USART_RX --> INPUT_userinput
-    DIGITAL --> COUNTERSFEED
-    ADC --> SENSORSFEED
-    SPI --> EGT
-    USART_TX
-    EVENT_TIMER_ISR
-    note right of INPUT_userinput
-        ISR only queues the event with a cycle timestamp.
-        Stopwatch start/stop applies that delta in high_prio_core.
-    end note
-    note right of EVENT_TIMER_ISR
-        Wakes CPU, advances SYSTEM_event_timer 0..7,
-        sets SYSTEM_exec. Core does not run on other IRQs.
-    end note
-}
+    subgraph uartRx [UART receive]
+        rxIrq[USART RX ISR]
+        rxQueue["UART_put_byte_to_RX_buffer: queue frame and timestamp"]
+        dispatch[process_UART_messages]
+        input["INPUT_userinput for Nextion touch"]
+        handlers[Nextion message handlers]
+        rxIrq --> rxQueue
+        rxQueue --> dispatch
+        dispatch --> input
+        dispatch --> handlers
+    end
 
-state System {
-    rtc: RTC
-    initialize: ENTRY_ROUTINE
-    state Core {
-        [*] --> high_prio
-        high_prio --> update
-        update --> flush
-        high_prio: high_prio_core
-        update: core
-        flush: USART_flush
-        note right of high_prio
-            INPUT_update, INPUT_handle, TIMER_update.
-            INPUT only if SYSTEM_STATUS_OPERATIONAL.
-        end note
-        note right of update
-            If OPERATIONAL: COUNTERSFEED, SENSORSFEED, NEXTION.
-            Always: SYSTEM_update, USART_update.
-            All output must be dumped to the USART buffer here.
-        end note
-    }
-    note left of rtc
-        System beat is 8 Hz (async Timer2).
-        Between ticks the CPU sleeps.
-        post_irq_core runs on wake but must not touch USART.
-    end note
-}
+    postIrq --> dispatch
+    highPrio --> dispatch
 
+    subgraph uartTx [UART transmit]
+        producer[Nextion producer]
+        enqueue[UART_write_message]
+        serialSend[SERIAL_send_msg]
+        txIrq["USART TX ISR: continue bytes"]
+        producer --> enqueue
+        enqueue --> serialSend
+        serialSend --> txIrq
+    end
 ```
+
+The asynchronous Timer2 beat runs at 8 Hz. Other IRQs may wake the CPU and let
+`post_irq_core` process queued UART frames, but only the timer IRQ schedules the
+high-priority and regular core cycle. UART RX handlers queue complete frames;
+application handlers run outside the RX ISR and receive the frame timestamp.
 
 Hardware WDT is 1 s, enabled at boot and refreshed from `SYSTEM_update` each 8 Hz beat; BOD (4.3 V) is a fuse setting, not firmware.

@@ -21,7 +21,7 @@ TESTFLAGS   	:= -Wall -Wextra -std=gnu17 -O1 -fpic -g -D__DEBUG__ $(TESTDEFINES)
 AVRFLAGS    	:= -Wall -Wextra -pedantic -std=gnu17 -O1 -mmcu=atmega324pb -DF_CPU=8000000 -fshort-enums $(TESTDEFINES)
 
 # Common sources
-COMMON_SRCS := USART.c input.c nextion.c timer.c sensorsfeed.c countersfeed.c utils.c \
+COMMON_SRCS := UART.c input.c nextion.c timer.c sensorsfeed.c countersfeed.c utils.c \
                programdata.c average.c system.c config.c
 UI_SRCS     := UI/init.c UI/board.c UI/numpad.c UI/config.c
 

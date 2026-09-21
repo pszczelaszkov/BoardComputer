@@ -33,7 +33,8 @@ static int keys_signal_loop(void* arg)
 			? INPUT_KEYSTATUS_PRESSED
 			: INPUT_KEYSTATUS_RELEASED;
 		
-		INPUT_userinput(keystatus, key, INPUT_COMPONENT_NONE);
+		INPUT_userinput(keystatus, key, INPUT_COMPONENT_NONE,
+		                SYSTEM_get_cycle_timestamp());
 	}
 
 	return 0;
