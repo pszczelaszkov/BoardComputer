@@ -191,7 +191,7 @@ class TestUARTNextionRX(TestParent):
         length = m.UART_get_next_message(self.channel, message, timestamp)
 
         assert bytes(ffi.unpack(message[0], length)) == b"timestamp"
-        assert timestamp[0] == 3 * 0x0F + 7
+        assert timestamp[0] == 3 * 16 + 7
 
     def test_post_irq_core_dispatches_touch_message(self):
         touch_message = bytes([

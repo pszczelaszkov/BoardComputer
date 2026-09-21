@@ -199,7 +199,7 @@ void TIMER_userinput_handle_watch(INPUT_Event* input_event)
                 SYSTEM_cycle_timestamp_t event_timestamp = input_event->timestamp;
                 SYSTEM_cycle_timestamp_t delta_timestamp = current_timestamp-event_timestamp;
 
-                if(delta_timestamp >= current_timestamp)
+                if(event_timestamp > current_timestamp)
                     delta_timestamp -= (0xff-SYSTEM_fullcycle_rtc_steps+1);
                 
                 if(TIMER_WATCHSTATUS_STOP == active_watch->timer.watchstatus || TIMER_WATCHSTATUS_ZERO == active_watch->timer.watchstatus)

@@ -1033,3 +1033,48 @@ class TestTimer(TestParent):
         #Timer should be forwarded by 5 seconds
         assert 1+minutes_forward == watch_timer.minutes
         assert 5 == watch_timer.seconds
+
+    def test_stopwatch_click_timestamp_zero_does_not_wrap(self):
+        m.TIMER_set_watch(m.TIMER_WATCHTYPE_STOPWATCH)
+        m.TIMER_clear_active_watch()
+        watch_timer = m.TIMER_get_watch(m.TIMER_WATCHTYPE_STOPWATCH).timer
+
+        m.SYSTEM_event_timer = 0
+        m.TCNT2 = 6
+        touch_event = ffi.new("INPUT_Event*")
+        touch_event.key = m.INPUT_KEY_ENTER
+        touch_event.keystatus = m.INPUT_KEYSTATUS_CLICK
+        touch_event.componentID = self.INPUTCOMPONENT_WATCH
+        touch_event.timestamp = 0
+
+        m.TIMER_userinput_handle_watch(cast_void(ffi, touch_event))
+
+        assert m.TIMER_WATCHSTATUS_COUNTING == watch_timer.watchstatus
+        assert m.TIMER_cycle_timestamp_to_cs(6) == watch_timer.centiseconds
+
+    def test_stopwatch_click_wraps_across_second_boundary(self):
+        m.TIMER_set_watch(m.TIMER_WATCHTYPE_STOPWATCH)
+        m.TIMER_clear_active_watch()
+        watch_timer = m.TIMER_get_watch(m.TIMER_WATCHTYPE_STOPWATCH).timer
+
+        # event at end of second (127), handled early in next second (4)
+        m.SYSTEM_event_timer = 0
+        m.TCNT2 = 4
+        touch_event = ffi.new("INPUT_Event*")
+        touch_event.key = m.INPUT_KEY_ENTER
+        touch_event.keystatus = m.INPUT_KEYSTATUS_CLICK
+        touch_event.componentID = self.INPUTCOMPONENT_WATCH
+        touch_event.timestamp = 127
+
+        m.TIMER_userinput_handle_watch(cast_void(ffi, touch_event))
+
+        wrapped_delta = 4 + 128 - 127
+        assert m.TIMER_WATCHSTATUS_COUNTING == watch_timer.watchstatus
+        assert m.TIMER_cycle_timestamp_to_cs(wrapped_delta) == watch_timer.centiseconds
+
+        # Stop with the same wrapped latency; unused fraction is subtracted.
+        watch_timer.centiseconds = 50
+        m.TIMER_userinput_handle_watch(cast_void(ffi, touch_event))
+
+        assert m.TIMER_WATCHSTATUS_STOP == watch_timer.watchstatus
+        assert 50 - m.TIMER_cycle_timestamp_to_cs(wrapped_delta) == watch_timer.centiseconds

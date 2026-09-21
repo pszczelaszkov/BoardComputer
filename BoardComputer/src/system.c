@@ -64,7 +64,7 @@ SYSTEM_ALERT_SEVERITY SYSTEM_resolve_alert_severity(SYSTEM_ALERT alert)
 
 SYSTEM_cycle_timestamp_t SYSTEM_get_cycle_timestamp()
 {
-    SYSTEM_cycle_timestamp_t result = SYSTEM_event_timer * 0xf + RTC_REGISTER;
+    SYSTEM_cycle_timestamp_t result = (SYSTEM_event_timer << 4) + RTC_REGISTER;
     return result;
 }
 
