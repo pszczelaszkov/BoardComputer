@@ -29,20 +29,6 @@ class testInit(unittest.TestCase):
         self.assertTrue(m.INPUT_KEYSTATUS_HOLD > m.INPUT_KEYSTATUS_PRESSED)
         self.assertTrue(m.INPUT_KEYSTATUS_CLICK > m.INPUT_KEYSTATUS_HOLD)
 
-    #move?
-    def test_uiboard_maindisplay_order(self):
-        # Must have default component and be circular
-        initial = m.UIBOARD_maindisplay_activecomponent
-        desired = m.UIBOARD_maindisplay_components[0]
-        self.assertEqual(initial, desired)
-        temp = initial.nextComponent
-        for i in range(m.UIBOARD_MD_LAST):
-            if temp == initial:
-                break
-            temp = temp.nextComponent
-
-        self.assertEqual(initial, temp)
-
     def test_input_common_bck_conformance(self):
         image = m.NEXTION_HIGHLIGHTTYPE_IMAGE
         bckcomponent = m.NEXTION_common_bckcomponent
@@ -187,6 +173,19 @@ class TestBasicUIBOARD:
             i = i + 1
 
         assert m.UIBOARD_maindisplay_activecomponent == m.UIBOARD_maindisplay_components[0]
+
+    def test_uiboard_maindisplay_order(self):
+        # Must have default component and be circular
+        initial = m.UIBOARD_maindisplay_activecomponent
+        desired = m.UIBOARD_maindisplay_components[0]
+        assert initial == desired
+        temp = initial.nextComponent
+        for i in range(m.UIBOARD_MD_LAST):
+            if temp == initial:
+                break
+            temp = temp.nextComponent
+
+        assert initial == temp
 
 class TestBasicTimer:
     @pytest.mark.parametrize("centiseconds,result,expected_format_flag",[
