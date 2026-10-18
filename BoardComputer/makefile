@@ -20,6 +20,12 @@ STANDALONEFLAGS	:= -Wall -Wextra -pedantic --std=gnu17 -O1 -g $(TESTDEFINES) $(X
 TESTFLAGS   	:= -Wall -Wextra -std=gnu17 -O1 -fpic -g -D__DEBUG__ $(TESTDEFINES) $(X86_HARDENING)
 AVRFLAGS    	:= -Wall -Wextra -pedantic -std=gnu17 -O1 -mmcu=atmega324pb -DF_CPU=8000000 -fshort-enums $(TESTDEFINES)
 
+# Opt-in gcov for x86_test / make coverage
+ifeq ($(COVERAGE),1)
+COVERAGE_CFLAGS := --coverage -fprofile-abs-path
+COVERAGE_LDFLAGS := --coverage
+endif
+
 # Common sources
 COMMON_SRCS := UART.c input.c nextion.c timer.c sensorsfeed.c countersfeed.c utils.c \
                programdata.c average.c system.c config.c
@@ -36,7 +42,7 @@ PRINTF = @printf "$(GREEN)CC:$(RESET) %s\n" "$1"
 
 # --- Targets -----------------------------------------------------------------
 
-.PHONY: all clean flash fuses fuses-read x86_test HW_1 prepare_dirs
+.PHONY: all clean flash fuses fuses-read x86_test coverage HW_1 prepare_dirs
 
 # ATmega324PB fuse targets (not part of default flash)
 LFUSE := 0xe2
@@ -75,15 +81,27 @@ TEST_INCLUDES := -I$(TDIR) -I$(TDIR)Interface/x86_Test -I$(IDIR) -I$(X86_TEST_ID
 
 $(BIN_DIR)testmodule.so: $(X86_OBJS)
 	$(call PRINTF,"Linking $@")
-	$(CC_X86) -shared $^ $(PYTHON_LDFLAGS) -o $@
+	$(CC_X86) -shared $^ $(PYTHON_LDFLAGS) $(COVERAGE_LDFLAGS) -o $@
 
 $(BIN_DIR)%_.o: $(TDIR)%.c
 	$(call PRINTF,"Compiling $<")
-	$(CC_X86) $(TESTFLAGS) $(TEST_INCLUDES) $(PYTHON_INCLUDES) -c $< -o $@
+	$(CC_X86) $(TESTFLAGS) $(COVERAGE_CFLAGS) $(TEST_INCLUDES) $(PYTHON_INCLUDES) -c $< -o $@
 
 $(BIN_DIR)%_.o: $(X86_TEST_IDIR)%.c
 	$(call PRINTF,"Compiling $<")
-	$(CC_X86) $(TESTFLAGS) $(TEST_INCLUDES) -c $< -o $@
+	$(CC_X86) $(TESTFLAGS) $(COVERAGE_CFLAGS) $(TEST_INCLUDES) -c $< -o $@
+
+# Local gcov report (do not clean before gcovr)
+coverage:
+	$(MAKE) x86_test COVERAGE=1
+	pytest
+	@mkdir -p coverage
+	@gcovr --root . --object-directory bin \
+		--filter 'test/' \
+		--exclude 'test/cffi_testmodule.c' \
+		--exclude 'test/Interface/' \
+		--html-details coverage/index.html --print-summary
+	@echo "Coverage report generated in coverage/index.html."
 
 # -------------------------- X86 Standalone Build ----------------------------------------
 

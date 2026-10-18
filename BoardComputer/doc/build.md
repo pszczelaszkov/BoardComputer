@@ -45,6 +45,15 @@ To test type:</br>
 ```
 make x86_test && pytest
 ```
+### Coverage
+Line coverage of the x86 test library uses gcc gcov.</br>
+```
+pip install -r python_requirements.txt
+make coverage
+```
+That rebuilds with `COVERAGE=1`, runs pytest, and writes an HTML report under `coverage/index.html`.</br>
+Only shared firmware under `test/` is reported (Interface trees and the generated CFFI wrapper are excluded).</br>
+Line numbers follow the post-`fileswrapper.py` copies, so they may differ from `src/`.</br>
 ## Manual testing
 It's possible to build firmware as standalone application.
 ```

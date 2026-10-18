@@ -53,6 +53,13 @@ obj/
 
 # Python
 *.pyc
+BoardComputer/.venv/
+
+# gcov / coverage report
+*.gcda
+*.gcno
+*.gcov
+BoardComputer/coverage/
 
 # Misc output
 *.out
